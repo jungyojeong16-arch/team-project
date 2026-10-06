@@ -40,7 +40,7 @@ import {
   type RankingItem,
   type TPOContext,
   type UserPersona,
-} from "../lib/viewfit";
+} from "./_lib/viewfit";
 
 function useHomeFeed() {
   const [feed, setFeed] = useState<HomeFeed | null>(null);

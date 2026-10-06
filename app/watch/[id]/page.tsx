@@ -27,7 +27,7 @@ import {
   formatAgeRating,
   getAgeAverage,
   type Movie,
-} from "../../../lib/viewfit";
+} from "../../_lib/viewfit";
 
 /* ============================================================================
  * Constants
