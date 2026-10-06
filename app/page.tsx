@@ -121,6 +121,12 @@ function Header() {
             <Bell className="h-5 w-5" />
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[#0a0a0a]" />
           </button>
+          <Link
+            href="/signup"
+            className="ml-1 rounded-full bg-fuchsia-300 px-4 py-1.5 text-sm font-bold text-[#1f1029] transition hover:bg-fuchsia-200"
+          >
+            회원가입
+          </Link>
           <button
             type="button"
             aria-label="프로필"
