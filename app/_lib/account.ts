@@ -47,6 +47,14 @@ export interface OnboardingAnswers {
 const ACCOUNT_KEY = "viewfit.account";
 const ONBOARDING_KEY = "viewfit.onboarding";
 
+export interface Account {
+  email: string;
+  marketing_opt_in: boolean;
+  created_at: string;
+}
+
+export type SavedOnboarding = OnboardingAnswers & { completed_at: string };
+
 const save = (key: string, value: unknown) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
@@ -55,10 +63,32 @@ const save = (key: string, value: unknown) => {
   }
 };
 
+const load = <T>(key: string): T | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+};
+
+// TODO(Step 3): 세션/토큰 기반 로그인 상태 확인으로 교체
+export const getAccount = () => load<Account>(ACCOUNT_KEY);
+export const getOnboarding = () => load<SavedOnboarding>(ONBOARDING_KEY);
+
+export function signOut() {
+  try {
+    localStorage.removeItem(ACCOUNT_KEY);
+  } catch {
+    /* 무시 */
+  }
+}
+
 // TODO(Step 3): POST /api/v1/auth/signup/ 연동
 export async function signUp({ email, agreements }: SignUpPayload): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 500));
-  save(ACCOUNT_KEY, { email, marketing_opt_in: agreements.marketing, created_at: new Date().toISOString() });
+  const account: Account = { email, marketing_opt_in: agreements.marketing, created_at: new Date().toISOString() };
+  save(ACCOUNT_KEY, account);
 }
 
 // TODO(Step 3): PUT /api/v1/me/preferences/ 연동 (User.age_group / occupation 매핑 포함)

@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Bell,
@@ -41,6 +42,7 @@ import {
   type TPOContext,
   type UserPersona,
 } from "./_lib/viewfit";
+import { getAccount } from "./_lib/account";
 
 function useHomeFeed() {
   const [feed, setFeed] = useState<HomeFeed | null>(null);
@@ -69,7 +71,11 @@ function useHomeFeed() {
  * ========================================================================== */
 
 function Header() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // 로그인 상태면 내 프로필, 아니면 회원가입으로 이동
+  const openProfile = () => router.push(getAccount() ? "/profile" : "/signup");
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 16);
@@ -121,15 +127,10 @@ function Header() {
             <Bell className="h-5 w-5" />
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[#0a0a0a]" />
           </button>
-          <Link
-            href="/signup"
-            className="ml-1 rounded-full bg-fuchsia-300 px-4 py-1.5 text-sm font-bold text-[#1f1029] transition hover:bg-fuchsia-200"
-          >
-            회원가입
-          </Link>
           <button
             type="button"
             aria-label="프로필"
+            onClick={openProfile}
             className="ml-1 flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-fuchsia-500 to-indigo-600 ring-1 ring-white/20 transition hover:ring-white/60"
           >
             <User className="h-4 w-4 text-white" />
