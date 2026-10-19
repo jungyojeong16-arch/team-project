@@ -1,0 +1,49 @@
+<mxfile host="Electron">
+  <diagram name="페이지-1" id="mjVHYlsA3Fo72H6dH8hs">
+    <mxGraphModel dx="1601" dy="1104" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-3" edge="1" parent="1" source="_ftzHQKWrJo3rTjNzCAN-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;endFill=0;" target="_ftzHQKWrJo3rTjNzCAN-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="사용자" vertex="1">
+          <mxGeometry height="60" width="120" x="780" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-5" edge="1" parent="1" source="_ftzHQKWrJo3rTjNzCAN-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;endFill=0;" target="_ftzHQKWrJo3rTjNzCAN-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-2" parent="1" style="rhombus;whiteSpace=wrap;html=1;shapeInside=1;" value="설문" vertex="1">
+          <mxGeometry height="80" width="80" x="800" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-7" edge="1" parent="1" source="_ftzHQKWrJo3rTjNzCAN-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;endFill=0;" target="_ftzHQKWrJo3rTjNzCAN-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="사용자 성향 파악" vertex="1">
+          <mxGeometry height="60" width="120" x="780" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-9" edge="1" parent="1" source="_ftzHQKWrJo3rTjNzCAN-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;endFill=0;" target="_ftzHQKWrJo3rTjNzCAN-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-6" parent="1" style="rhombus;whiteSpace=wrap;html=1;shapeInside=1;" value="AI 분석" vertex="1">
+          <mxGeometry height="80" width="80" x="800" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-12" edge="1" parent="1" source="_ftzHQKWrJo3rTjNzCAN-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;endArrow=none;endFill=0;" target="_ftzHQKWrJo3rTjNzCAN-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&amp;nbsp;사용자 성향에 맞는&amp;nbsp;&lt;div&gt;AI 추천 목록&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="780" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-14" edge="1" parent="1" source="_ftzHQKWrJo3rTjNzCAN-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;endFill=0;" target="_ftzHQKWrJo3rTjNzCAN-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-11" parent="1" style="rhombus;whiteSpace=wrap;html=1;shapeInside=1;" value="시청" vertex="1">
+          <mxGeometry height="80" width="80" x="960" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="_ftzHQKWrJo3rTjNzCAN-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="평점 및 코멘트" vertex="1">
+          <mxGeometry height="60" width="120" x="1100" y="530" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
