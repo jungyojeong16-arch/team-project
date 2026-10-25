@@ -1,4 +1,4 @@
-# ViewFit 화면별 데이터 입출력 · ERD v4
+# ViewFit 화면별 데이터 입출력 · ERD v4.1
 
 - 기준: Figma `ViewFit — Design Board` / `01 Home Feed` 페이지 (2026-10-25 확인)
 - 분석 화면: 17개. 재생 화면(Watch)은 딥링크 방식으로 바뀌어 제외했습니다.
@@ -12,19 +12,19 @@
 | 2 | 로그인 팝업 | 아이디, 비밀번호, 소셜 로그인(카카오·네이버·Google) | 로그인 결과 | user |
 | 3 | 회원가입 | 이메일, 닉네임(2~12자, 중복 확인), 비밀번호·확인, 약관 동의(필수 3 + 선택 1) | 닉네임 사용 가능 여부 | user |
 | 4 | 회원가입 완료 안내 | — | 설문 5문항 안내 | — |
-| 5 | 맞춤 추천 설문 | 연령대(하나), 직업(하나), 선호 장르(여러 개·"모든 장르가 좋아요"), 비선호 장르(여러 개·"딱히 없어요"), 기억에 남는 작품(검색·추가·삭제) | 장르 12개, 작품 검색 결과(제목·연도·장르·OTT) | survey, genre, preference, watch_history, content |
-| 6 | 홈 | (현재 시각), 작품 클릭 | TPO 상황 문구, "20대 대학생 정준교님" 인사, 대표 작품(제목·평균 평점·평가 수·연도·관람 등급·회차·장르·OTT·해시태그), "비슷한 취향 20대 3,241명이 선택", 맞춤 추천 TOP 10(순위 변동), 통합 랭킹 TOP 10, 세대별 교차 평점(20·30·40대) | recommendation, content, rating, ranking, tag, platform, survey |
-| 7 | 프로필 메뉴 | 메뉴 선택, 로그아웃 | 닉네임, 연령대·직업, 한 줄 소개, 좋아요 수, 평점 수, 가입 시점 | user, survey, like_content, rating |
-| 8 | 내 프로필 | — | 좋아요 수·평점 수·평균 평점, 최근 좋아요 4개, 취향 키워드, 장르 비율, 주로 찾는 시청 상황, 최근 평점 3개(코멘트), 또래와 평점 비교 | user, survey, like_content, rating, preference, tag, watch_history |
+| 5 | 맞춤 추천 설문 | 연령대(하나), 직업(하나), 선호 장르(여러 개·"모든 장르가 좋아요"), 비선호 장르(여러 개·"딱히 없어요"), 기억에 남는 작품(검색·추가·삭제) | 장르 12개, 작품 검색 결과(제목·연도·장르·OTT) | user, genre, preference, watch_history, content |
+| 6 | 홈 | (현재 시각), 작품 클릭 | TPO 상황 문구, "20대 대학생 정준교님" 인사, 대표 작품(제목·평균 평점·평가 수·연도·관람 등급·회차·장르·OTT·해시태그), "비슷한 취향 20대 3,241명이 선택", 맞춤 추천 TOP 10(순위 변동), 통합 랭킹 TOP 10, 세대별 교차 평점(20·30·40대) | recommendation, content, rating, ranking, tag, platform |
+| 7 | 프로필 메뉴 | 메뉴 선택, 로그아웃 | 닉네임, 연령대·직업, 한 줄 소개, 좋아요 수, 평점 수, 가입 시점 | user, like_content, rating |
+| 8 | 내 프로필 | — | 좋아요 수·평점 수·평균 평점, 최근 좋아요 4개, 취향 키워드, 장르 비율, 주로 찾는 시청 상황, 최근 평점 3개(코멘트), 또래와 평점 비교 | user, like_content, rating, preference, tag, watch_history |
 | 9 | 좋아요 표시한 작품 | 유형·OTT 필터, 정렬(최근 좋아요순), 좋아요 해제(목록 편집) | 좋아요 목록(포스터·OTT·평균 평점·연도) | like_content, content, content_platform |
 | 10 | 나의 평점 | 유형·별점 필터, 정렬(최근 평가순), 평점·감상 수정 | 평점 목록(별점·코멘트·평가일), 평균 평점 | rating, content |
-| 11 | 취향 수정 | 설문과 같은 항목 수정, 저장/취소 | 기존 응답 불러오기 | survey, preference, watch_history |
+| 11 | 취향 수정 | 설문과 같은 항목 수정, 저장/취소 | 기존 응답 불러오기 | user, preference, watch_history |
 | 12 | 통합 랭킹 | 주간/월간, 유형(영화·시리즈), OTT, 장르 | TOP 3, TOP 100(순위·지수·등락·NEW) | ranking, content, content_platform |
 | 13 | 세대별 랭킹 | 연령대(10대~60대 이상), 유형, OTT, 장르 | 연령대별 평균 평점 TOP 30 | rating(계산), content |
 | 14 | 맞춤 추천 (TPO) | 상황(혼자 보는 밤·퇴근 후·주말에 함께·가족과 함께·여행이 필요할 때), 유형, OTT, 장르 | TOP 50, 작품별 상황 태그(예: 주말 · 집에서 둘이), 한 줄 큐레이션 | recommendation, tag, content_tag, content |
 | 15 | 재방문 추천 피드백 | 별점(0.5점 단위), "아직 못 봤어요", 코멘트(200자) | 지난번 추천 작품 | recommendation, rating |
 | 16 | 평점 반영 결과 · 랭킹 변화 | — | 방금 평가한 작품·별점·코멘트, 이전/현재 순위, 주변 순위 | rating, ranking |
-| 17 | 최근 관심사 반영 확인 | 반영하기 / 지금 추천 유지 | 기존 선호·비선호 유지 안내 | survey |
+| 17 | 최근 관심사 반영 확인 | 반영하기 / 지금 추천 유지 | 기존 선호·비선호 유지 안내 | user |
 | — | 헤더 검색창 | 검색어 | (결과 화면 없음) | content |
 
 ## 2. 입출력에서 뽑은 저장 대상
@@ -32,7 +32,8 @@
 | 화면에서 나온 값 | 저장 위치 | 비고 |
 |---|---|---|
 | 이메일·닉네임·비밀번호·약관 | `user` | 닉네임 중복 불가(UK) |
-| 연령대·직업·"모든 장르"·"딱히 없어요"·최근 관심사 반영 | `survey` | 회원당 1개(1:1) |
+| 연령대·직업·최근 관심사 반영·설문 완료 시각 | `user` | 설문은 회원 정보라서 회원 테이블에 둠 |
+| "모든 장르가 좋아요" / "딱히 없어요" | `preference` | 모든 장르를 선호로 저장 / 비선호 행 없음 (따로 저장하지 않음) |
 | 선호·비선호 장르 | `preference` + `genre` | 장르 하나당 한 행 |
 | 기억에 남는 작품 | `watch_history` (source=SURVEY) | |
 | 별점·코멘트·수정 | `rating` | 0.5 단위, 코멘트 200자 |
@@ -44,11 +45,10 @@
 | OTT 뱃지·딥링크 | `platform` + `content_platform` | |
 | 평균 평점·평가 수·세대별 평점·장르 비율·"3,241명이 선택" | 저장하지 않음 (계산) | rating, recommendation에서 집계 |
 
-## 3. ERD v4 (테이블 15개)
+## 3. ERD v4.1 (테이블 14개)
 
 ```mermaid
 erDiagram
-    user ||--|| survey : "1:1 응답"
     user ||--o{ preference : "1:N 장르 선택"
     genre ||--o{ preference : "1:N"
     user ||--o{ rating : "1:N 평가"
@@ -74,19 +74,13 @@ erDiagram
         VARCHAR password
         VARCHAR nickname UK
         VARCHAR bio
-        BOOLEAN marketing_agree
-        DATETIME terms_agreed_at
-        DATETIME created_at
-    }
-    survey {
-        BIGINT survey_id PK
-        BIGINT user_id FK, UK
         VARCHAR age_group
         VARCHAR job
-        BOOLEAN like_all_genres
-        BOOLEAN no_disliked_genre
         BOOLEAN use_recent_interest
-        DATETIME updated_at
+        BOOLEAN marketing_agree
+        DATETIME terms_agreed_at
+        DATETIME survey_done_at
+        DATETIME created_at
     }
     genre {
         BIGINT genre_id PK
@@ -187,8 +181,8 @@ erDiagram
 
 | 테이블.컬럼 | 값 |
 |---|---|
-| 설문.연령대 | 14–19세, 20대, 30대, 40대, 50대, 60대 이상, 응답 안 함 |
-| 설문.직업 | 학생, 직장인, 자영업·프리랜서, 가사·돌봄, 구직·휴직 중, 기타 |
+| 회원.연령대 | 14–19세, 20대, 30대, 40대, 50대, 60대 이상, 응답 안 함 |
+| 회원.직업 | 학생, 직장인, 자영업·프리랜서, 가사·돌봄, 구직·휴직 중, 기타 |
 | 장르취향.취향구분 | 선호 / 비선호 |
 | 작품.작품유형 | 영화 / 시리즈 |
 | 태그.태그구분 | 분위기(#힐링 등) / 상황(혼자 보는 밤 등) |
@@ -205,8 +199,7 @@ draw.io 파일: `docs/erd/ViewFit_ERD_v4_korean.drawio`. 테이블 이름 옆 �
 
 | 한글 테이블 | 영문 | 한글 컬럼 (순서대로) |
 |---|---|---|
-| 회원 | user | 회원번호(PK), 이메일(UK), 비밀번호, 닉네임(UK), 한줄소개, 마케팅수신동의, 약관동의일시, 가입일시 |
-| 설문 | survey | 설문번호(PK), 회원번호(FK·UK), 연령대, 직업, 모든장르선호여부, 비선호없음여부, 최근관심사반영여부, 수정일시 |
+| 회원 | user | 회원번호(PK), 이메일(UK), 비밀번호, 닉네임(UK), 한줄소개, 연령대, 직업, 최근관심사반영여부, 마케팅수신동의, 약관동의일시, 설문완료일시, 가입일시 |
 | 장르 | genre | 장르번호(PK), 장르명(UK) |
 | 장르취향 | preference | 장르취향번호(PK), 회원번호(FK), 장르번호(FK), 취향구분 |
 | 작품 | content | 작품번호(PK), TMDB번호(UK), 제목, 작품유형, 줄거리, 한줄큐레이션, 포스터주소, 배경이미지주소, 공개연도, 관람등급, 회차수 |
@@ -226,7 +219,6 @@ draw.io 파일: `docs/erd/ViewFit_ERD_v4_korean.drawio`. 테이블 이름 옆 �
 - preference (user_id, genre_id) · rating (user_id, content_id) · like_content (user_id, content_id)
 - content_genre (content_id, genre_id) · content_platform (content_id, platform_id) · content_tag (content_id, tag_id)
 - ranking (period, ranked_date, rank_no)
-- survey.user_id 는 UK (1:1)
 
 ## 4. ERD v3 대비 바뀐 점
 
@@ -236,7 +228,7 @@ draw.io 파일: `docs/erd/ViewFit_ERD_v4_korean.drawio`. 테이블 이름 옆 �
 | 추가 | `tag`, `content_tag` | 홈 해시태그, 맞춤 추천 상황 필터·상황 태그, 프로필 취향 키워드 |
 | 추가 | `recommendation` | 재방문 추천 피드백, 맞춤 추천 순위 변동 |
 | 컬럼 추가 | user.nickname UK, user.bio, user.terms_agreed_at | 회원가입 중복 확인, 프로필 한 줄 소개 |
-| 컬럼 추가 | survey.like_all_genres, no_disliked_genre, use_recent_interest | 설문, 최근 관심사 반영 확인 |
+| **삭제** | `survey` → `user`에 합침 (연령대, 직업, 최근관심사반영여부, 설문완료일시). "모든 장르"·"딱히 없어요"는 preference로 표현 | 1:1 관계라 따로 둘 이유가 없음 (v4.1, 팀 의견 반영) |
 | 컬럼 추가 | rating.comment, rating.updated_at | 나의 평점(감상·수정), 재방문 피드백 |
 | 컬럼 추가 | content.tagline, backdrop_url, age_rating, episode_count | 홈 대표 작품, 맞춤 추천 한 줄 큐레이션 |
 | 컬럼 변경 | watch_history.occasion → companion, source 추가 | 상황 태그(혼자·둘이·가족과), 설문 입력 구분 |
