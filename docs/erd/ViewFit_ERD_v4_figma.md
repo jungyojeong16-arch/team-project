@@ -44,7 +44,7 @@
 | OTT 뱃지·딥링크 | `platform` + `content_platform` | |
 | 평균 평점·평가 수·세대별 평점·장르 비율·"3,241명이 선택" | 저장하지 않음 (계산) | rating, recommendation에서 집계 |
 
-## 3. ERD v4 (테이블 14개)
+## 3. ERD v4 (테이블 15개)
 
 ```mermaid
 erDiagram
@@ -183,21 +183,43 @@ erDiagram
     }
 ```
 
-### 컬럼 설명 (값이 정해진 것)
+### 정해진 값 (한글)
 
 | 테이블.컬럼 | 값 |
 |---|---|
-| survey.age_group | 14–19세, 20대, 30대, 40대, 50대, 60대 이상, 응답 안 함 |
-| survey.job | 학생, 직장인, 자영업·프리랜서, 가사·돌봄, 구직·휴직 중, 기타 |
-| preference.type | LIKE / DISLIKE |
-| content.content_type | MOVIE / SERIES |
-| tag.tag_type | MOOD(#힐링 등) / SITUATION(혼자 보는 밤 등) |
-| rating.score | 0.5 ~ 5.0, 0.5 단위 |
-| rating.age_group | 평가 당시 연령대 (세대별 랭킹용) |
-| watch_history.source | SURVEY(설문 입력) / OTT(딥링크 이동 후) |
-| recommendation.rec_type | PERSONAL(맞춤) / TPO(상황) |
-| recommendation.feedback_status | PENDING / RATED / NOT_WATCHED |
-| ranking.period | WEEKLY / MONTHLY |
+| 설문.연령대 | 14–19세, 20대, 30대, 40대, 50대, 60대 이상, 응답 안 함 |
+| 설문.직업 | 학생, 직장인, 자영업·프리랜서, 가사·돌봄, 구직·휴직 중, 기타 |
+| 장르취향.취향구분 | 선호 / 비선호 |
+| 작품.작품유형 | 영화 / 시리즈 |
+| 태그.태그구분 | 분위기(#힐링 등) / 상황(혼자 보는 밤 등) |
+| 평점.별점 | 0.5 ~ 5.0, 0.5 단위 |
+| 평점.평가당시연령대 | 평가할 때의 연령대 (세대별 랭킹용) |
+| 시청이력.입력경로 | 설문 / OTT 이동 |
+| 추천.추천구분 | 맞춤 / 상황(TPO) |
+| 추천.피드백상태 | 대기 / 평가 완료 / 아직 안 봄 |
+| 랭킹.집계기간 | 주간 / 월간 |
+
+### 한글 ERD (논리 모델)
+
+draw.io 파일: `docs/erd/ViewFit_ERD_v4_korean.drawio`. 테이블 이름 옆 괄호는 나중에 Django·MariaDB에서 쓸 영문 이름(물리 모델)입니다.
+
+| 한글 테이블 | 영문 | 한글 컬럼 (순서대로) |
+|---|---|---|
+| 회원 | user | 회원번호(PK), 이메일(UK), 비밀번호, 닉네임(UK), 한줄소개, 마케팅수신동의, 약관동의일시, 가입일시 |
+| 설문 | survey | 설문번호(PK), 회원번호(FK·UK), 연령대, 직업, 모든장르선호여부, 비선호없음여부, 최근관심사반영여부, 수정일시 |
+| 장르 | genre | 장르번호(PK), 장르명(UK) |
+| 장르취향 | preference | 장르취향번호(PK), 회원번호(FK), 장르번호(FK), 취향구분 |
+| 작품 | content | 작품번호(PK), TMDB번호(UK), 제목, 작품유형, 줄거리, 한줄큐레이션, 포스터주소, 배경이미지주소, 공개연도, 관람등급, 회차수 |
+| 작품장르 | content_genre | 작품장르번호(PK), 작품번호(FK), 장르번호(FK) |
+| OTT플랫폼 | platform | 플랫폼번호(PK), 플랫폼명(UK), 뱃지색상 |
+| 작품제공OTT | content_platform | 작품OTT번호(PK), 작품번호(FK), 플랫폼번호(FK), 딥링크주소 |
+| 태그 | tag | 태그번호(PK), 태그명(UK), 태그구분 |
+| 작품태그 | content_tag | 작품태그번호(PK), 작품번호(FK), 태그번호(FK) |
+| 평점 | rating | 평점번호(PK), 회원번호(FK), 작품번호(FK), 별점, 감상코멘트, 평가당시연령대, 평가일시, 수정일시 |
+| 좋아요 | like_content | 좋아요번호(PK), 회원번호(FK), 작품번호(FK), 좋아요일시 |
+| 시청이력 | watch_history | 시청이력번호(PK), 회원번호(FK), 작품번호(FK), 입력경로, 시청장소, 동행, 시청일시 |
+| 추천 | recommendation | 추천번호(PK), 회원번호(FK), 작품번호(FK), 상황태그번호(FK), 추천구분, 추천순위, 피드백상태, 추천일시 |
+| 랭킹 | ranking | 랭킹번호(PK), 작품번호(FK), 집계기간, 순위, 이전순위, 랭킹지수, 집계일 |
 
 ### 복합 유니크
 
