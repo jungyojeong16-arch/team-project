@@ -1,14 +1,10 @@
-from django.urls import include, path
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 
-from .views import ContentViewSet, HomeFeedAPIView
+from . import views
 
 app_name = "core"
 
-router = DefaultRouter()
-router.register("contents", ContentViewSet, basename="content")
-
 urlpatterns = [
-    path("home/feed/", HomeFeedAPIView.as_view(), name="home-feed"),
-    path("", include(router.urls)),
+    path("health/", views.health, name="health"),
+    path("options/", views.options, name="options"),
 ]

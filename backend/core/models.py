@@ -1,19 +1,26 @@
+"""
+ViewFit 물리 설계 (Django 모델)
+
+최종 개념 ERD(docs/erd/ViewFit_ERD_midterm_final.drawio)를 실제 테이블로 옮긴 것입니다.
+  - 엔터티 6개: 회원, 작품, 장르, OTT 플랫폼, TPO(상황), 랭킹
+  - N:M 관계 8개 → 연결 테이블 8개
+  = 테이블 14개 (설명: docs/erd/ViewFit_ERD_physical.md)
+
+Django 규칙
+  - 모든 테이블은 번호(id, 자동 증가)를 기본키로 둡니다.
+  - "같은 조합은 한 번만" 이 필요한 연결 테이블은 UniqueConstraint 로 막습니다.
+    (번호 PK + 두 외래키 중복 금지 = 복합 기본키와 같은 효과)
+"""
 from decimal import Decimal
 
-from django.conf import settings
-from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
-from django.core.validators import (
-    MaxValueValidator,
-    MinValueValidator,
-    RegexValidator,
-)
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import Avg, Count, Q
+from django.utils import timezone
 
 
 # =============================================================================
-# Choices
+# 선택지 (화면의 버튼 목록과 맞춤)
 # =============================================================================
 
 
@@ -22,321 +29,353 @@ class AgeGroup(models.TextChoices):
     TWENTIES = "20s", "20대"
     THIRTIES = "30s", "30대"
     FORTIES = "40s", "40대"
-    FIFTIES_PLUS = "50s+", "50대 이상"
+    FIFTIES = "50s", "50대"
+    SIXTIES_PLUS = "60s+", "60대 이상"
 
 
-class Occupation(models.TextChoices):
-    STUDENT = "student", "중·고등학생"
-    UNIVERSITY_STUDENT = "university_student", "대학생"
-    JOB_SEEKER = "job_seeker", "취업준비생"
-    OFFICE_WORKER = "office_worker", "직장인"
-    FREELANCER = "freelancer", "프리랜서"
-    SELF_EMPLOYED = "self_employed", "자영업자"
-    HOMEMAKER = "homemaker", "주부"
-    OTHER = "other", "기타"
+class Job(models.TextChoices):
+    STUDENT = "student", "학생"
+    OFFICE = "office", "직장인"
+    FREELANCE = "freelance", "자영업·프리랜서"
+    HOME = "home", "가사·돌봄"
+    SEEKING = "seeking", "구직·휴직 중"
+    ETC = "etc", "기타"
 
 
-class MediaType(models.TextChoices):
+class ContentType(models.TextChoices):
     MOVIE = "movie", "영화"
     SERIES = "series", "시리즈"
 
 
+class PreferenceKind(models.TextChoices):
+    LIKE = "like", "선호"
+    DISLIKE = "dislike", "비선호"
+
+
+class WatchSource(models.TextChoices):
+    SURVEY = "survey", "취향 설문에서 입력"
+    DIRECT = "direct", "직접 기록"
+
+
+class RecommendationFeedback(models.TextChoices):
+    PENDING = "pending", "응답 전"
+    RATED = "rated", "평가함"
+    NOT_WATCHED = "not_watched", "아직 못 봤어요"
+
+
+class RankingPeriod(models.TextChoices):
+    WEEKLY = "weekly", "주간"
+    MONTHLY = "monthly", "월간"
+
+
+# 별점은 0.5 단위 (0.5, 1.0, ..., 5.0)
+SCORE_CHOICES = [Decimal(n) / 2 for n in range(1, 11)]
+
+
 # =============================================================================
-# Validators
-# =============================================================================
-
-SCORE_MIN = Decimal("0.0")
-SCORE_MAX = Decimal("5.0")
-SCORE_STEP = Decimal("0.5")
-ALLOWED_SCORES = [SCORE_STEP * i for i in range(int(SCORE_MAX / SCORE_STEP) + 1)]  # 0.0, 0.5, ..., 5.0
-
-hex_color_validator = RegexValidator(
-    regex=r"^#[0-9A-Fa-f]{6}$",
-    message="HEX 컬러코드는 #RRGGBB 형식이어야 합니다.",
-)
-
-
-def validate_half_step(value: Decimal) -> None:
-    if (Decimal(value) % SCORE_STEP) != 0:
-        raise ValidationError("평점은 0.5 단위로만 입력할 수 있습니다.")
-
-
-# =============================================================================
-# Base
+# 엔터티 6개
 # =============================================================================
 
 
-class TimeStampedModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class MemberManager(BaseUserManager):
+    def create_user(self, email, nickname, password=None, **extra):
+        if not email:
+            raise ValueError("이메일은 꼭 입력해야 합니다.")
+        member = self.model(email=self.normalize_email(email), nickname=nickname, **extra)
+        member.set_password(password)  # 비밀번호는 암호화(해시)해서 저장
+        member.save(using=self._db)
+        return member
+
+    def create_superuser(self, email, nickname, password=None, **extra):
+        extra.setdefault("is_staff", True)
+        extra.setdefault("is_superuser", True)
+        return self.create_user(email, nickname, password, **extra)
+
+
+class Member(AbstractBaseUser, PermissionsMixin):
+    """회원 — ERD: 아이디(PK), 이메일, 비밀번호, 연령대, 직업, 가입일"""
+
+    # id(회원번호)는 Django 가 자동으로 만듭니다. 로그인 아이디는 이메일을 씁니다.
+    email = models.EmailField("이메일", max_length=254, unique=True)
+    nickname = models.CharField("닉네임", max_length=12, unique=True)
+    # password 칸은 AbstractBaseUser 에 이미 들어 있습니다 (암호화 저장).
+    age_group = models.CharField("연령대", max_length=5, choices=AgeGroup.choices, null=True, blank=True)
+    job = models.CharField("직업", max_length=10, choices=Job.choices, null=True, blank=True)
+    marketing_opt_in = models.BooleanField("마케팅 수신 동의", default=False)
+    terms_agreed_at = models.DateTimeField("약관 동의 일시", null=True, blank=True)
+    date_joined = models.DateTimeField("가입일", default=timezone.now)
+    is_active = models.BooleanField("활성 계정", default=True)
+    is_staff = models.BooleanField("관리자 페이지 접근", default=False)
+
+    objects = MemberManager()
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["nickname"]
 
     class Meta:
-        abstract = True
+        db_table = "member"
+        verbose_name = verbose_name_plural = "회원"
 
-
-# =============================================================================
-# 1. User
-# =============================================================================
-
-
-class User(AbstractUser):
-    nickname = models.CharField("닉네임", max_length=30, blank=True)
-    age_group = models.CharField(
-        "연령대",
-        max_length=4,
-        choices=AgeGroup.choices,
-        blank=True,
-        db_index=True,
-    )
-    occupation = models.CharField(
-        "직업",
-        max_length=20,
-        choices=Occupation.choices,
-        blank=True,
-        db_index=True,
-    )
-
-    class Meta:
-        verbose_name = "사용자"
-        verbose_name_plural = "사용자 목록"
-
-    def __str__(self) -> str:
-        return self.nickname or self.username
-
-    @property
-    def persona_label(self) -> str:
-        """TPO 환영 멘트용 페르소나 라벨 (예: '20대 대학생 정준교')"""
-        parts = [
-            self.get_age_group_display() if self.age_group else "",
-            self.get_occupation_display() if self.occupation else "",
-            str(self),
-        ]
-        return " ".join(p for p in parts if p)
-
-
-# =============================================================================
-# 2. Platform
-# =============================================================================
-
-
-class Platform(models.Model):
-    name = models.CharField("플랫폼명", max_length=50, unique=True)
-    code = models.SlugField("플랫폼 코드", max_length=30, unique=True, help_text="예: netflix, tving")
-    color_code = models.CharField(
-        "브랜드 컬러",
-        max_length=7,
-        validators=[hex_color_validator],
-        help_text="예: #E50914",
-    )
-    homepage_url = models.URLField("홈페이지", blank=True)
-
-    class Meta:
-        verbose_name = "OTT 플랫폼"
-        verbose_name_plural = "OTT 플랫폼 목록"
-        ordering = ["name"]
-
-    def __str__(self) -> str:
-        return self.name
-
-
-# =============================================================================
-# 3. Genre
-# =============================================================================
+    def __str__(self):
+        return f"{self.nickname} ({self.email})"
 
 
 class Genre(models.Model):
-    name = models.CharField("장르명", max_length=50)
-    tmdb_id = models.PositiveIntegerField("TMDB 장르 ID", unique=True)
+    """장르 — ERD: 장르 번호(PK), 장르명"""
+
+    name = models.CharField("장르명", max_length=30, unique=True)
+    tmdb_id = models.PositiveIntegerField("TMDB 장르 번호", unique=True, null=True, blank=True)
 
     class Meta:
-        verbose_name = "장르"
-        verbose_name_plural = "장르 목록"
-        ordering = ["name"]
+        db_table = "genre"
+        ordering = ["id"]
+        verbose_name = verbose_name_plural = "장르"
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.name
 
 
-# =============================================================================
-# 4. Content
-# =============================================================================
+class Platform(models.Model):
+    """OTT 플랫폼 — ERD: 플랫폼 번호(PK), 플랫폼명"""
+
+    code = models.CharField("코드", max_length=20, unique=True)  # 화면에서 쓰는 이름 (예: NETFLIX)
+    name = models.CharField("플랫폼명", max_length=30, unique=True)
+
+    class Meta:
+        db_table = "ott_platform"
+        ordering = ["id"]
+        verbose_name = verbose_name_plural = "OTT 플랫폼"
+
+    def __str__(self):
+        return self.name
 
 
-def _round(value) -> float | None:
-    return round(float(value), 1) if value is not None else None
+class Tpo(models.Model):
+    """TPO(상황) — ERD: TPO 번호(PK), 상황명"""
+
+    name = models.CharField("상황명", max_length=30, unique=True)
+
+    class Meta:
+        db_table = "tpo"
+        ordering = ["id"]
+        verbose_name = verbose_name_plural = "TPO(상황)"
+
+    def __str__(self):
+        return self.name
 
 
-class ContentQuerySet(models.QuerySet):
-    def with_rating_stats(self):
-        """목록/랭킹 API용: 전체 및 세대별 평균 평점을 단일 쿼리로 annotate"""
-        annotations = {
-            "avg_score": Avg("ratings__score"),
-            "rating_count": Count("ratings"),
-        }
-        for value, _ in AgeGroup.choices:
-            key = value.replace("+", "_plus")
-            annotations[f"avg_score_{key}"] = Avg("ratings__score", filter=Q(ratings__age_group=value))
-        return self.annotate(**annotations)
+class Content(models.Model):
+    """작품 — ERD: 작품 번호(PK), 제목, 작품유형, 줄거리, 포스터, 공개연도"""
 
-
-class Content(TimeStampedModel):
-    content_type = models.CharField("콘텐츠 유형", max_length=10, choices=MediaType.choices, default=MediaType.MOVIE)
-    title = models.CharField("제목", max_length=255, db_index=True)
-    original_title = models.CharField("원제", max_length=255, blank=True)
-    tmdb_id = models.PositiveIntegerField("TMDB ID")
+    tmdb_id = models.PositiveIntegerField("TMDB 작품 번호", null=True, blank=True)
+    title = models.CharField("제목", max_length=255)
+    content_type = models.CharField("작품유형", max_length=10, choices=ContentType.choices)
     overview = models.TextField("줄거리", blank=True)
-    poster_url = models.URLField("포스터 URL", max_length=500, blank=True)
-    backdrop_url = models.URLField("배경 이미지 URL", max_length=500, blank=True)
-    release_year = models.PositiveSmallIntegerField(
-        "개봉 연도",
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(1888), MaxValueValidator(2100)],
-        db_index=True,
-    )
+    poster_url = models.URLField("포스터 주소", max_length=500, blank=True)
+    release_year = models.PositiveSmallIntegerField("공개연도", null=True, blank=True)
+    tagline = models.CharField("한 줄 큐레이션", max_length=100, blank=True)
 
+    genres = models.ManyToManyField(Genre, through="ContentGenre", related_name="contents", verbose_name="장르")
     platforms = models.ManyToManyField(
-        Platform,
-        through="ContentPlatform",
-        related_name="contents",
-        blank=True,
-        verbose_name="제공 플랫폼",
+        Platform, through="ContentPlatform", related_name="contents", verbose_name="제공 OTT"
     )
-    genres = models.ManyToManyField(
-        Genre,
-        related_name="contents",
-        blank=True,
-        verbose_name="장르",
-    )
-
-    objects = ContentQuerySet.as_manager()
+    tpos = models.ManyToManyField(Tpo, through="ContentTpo", related_name="contents", verbose_name="어울리는 상황")
 
     class Meta:
-        verbose_name = "콘텐츠"
-        verbose_name_plural = "콘텐츠 목록"
-        ordering = ["-release_year", "title"]
+        db_table = "content"
+        verbose_name = verbose_name_plural = "작품"
         constraints = [
-            # TMDB는 movie / tv ID 공간이 분리되어 있으므로 (tmdb_id, content_type) 복합 유니크
-            models.UniqueConstraint(fields=["tmdb_id", "content_type"], name="uniq_content_tmdb_id_type"),
+            # TMDB 는 영화와 시리즈 번호가 따로라서 (번호 + 유형) 조합으로 중복을 막습니다.
+            models.UniqueConstraint(fields=["tmdb_id", "content_type"], name="uq_content_tmdb"),
         ]
 
-    def __str__(self) -> str:
-        return f"{self.title} ({self.release_year or '미정'})"
-
-    # --- 평점 통계 ---------------------------------------------------------------
-
-    @property
-    def average_rating(self) -> float | None:
-        """전체 평균 평점 (with_rating_stats()로 annotate된 경우 추가 쿼리 없음)"""
-        if hasattr(self, "avg_score"):
-            return _round(self.avg_score)
-        return _round(self.ratings.aggregate(avg=Avg("score"))["avg"])
-
-    @property
-    def rating_total_count(self) -> int:
-        if hasattr(self, "rating_count"):
-            return self.rating_count
-        return self.ratings.count()
-
-    def get_age_group_average(self, age_group: str) -> float | None:
-        """특정 세대의 평균 평점 (예: content.get_age_group_average(AgeGroup.TWENTIES))"""
-        if age_group not in AgeGroup.values:
-            raise ValueError(f"지원하지 않는 연령대입니다: {age_group}")
-        annotated = f"avg_score_{age_group.replace('+', '_plus')}"
-        if hasattr(self, annotated):
-            return _round(getattr(self, annotated))
-        return _round(self.ratings.filter(age_group=age_group).aggregate(avg=Avg("score"))["avg"])
-
-    def get_age_group_ratings(self) -> list[dict]:
-        """세대별 교차 평점 전체 (단일 GROUP BY 쿼리) — 프론트 by_age_group 스키마와 동일"""
-        rows = {
-            row["age_group"]: row
-            for row in self.ratings.exclude(age_group="")
-            .values("age_group")
-            .annotate(average=Avg("score"), count=Count("id"))
-        }
-        return [
-            {
-                "age_group": value,
-                "label": label,
-                "average": _round(rows[value]["average"]) if value in rows else None,
-                "count": rows[value]["count"] if value in rows else 0,
-            }
-            for value, label in AgeGroup.choices
-        ]
+    def __str__(self):
+        return f"{self.title} ({self.get_content_type_display()})"
 
 
-class ContentPlatform(TimeStampedModel):
-    """Content ↔ Platform N:M 매핑 (OTT 크롤링 ETL 적재 대상)"""
+class Ranking(models.Model):
+    """랭킹 — ERD: 랭킹 번호(PK), 순위, 작품 번호(FK) / 작품 1 : N 랭킹"""
 
-    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name="platform_links")
-    platform = models.ForeignKey(Platform, on_delete=models.CASCADE, related_name="content_links")
-    watch_url = models.URLField("시청 URL", max_length=500, blank=True)
-    is_available = models.BooleanField("현재 제공 여부", default=True)
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name="rankings", verbose_name="작품")
+    period = models.CharField("집계 기간", max_length=10, choices=RankingPeriod.choices, default=RankingPeriod.WEEKLY)
+    ranked_on = models.DateField("집계일")
+    rank = models.PositiveSmallIntegerField("순위", validators=[MinValueValidator(1)])
 
     class Meta:
-        verbose_name = "콘텐츠-플랫폼 매핑"
-        verbose_name_plural = "콘텐츠-플랫폼 매핑 목록"
-        unique_together = ("content", "platform")
+        db_table = "ranking"
+        ordering = ["-ranked_on", "period", "rank"]
+        verbose_name = verbose_name_plural = "랭킹"
+        constraints = [
+            # 같은 날·같은 기간 랭킹에서 순위와 작품은 각각 한 번만
+            models.UniqueConstraint(fields=["period", "ranked_on", "rank"], name="uq_ranking_rank"),
+            models.UniqueConstraint(fields=["period", "ranked_on", "content"], name="uq_ranking_content"),
+        ]
 
-    def __str__(self) -> str:
-        return f"{self.content.title} @ {self.platform.name}"
+    def __str__(self):
+        return f"{self.ranked_on} {self.get_period_display()} {self.rank}위 - {self.content.title}"
 
 
 # =============================================================================
-# 5. Rating
+# 회원 – 작품 사이의 N:M 관계 4개
 # =============================================================================
 
 
-class Rating(TimeStampedModel):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="ratings",
-    )
-    content = models.ForeignKey(
-        Content,
-        on_delete=models.CASCADE,
-        related_name="ratings",
-    )
+class Rating(models.Model):
+    """평가한다 → 평점 — 별점, 후기, 평가일시, 평가 당시 연령대"""
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="ratings", verbose_name="회원")
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name="ratings", verbose_name="작품")
     score = models.DecimalField(
-        "평점",
+        "별점",
         max_digits=2,
         decimal_places=1,
-        validators=[
-            MinValueValidator(SCORE_MIN),
-            MaxValueValidator(SCORE_MAX),
-            validate_half_step,
-        ],
+        validators=[MinValueValidator(Decimal("0.5")), MaxValueValidator(Decimal("5.0"))],
     )
-    # 평가 시점의 연령대 스냅샷 — 유저 연령대가 바뀌어도 세대별 통계가 왜곡되지 않도록 보존
-    age_group = models.CharField(
-        "평가 시점 연령대",
-        max_length=4,
-        choices=AgeGroup.choices,
-        blank=True,
-        editable=False,
-        db_index=True,
+    comment = models.CharField("후기", max_length=200, blank=True)
+    # 회원의 연령대는 시간이 지나면 바뀌므로, 세대별 랭킹을 위해 "평가할 때의" 연령대를 따로 저장
+    age_group_at_rating = models.CharField(
+        "평가 당시 연령대", max_length=5, choices=AgeGroup.choices, null=True, blank=True
     )
+    rated_at = models.DateTimeField("평가일시", auto_now_add=True)
+    updated_at = models.DateTimeField("수정일시", auto_now=True)
 
     class Meta:
-        verbose_name = "평점"
-        verbose_name_plural = "평점 목록"
-        unique_together = ("user", "content")
-        indexes = [
-            models.Index(fields=["content", "age_group"], name="idx_rating_content_age"),
-        ]
+        db_table = "rating"
+        verbose_name = verbose_name_plural = "평점"
         constraints = [
-            models.CheckConstraint(
-                condition=Q(score__in=ALLOWED_SCORES),
-                name="chk_rating_score_half_step_0_to_5",
-            ),
+            # 한 회원은 한 작품에 평점을 하나만 (다시 평가하면 수정)
+            models.UniqueConstraint(fields=["member", "content"], name="uq_rating_member_content"),
+            models.CheckConstraint(condition=models.Q(score__in=SCORE_CHOICES), name="ck_rating_score_half_step"),
         ]
-
-    def __str__(self) -> str:
-        return f"{self.user} → {self.content.title}: {self.score}"
 
     def save(self, *args, **kwargs):
-        if not self.age_group:
-            self.age_group = getattr(self.user, "age_group", "") or ""
+        if self._state.adding and not self.age_group_at_rating:
+            self.age_group_at_rating = self.member.age_group
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.member.nickname} → {self.content.title}: {self.score}"
+
+
+class ContentLike(models.Model):
+    """좋아요 — 좋아요 일시"""
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="likes", verbose_name="회원")
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name="likes", verbose_name="작품")
+    liked_at = models.DateTimeField("좋아요 일시", auto_now_add=True)
+
+    class Meta:
+        db_table = "content_like"
+        verbose_name = verbose_name_plural = "좋아요"
+        constraints = [models.UniqueConstraint(fields=["member", "content"], name="uq_like_member_content")]
+
+    def __str__(self):
+        return f"{self.member.nickname} ♥ {self.content.title}"
+
+
+class WatchHistory(models.Model):
+    """시청한다 → 시청 이력 — 시청 일시
+
+    같은 작품을 여러 번 볼 수 있으므로 (회원, 작품) 중복을 막지 않습니다.
+    """
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="watch_histories", verbose_name="회원")
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name="watch_histories", verbose_name="작품")
+    source = models.CharField("입력 경로", max_length=10, choices=WatchSource.choices, default=WatchSource.DIRECT)
+    watched_at = models.DateTimeField("시청 일시", default=timezone.now)
+
+    class Meta:
+        db_table = "watch_history"
+        ordering = ["-watched_at"]
+        verbose_name = verbose_name_plural = "시청 이력"
+        indexes = [models.Index(fields=["member", "-watched_at"], name="ix_watch_member_time")]
+
+    def __str__(self):
+        return f"{self.member.nickname} ▶ {self.content.title}"
+
+
+class Recommendation(models.Model):
+    """AI에게 추천 받는다 → 추천 — 추천일시, 추천 순위, 피드백 상태
+
+    같은 작품이 날마다 다시 추천될 수 있으므로 (회원, 작품) 중복을 막지 않습니다.
+    TPO 추천일 때는 어떤 상황에서 추천했는지(tpo)도 남깁니다.
+    """
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="recommendations", verbose_name="회원")
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name="recommendations", verbose_name="작품")
+    tpo = models.ForeignKey(
+        Tpo, on_delete=models.SET_NULL, null=True, blank=True, related_name="recommendations", verbose_name="추천 상황"
+    )
+    rank = models.PositiveSmallIntegerField("추천 순위", validators=[MinValueValidator(1)])
+    feedback = models.CharField(
+        "피드백 상태", max_length=12, choices=RecommendationFeedback.choices, default=RecommendationFeedback.PENDING
+    )
+    recommended_at = models.DateTimeField("추천일시", auto_now_add=True)
+
+    class Meta:
+        db_table = "recommendation"
+        ordering = ["-recommended_at", "rank"]
+        verbose_name = verbose_name_plural = "AI 추천"
+        indexes = [models.Index(fields=["member", "-recommended_at"], name="ix_rec_member_time")]
+
+    def __str__(self):
+        return f"{self.member.nickname} ← {self.rank}위 {self.content.title}"
+
+
+# =============================================================================
+# 나머지 N:M 관계 4개
+# =============================================================================
+
+
+class GenrePreference(models.Model):
+    """선호한다 → 장르 취향 — 회원 N : M 장르, 취향 구분(선호/비선호)"""
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="genre_preferences", verbose_name="회원")
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE, related_name="preferences", verbose_name="장르")
+    kind = models.CharField("취향 구분", max_length=10, choices=PreferenceKind.choices)
+
+    class Meta:
+        db_table = "genre_preference"
+        verbose_name = verbose_name_plural = "장르 취향"
+        # 한 장르를 선호와 비선호에 동시에 넣을 수 없게
+        constraints = [models.UniqueConstraint(fields=["member", "genre"], name="uq_pref_member_genre")]
+
+    def __str__(self):
+        return f"{self.member.nickname}: {self.genre.name} {self.get_kind_display()}"
+
+
+class ContentGenre(models.Model):
+    """속한다 → 작품 장르 — 작품 N : M 장르"""
+
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, verbose_name="작품")
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE, verbose_name="장르")
+
+    class Meta:
+        db_table = "content_genre"
+        verbose_name = verbose_name_plural = "작품 장르"
+        constraints = [models.UniqueConstraint(fields=["content", "genre"], name="uq_content_genre")]
+
+
+class ContentPlatform(models.Model):
+    """제공된다 → 작품 제공 OTT — 작품 N : M OTT, 딥링크 주소"""
+
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, verbose_name="작품")
+    platform = models.ForeignKey(Platform, on_delete=models.CASCADE, verbose_name="OTT 플랫폼")
+    deeplink_url = models.URLField("딥링크 주소", max_length=500, blank=True)
+
+    class Meta:
+        db_table = "content_platform"
+        verbose_name = verbose_name_plural = "작품 제공 OTT"
+        constraints = [models.UniqueConstraint(fields=["content", "platform"], name="uq_content_platform")]
+
+
+class ContentTpo(models.Model):
+    """TPO 추천(어울린다) → 작품 TPO — 작품 N : M TPO"""
+
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, verbose_name="작품")
+    tpo = models.ForeignKey(Tpo, on_delete=models.CASCADE, verbose_name="TPO(상황)")
+
+    class Meta:
+        db_table = "content_tpo"
+        verbose_name = verbose_name_plural = "작품 TPO"
+        constraints = [models.UniqueConstraint(fields=["content", "tpo"], name="uq_content_tpo")]
