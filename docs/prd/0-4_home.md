@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 화면은 있음(가짜 데이터). **0순위에서는 Figma 모양의 틀만** 만들고, 영역별 진짜 데이터 연결은 2-1·6-1·7-1이 끝난 뒤 |
+| 상태 | ✅ 틀 완료(11/10, 가짜 데이터) — 영역 부품 `app/_components/home/` (today-pick, home-rows). 영역별 진짜 데이터 연결은 2-1·6-1·7-1이 끝난 뒤 ⬜ |
 | Figma | [Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5) · [프로필 메뉴 열림](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=40-1849) |
 | 코드 | `app/page.tsx`, `app/_lib/viewfit.ts`(fetchHomeFeed — 지금은 404면 가짜 데이터) |
 | 테이블 | 조회만: content, recommendation, ranking, rating, member |

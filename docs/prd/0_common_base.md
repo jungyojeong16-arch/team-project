@@ -6,8 +6,8 @@
 |---|---|---|---|
 | 0-1 | 개발 환경 · DB 스키마 | 정준교 (전원 각자 PC 세팅) | ✅ 코드 완료 / 팀원 PC 세팅 ⬜ |
 | 0-2 | 공통 규칙 (폴더·API·이름·GitHub) | 3명 회의로 확정 | 🟡 아래 초안 |
-| 0-3 | 공통 레이아웃 · 공통 컴포넌트 | 정재준 (화면) | ⬜ |
-| 0-4 | 홈 화면 틀 | 3명 공동 → [0-4_home.md](0-4_home.md) | 🟡 |
+| 0-3 | 공통 레이아웃 · 공통 컴포넌트 | 정재준 (화면) | ✅ 11/10 (화면 검수: 정재준) |
+| 0-4 | 홈 화면 틀 | 3명 공동 → [0-4_home.md](0-4_home.md) | ✅ 틀 11/10 / 영역별 진짜 데이터 연결 ⬜ |
 
 ---
 
@@ -80,16 +80,35 @@
 | FR14 | 상태 표시 | 불러오는 중, 비어 있음("아직 ~가 없어요"), 오류 + [다시 시도] | 전체 |
 
 ### 3. 완료 기준
-- [ ] `/`, `/profile`, `/onboarding` 등 모든 화면에 같은 상단 바·하단
-- [ ] 메뉴 3개를 누르면 각 페이지로 이동 (없는 페이지는 "준비 중" 화면)
-- [ ] `app/_components/` 에 FR5~FR14 부품이 있고, 부품 모음 페이지 `/dev/components` 에서 한눈에 볼 수 있다
-- [ ] 모양이 Figma 9:5, 144:6421 의 해당 부분과 같다
+- [x] 홈·프로필·준비 중 화면에 같은 상단 바·하단 (회원가입·로그인·설문은 Figma에서 상단 바가 달라 제외)
+- [x] 메뉴 3개를 누르면 각 페이지로 이동 (없는 페이지는 "준비 중" 화면)
+- [x] `app/_components/` 에 FR5~FR14 부품이 있고, 부품 모음 페이지 `/dev/components` 에서 한눈에 볼 수 있다
+- [x] 모양이 Figma 9:5, 40:1850, 144:6421 의 해당 부분과 같다
+- [ ] 정재준 화면 검수
+
+### 만든 파일 (11/10)
+| 파일 | 내용 |
+|---|---|
+| `app/_lib/catalog.ts` | 메뉴 주소, 장르 12개, OTT 순서, 상황 5개 — DB 기본 데이터와 같은 이름 |
+| `app/_components/site-shell.tsx` | 공통 화면 틀 `<SiteShell>` (상단 바 + 내용 + 하단), `<PageContainer>` |
+| `app/_components/site-header.tsx` · `profile-menu.tsx` · `site-footer.tsx` | FR1~FR4 |
+| `app/_components/poster-card.tsx` | FR5·FR6 작품 카드 `PosterCard`, 순위 변동 `RankChange` |
+| `app/_components/top-pick-card.tsx` | FR7 `TopPickCard`, `TopPickSection` |
+| `app/_components/platform-badge.tsx` | FR8 |
+| `app/_components/filter-bar.tsx` | FR9 `SectionTitle`, `SegmentedToggle`, `UnderlineTabs`, `PlatformFilter`, `GenreSelect`, `ResultInfo` |
+| `app/_components/expand-list.tsx` | FR10 `useExpand`, `RangeHeader`, `ExpandButton`, `ListEnd` |
+| `app/_components/pagination.tsx` · `modal.tsx` · `star-rating.tsx` · `status-view.tsx` | FR11~FR14 |
+| `app/_components/content-row.tsx` | 가로로 넘기는 카드 줄 |
+| `app/_components/coming-soon.tsx` + `app/ranking`, `recommend`, `generation`, `me/likes`, `me/ratings`, `me/taste` | 아직 없는 화면 자리 ("준비 중") — 담당자가 진짜 화면으로 교체 |
+| `app/dev/components/page.tsx` | 부품 모음 페이지 |
+
+> `layout.tsx` 는 GitHub에 없고 각자 PC에만 있어서, 상단 바는 `layout.tsx` 대신 화면마다 `<SiteShell>` 로 감싸는 방식으로 했습니다.
 
 ### 4. 바이브 코딩 프롬프트
 #### Step 1 — 상단 바 · 프로필 메뉴 · 하단
 ```
 docs/prd/0_common_base.md 의 0-3 FR1~FR4 를 만들어 줘.
-app/_components/site-header.tsx, profile-menu.tsx, site-footer.tsx 로 나누고, app/layout.tsx 에서 모든 화면에 붙여 줘.
+app/_components/site-header.tsx, profile-menu.tsx, site-footer.tsx 로 나누고, site-shell.tsx 의 <SiteShell> 로 화면을 감싸서 붙여 줘 (layout.tsx 는 저장소에 없음).
 모양은 Figma 노드 9:5 의 Header 와 40:1849 의 프로필 메뉴를 따라 줘. 로그인 여부는 app/_lib/account.ts 의 getAccount() 로 판단해.
 메뉴: 통합 랭킹 → /ranking, 맞춤 추천 → /recommend, 세대별 랭킹 → /generation (아직 없으면 '준비 중' 페이지).
 검색창은 모양만 만들고 동작은 4-1 담당이 붙일 수 있게 onSearch 자리만 남겨 줘.

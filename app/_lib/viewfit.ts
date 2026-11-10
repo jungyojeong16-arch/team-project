@@ -88,6 +88,8 @@ export interface HomeFeed {
   user: UserPersona;
   tpo: TPOContext;
   hero: HeroCuration;
+  /** 회원 맞춤 추천작품 줄 (7-1 맞춤 추천 상위 10개) */
+  recommendations?: Movie[];
   rankings: RankingItem[];
   cross_age_picks: Movie[];
 }
@@ -126,8 +128,6 @@ export const TIME_SLOT_LABEL: Record<TimeSlot, string> = {
   evening: "저녁",
   late_night: "늦은 밤",
 };
-
-export const NAV_ITEMS = ["홈", "통합 랭킹", "세대별 평점", "TPO 추천", "보관함"];
 
 export const SCROLLBAR_HIDE =
   "scrollbar-hide [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
@@ -511,6 +511,7 @@ export const MOCK_HOME_FEED_RESPONSE: ApiResponse<HomeFeed> = {
       { rank: 9, rank_change: 0, is_new: true, movie: movieById(6) },
       { rank: 10, rank_change: -1, is_new: false, movie: movieById(7) },
     ],
+    recommendations: [1, 2, 4, 6, 8, 10, 12, 3, 5, 7].map(movieById),
     cross_age_picks: [11, 5, 1, 8, 4, 10, 7, 9, 6, 2, 3, 12].map(movieById),
   },
 };

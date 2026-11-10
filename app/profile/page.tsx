@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Clapperboard, Heart, LogOut, RotateCcw, ThumbsDown, Timer, UserRound } from "lucide-react";
-import { AuthHeader, AuthPage, FormCard, PRIMARY_BUTTON, PlatformTag, SECONDARY_BUTTON } from "../_components/onboarding-ui";
+import { FormCard, PRIMARY_BUTTON, PlatformTag, SECONDARY_BUTTON } from "../_components/onboarding-ui";
+import { SiteShell } from "../_components/site-shell";
 import { PLATFORM_STYLES, type PlatformCode } from "../_lib/viewfit";
 import { fetchMe, getAccount, getOnboarding, signOut, type Account, type SavedOnboarding } from "../_lib/account";
 
@@ -151,17 +152,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <AuthPage
-      header={
-        <AuthHeader
-          right={
-            <Link href="/" className={`${SECONDARY_BUTTON} px-5 py-2`}>
-              홈으로
-            </Link>
-          }
-        />
-      }
-    >
+    <SiteShell>
       {account && (
         <div className="mx-auto flex max-w-[880px] flex-col gap-6 px-4 py-12 md:py-16">
           <FormCard>
@@ -203,6 +194,6 @@ export default function ProfilePage() {
           )}
         </div>
       )}
-    </AuthPage>
+    </SiteShell>
   );
 }
