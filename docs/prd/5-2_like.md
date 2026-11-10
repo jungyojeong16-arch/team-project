@@ -1,4 +1,4 @@
-# P12 좋아요
+# 5-2 좋아요
 
 | 항목 | 내용 |
 |---|---|
@@ -6,10 +6,11 @@
 | Figma | [좋아요 표시한 작품](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=220-2521), 프로필의 "최근 좋아요 표시한 작품"([프로필 정보](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=130-846)) |
 | 코드(예정) | `views.py`(like_content, my_likes), `app/me/likes/page.tsx`, `app/_components/like-button.tsx` |
 | 테이블 | `content_like`(member, content, liked_at) |
-| 검수 | 정준교(DB), 정재준(화면) |
+| 담당 | **정준교** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정재준(화면) |
 
 ## 1. 목적
-"나중에 보고 싶은 작품"을 모아 두고, 좋아요한 작품의 장르를 추천(P09)·취향 분석(P13)에 쓴다.
+"나중에 보고 싶은 작품"을 모아 두고, 좋아요한 작품의 장르를 추천(7-1)·취향 분석(8-1)에 쓴다.
 
 ## 2. 사용자 이야기
 - 회원으로서, 마음에 드는 작품에 하트를 눌러 모아 두고 싶다.
@@ -35,7 +36,7 @@
 - DB 규칙(이미 적용): `UNIQUE(member, content)` → 같은 작품 두 번 좋아요 불가.
 
 ## 5. 규칙 · 예외
-- 로그인 안 한 사용자가 하트를 누르면 로그인 창(P02).
+- 로그인 안 한 사용자가 하트를 누르면 로그인 창(1-2).
 - 하트는 누르는 즉시 바뀌어 보이고, 서버 저장이 실패하면 원래대로 돌리고 안내.
 
 ## 6. 완료 기준
@@ -51,7 +52,7 @@
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — API
 ```
-docs/prd/P12_like.md 4번의 API 4개를 만들어 줘. PUT 은 get_or_create, DELETE 는 없으면 그냥 204.
+docs/prd/5-2_like.md 4번의 API 4개를 만들어 줘. PUT 은 get_or_create, DELETE 는 없으면 그냥 204.
 목록은 liked_at 최신순, type/platform 필터, 4개씩 page. tests.py 에 '두 번 눌러도 1행', 'bulk 삭제' 테스트 추가.
 ```
 ### Step 2 — 하트 버튼 + 화면

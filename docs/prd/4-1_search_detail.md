@@ -1,12 +1,13 @@
-# P06 작품 검색 · 상세 · OTT 바로가기
+# 4-1 작품 검색 · 상세 · OTT 바로가기
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/17주) |
+| 상태 | ⬜ 예정 (11/24주) |
 | Figma | 상단 검색창 "어떤 이야기를 찾으세요?"(모든 화면), [상세 정보]·[바로 보기] 버튼([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)). 상세 화면 자체는 Figma에 없음 (D5) |
 | 코드(예정) | `backend/core/views.py`(content_search, content_detail, content_watch), `app/_components/content-modal.tsx` |
 | 테이블 | `content`, `content_genre`, `content_platform`, `rating`, `content_like`, `watch_history`(source=direct) |
-| 검수 | 정재준(화면), 정준교(API) |
+| 담당 | **정재준** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정준교(API) |
 
 ## 1. 목적
 보고 싶은 작품을 제목으로 찾고, 어떤 OTT에 있는지 확인한 뒤 바로 그 OTT로 이동한다. ViewFit은 추천만 하고 시청은 각 OTT에서 한다.
@@ -20,9 +21,9 @@
 |---|---|---|
 | FR1 | 상단 검색창에 2글자 이상 입력 → 제목에 포함된 작품 최대 20개 (포스터·제목·연도·유형) | 필수 |
 | FR2 | 작품을 누르면 **상세 팝업**: 포스터, 제목, 연도, 유형, 장르, 줄거리, 제공 OTT 뱃지, ViewFit 평균 평점·평가 수, 세대별 평균(평가 3개 이상인 연령대만) | 필수 |
-| FR3 | 상세 팝업에서 좋아요(P12), 별점 남기기(P11) | 필수 |
+| FR3 | 상세 팝업에서 좋아요(5-2), 별점 남기기(5-1) | 필수 |
 | FR4 | [바로 보기] → 제공 OTT가 1개면 바로, 여러 개면 고르게 한 뒤 `deeplink_url`을 새 탭으로 연다 | 필수 |
-| FR5 | [바로 보기]를 누르면 `watch_history`에 `source='direct'`로 기록 (P10·P14에서 사용) | 필수 |
+| FR5 | [바로 보기]를 누르면 `watch_history`에 `source='direct'`로 기록 (7-2·8-2에서 사용) | 필수 |
 | FR6 | 검색 결과 없음 → "찾는 작품이 아직 없어요" | 필수 |
 
 ## 4. 데이터 · API
@@ -52,14 +53,14 @@
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — 검색·상세·시청 기록 API
 ```
-docs/prd/P06_search_detail.md 의 4번 API 3개를 만들어 줘.
+docs/prd/4-1_search_detail.md 의 4번 API 3개를 만들어 줘.
 상세 응답은 app/_lib/viewfit.ts 의 Movie 타입 모양에 맞추고, 평균·세대별 평균은 rating 에서 그때그때 계산해
 (세대별은 age_group_at_rating 기준, 평가 3개 이상인 연령대만). 시청 기록은 watch_history 에 source='direct'.
 tests.py 에 검색·없는 작품 404·로그인 안 한 상세 조회 테스트를 추가해 줘.
 ```
 ### Step 2 — 검색창 + 상세 팝업 + 바로 보기
 ```
-docs/prd/P06_search_detail.md 의 FR1~FR6 화면을 만들어 줘.
+docs/prd/4-1_search_detail.md 의 FR1~FR6 화면을 만들어 줘.
 상단 바의 검색창("어떤 이야기를 찾으세요?")을 모든 화면 공통 컴포넌트로 만들고, 입력 0.3초 뒤 검색해.
 app/_components/content-modal.tsx 로 상세 팝업을 만들고, 홈의 [상세 정보]·[바로 보기]를 이것과 연결해 줘.
 OTT 가 여러 개면 OTT 뱃지 중 하나를 고르게 한 뒤 새 탭으로 열어 줘. 디자인은 Figma 9:5 의 카드·뱃지 모양을 따라 줘.

@@ -1,4 +1,4 @@
-# P11 평점 (작성 · 나의 평점 · 반영 결과)
+# 5-1 평점 (작성 · 나의 평점 · 반영 결과)
 
 | 항목 | 내용 |
 |---|---|
@@ -6,10 +6,11 @@
 | Figma | [나의 평점](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=220-2672) · [평점 반영 결과 · 랭킹 변화](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=224-4225) |
 | 코드(예정) | `views.py`(rate_content, my_ratings, rating_result), `app/me/ratings/page.tsx`, `app/me/ratings/result/[id]/page.tsx` |
 | 테이블 | `rating`(member, content, score, comment, age_group_at_rating, rated_at, updated_at), `ranking` |
-| 검수 | 정준교(DB 규칙), 정재준(화면) |
+| 담당 | **정준교** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정재준(화면) |
 
 ## 1. 목적
-회원이 본 작품에 별점과 감상을 남기고 모아 본다. 이 평점이 세대별 랭킹(P08)과 통합 랭킹 지수(P07), 추천(P09)의 재료가 된다.
+회원이 본 작품에 별점과 감상을 남기고 모아 본다. 이 평점이 세대별 랭킹(6-2)과 통합 랭킹 지수(6-1), 추천(7-1)의 재료가 된다.
 
 ## 2. 사용자 이야기
 - 회원으로서, 본 작품에 0.5점 단위로 별점과 짧은 감상을 남기고 싶다.
@@ -19,7 +20,7 @@
 ## 3. 기능 요구사항
 | ID | 내용 | 구분 |
 |---|---|---|
-| FR1 | 별점 남기기 (상세 팝업 P06, 피드백 P10, 나의 평점에서 수정). 0.5~5.0, 0.5 단위 | 필수 |
+| FR1 | 별점 남기기 (상세 팝업 4-1, 피드백 7-2, 나의 평점에서 수정). 0.5~5.0, 0.5 단위 | 필수 |
 | FR2 | 감상 한마디 (선택, 200자) | 선택 |
 | FR3 | 같은 작품에 다시 평가하면 **기존 평점 수정** (새로 추가 X) | 필수 |
 | FR4 | 평가 당시 연령대를 `age_group_at_rating`에 자동 복사 | 필수 ✅ |
@@ -58,7 +59,7 @@
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — 평점 API
 ```
-docs/prd/P11_rating.md 4번의 API 4개를 만들어 줘.
+docs/prd/5-1_rating.md 4번의 API 4개를 만들어 줘.
 PUT 은 update_or_create 로 한 작품 1개 규칙을 지키고, age_group_at_rating 은 모델 save() 가 채우니 건드리지 마.
 나의 평점 목록은 type/score/sort/page(3개씩)를 지원하고, 요약(좋아요 수·평점 수·평균)도 같이 돌려줘.
 rating-result 는 ranking 의 최근 두 주간 집계에서 순위와 위·아래 1개를 찾아 줘.
@@ -66,7 +67,7 @@ tests.py 에 '다시 평가하면 수정', '응답 안 함 회원 평점은 세�
 ```
 ### Step 2 — 별점 입력 컴포넌트
 ```
-P10 피드백 팝업과 P06 상세 팝업에서 같이 쓸 별점 입력 컴포넌트를 app/_components/star-input.tsx 로 만들어 줘.
+7-2 피드백 팝업과 4-1 상세 팝업에서 같이 쓸 별점 입력 컴포넌트를 app/_components/star-input.tsx 로 만들어 줘.
 반 별 클릭, 키보드 좌우 화살표 0.5씩, 감상 200자 + 글자 수 표시. 저장하면 평점 반영 결과 화면으로 이동해.
 ```
 ### Step 3 — 나의 평점·반영 결과 화면

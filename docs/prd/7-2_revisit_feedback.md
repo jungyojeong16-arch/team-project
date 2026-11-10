@@ -1,12 +1,13 @@
-# P10 재방문 추천 피드백
+# 7-2 재방문 추천 피드백
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/24주) |
+| 상태 | ⬜ 예정 (12/1주) |
 | Figma | [재방문 추천 피드백](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=145-2341) (홈 위에 뜨는 팝업) |
 | 코드(예정) | `views.py`(pending_feedback, submit_feedback), `app/_components/feedback-modal.tsx` |
 | 테이블 | `recommendation.feedback`(pending → rated / not_watched), `rating`(score, comment) |
-| 검수 | 홍준화(기획), 정재준(화면) |
+| 담당 | **홍준화** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정준교(DB), 정재준(화면) |
 
 ## 1. 목적
 지난번 추천을 실제로 봤는지, 어땠는지를 다시 방문했을 때 짧게 묻고, 그 답을 다음 추천에 반영한다.
@@ -22,7 +23,7 @@
 | FR2 | 별점 0.5점 단위 (별 5개, 반 별 가능) + "3.5 / 5 선택됨" | 필수 |
 | FR3 | "아직 못 봤어요" 선택 (별점 대신) | 필수 |
 | FR4 | 한마디 (선택, 200자, 글자 수 표시) | 선택 |
-| FR5 | [의견 보내기] → 별점이면 평점 저장(P11) + feedback=rated, 못 봤어요면 feedback=not_watched | 필수 |
+| FR5 | [의견 보내기] → 별점이면 평점 저장(5-1) + feedback=rated, 못 봤어요면 feedback=not_watched | 필수 |
 | FR6 | [나중에 할게요] · X → 이번 방문 동안 다시 뜨지 않음 | 필수 |
 
 ### 팝업을 띄우는 조건
@@ -36,7 +37,7 @@
 | GET | `/api/v1/recommendations/pending-feedback/` 🔒 | 물어볼 추천 1개 또는 `null` |
 | POST | `/api/v1/recommendations/{id}/feedback/` 🔒 | `{watched: true, score: 3.5, comment: ""}` 또는 `{watched: false}` |
 
-- 별점 저장은 P11과 같은 규칙(0.5 단위, 한 작품당 1개, 다시 하면 수정, 평가 당시 연령대 저장).
+- 별점 저장은 5-1과 같은 규칙(0.5 단위, 한 작품당 1개, 다시 하면 수정, 평가 당시 연령대 저장).
 
 ## 5. 규칙 · 예외
 - 별점도 "못 봤어요"도 안 고르고 보내기 → "별점을 선택해 주세요".
@@ -56,9 +57,9 @@
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — API
 ```
-docs/prd/P10_revisit_feedback.md 의 '팝업을 띄우는 조건' 과 4번 API 2개를 만들어 줘.
+docs/prd/7-2_revisit_feedback.md 의 '팝업을 띄우는 조건' 과 4번 API 2개를 만들어 줘.
 조건의 12시간은 settings 의 FEEDBACK_DELAY_HOURS 로 빼서 테스트 때 바꿀 수 있게 해 줘.
-평점 저장은 P11 과 같은 함수를 써서 0.5 단위·한 작품 1개 규칙을 지켜 줘.
+평점 저장은 5-1 과 같은 함수를 써서 0.5 단위·한 작품 1개 규칙을 지켜 줘.
 tests.py 에 '조건 충족 시 1개', '못 봤어요', '이미 평점 있으면 수정' 테스트를 추가해 줘.
 ```
 ### Step 2 — 팝업 화면

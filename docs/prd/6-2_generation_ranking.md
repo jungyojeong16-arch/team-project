@@ -1,12 +1,13 @@
-# P08 세대별 랭킹(평점)
+# 6-2 세대별 랭킹(평점)
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/17주) |
+| 상태 | ⬜ 예정 (11/24주) |
 | Figma | [세대별 평점](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-33778) (상단 메뉴 이름은 "세대별 랭킹") |
 | 코드(예정) | `views.py`(generation_rankings), `app/generation/page.tsx` |
 | 테이블 | `rating`(score, age_group_at_rating), `content` |
-| 검수 | 정준교(집계·DB), 정재준(화면) |
+| 담당 | **정준교** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정재준(화면) |
 
 ## 1. 목적
 같은 작품도 세대마다 평가가 다르다는 점을 보여 주고, **내 또래가 높게 평가한 작품**을 찾게 한다. ViewFit만의 차별 기능이다.
@@ -23,7 +24,7 @@
 | FR3 | "OO대가 높게 평가한 TOP 3" 큰 카드 | 필수 |
 | FR4 | TOP 30: 1~20위 먼저, [펼치기]로 21–30 | 필수 |
 | FR5 | 각 작품: 순위, 제목, 유형·장르·연도, ★ 연령대 평균(소수 둘째 자리), OTT | 필수 |
-| FR6 | 작품 클릭 → 상세 팝업(P06) — 다른 연령대 평균도 비교 | 필수 |
+| FR6 | 작품 클릭 → 상세 팝업(4-1) — 다른 연령대 평균도 비교 | 필수 |
 
 ## 4. 데이터 · API
 `GET /api/v1/rankings/generation/?age=20s&type=series&platform=TVING&genre=로맨스&offset=0&limit=20`
@@ -42,7 +43,7 @@ LIMIT 30;
 
 ## 5. 규칙 · 예외
 - 조건에 맞는 작품이 30개보다 적으면 있는 만큼만 보여 주고 "아직 평가가 모이고 있어요" 안내.
-- 시연 데이터(P04 FR8)가 섞여 있으면 화면 아래에 "시연용 가상 평점이 포함되어 있어요" 표시 (D12).
+- 시연 데이터(2-1 FR8)가 섞여 있으면 화면 아래에 "시연용 가상 평점이 포함되어 있어요" 표시 (D12).
 - 로그인 없이도 볼 수 있다.
 
 ## 6. 완료 기준
@@ -58,7 +59,7 @@ LIMIT 30;
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — 세대별 랭킹 API
 ```
-docs/prd/P08_generation_ranking.md 4번의 API 를 만들어 줘.
+docs/prd/6-2_generation_ranking.md 4번의 API 를 만들어 줘.
 rating 의 age_group_at_rating 으로 묶어 평균을 계산하고, 평가 3개 미만은 빼고, 평균 높은 순·같으면 평가 수 많은 순.
 type/platform/genre 필터와 offset/limit 을 지원해 줘. 결과는 저장하지 마.
 tests.py 에 '평가 2개 작품 제외', '회원 연령대를 바꿔도 예전 평가는 예전 세대에 남음' 테스트를 추가해 줘.

@@ -1,4 +1,4 @@
-# P04 작품 데이터 수집 · 시연 데이터
+# 2-1 작품 데이터 수집 · 시연 데이터
 
 | 항목 | 내용 |
 |---|---|
@@ -7,7 +7,8 @@
 | 코드(예정) | `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, `backend/core/tmdb.py` |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |
 | 필요한 것 | TMDB API Read Access Token (`backend/.env` 의 `TMDB_API_TOKEN`) |
-| 검수 | 정준교(DB), 홍준화(데이터 범위) |
+| 담당 | **홍준화** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정준교(DB) |
 
 ## 1. 목적
 홈·랭킹·추천에 쓸 **진짜 영화·시리즈 정보**(제목·줄거리·포스터·장르·제공 OTT)를 TMDB에서 가져와 DB에 채운다.
@@ -20,7 +21,7 @@
 ## 3. 기능 요구사항
 | ID | 내용 | 구분 |
 |---|---|---|
-| FR1 | `python manage.py import_tmdb` : 한국어(ko-KR)로 인기 영화·시리즈를 가져와 `content`에 저장 (기본 영화 300 + 시리즈 300) | 필수 |
+| FR1 | `python manage.py import_tmdb` : 한국어(ko-KR)로 인기 영화·시리즈를 가져와 `content`에 저장 (기본 영화 500 + 시리즈 500 = 1,000개) | 필수 |
 | FR2 | 같은 작품을 다시 가져오면 새로 만들지 않고 **수정** (`tmdb_id` + `content_type` 기준) | 필수 |
 | FR3 | TMDB 장르 → ViewFit 장르 12개로 연결해 `content_genre` 저장 (아래 표) | 필수 |
 | FR4 | TMDB 한국(KR) 제공처 정보로 `content_platform` 저장. ViewFit 6개 OTT만 | 필수 |
@@ -82,7 +83,7 @@
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — TMDB 연결 모듈
 ```
-docs/prd/P04_tmdb_import.md 를 읽고 Step 1 을 해 줘.
+docs/prd/2-1_tmdb_import.md 를 읽고 Step 1 을 해 줘.
 backend/core/tmdb.py 에 TMDB API 를 부르는 함수를 만들어 줘
 (인기 영화/시리즈 목록, 작품별 KR 제공처, 장르 목록). 키는 settings 에서 os.environ['TMDB_API_TOKEN'] 으로 읽고,
 backend/.env.example 에 TMDB_API_TOKEN= 줄을 추가해 줘. 실패 시 3번 재시도, 요청 사이 0.25초 쉬기.
@@ -90,9 +91,9 @@ backend/.env.example 에 TMDB_API_TOKEN= 줄을 추가해 줘. 실패 시 3번 �
 ```
 ### Step 2 — import_tmdb 명령
 ```
-docs/prd/P04_tmdb_import.md 의 FR1~FR7 을 구현해 줘.
+docs/prd/2-1_tmdb_import.md 의 FR1~FR7 을 구현해 줘.
 backend/core/management/commands/import_tmdb.py 를 만들어
---movies 300 --series 300 옵션으로 작품을 가져오고, PRD 의 장르 연결 표·상황 규칙 표대로
+--movies 500 --series 500 옵션으로 작품을 가져오고, PRD 의 장르 연결 표·상황 규칙 표대로
 content, content_genre, content_platform(deeplink_url 포함), content_tpo 를 저장해 줘.
 같은 (tmdb_id, content_type) 은 update_or_create 로 수정만 해.
 6개 OTT 어디에도 없는 작품은 건너뛰고, 마지막에 저장·수정·건너뜀 개수를 출력해 줘.
@@ -100,7 +101,7 @@ content, content_genre, content_platform(deeplink_url 포함), content_tpo 를 �
 ```
 ### Step 3 — 시연 데이터
 ```
-docs/prd/P04_tmdb_import.md 의 FR8 을 구현해 줘.
+docs/prd/2-1_tmdb_import.md 의 FR8 을 구현해 줘.
 backend/core/management/commands/seed_demo.py: 연령대 6개 × 10명 = 가상 회원 60명(이메일 demoNN@demo.viewfit.local),
 각 회원이 작품 20~40개에 0.5 단위 평점을 남기고 일부는 좋아요를 누르게 해 줘.
 연령대마다 좋아하는 장르를 조금 다르게 해서 세대별 랭킹에 차이가 보이게 해 줘. 같은 결과가 나오도록 random seed 고정.

@@ -1,4 +1,4 @@
-# P01 회원가입
+# 1-1 회원가입
 
 | 항목 | 내용 |
 |---|---|
@@ -6,7 +6,8 @@
 | Figma | [회원가입](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=157-1355) · [회원가입 완료 안내](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=61-591) |
 | 코드 | `app/signup/page.tsx`, `app/_lib/account.ts`, `backend/core/serializers.py`(SignupSerializer), `views.py`(signup, check_nickname_view) |
 | 테이블 | `member` (+ Django `authtoken_token`) |
-| 검수 | 정준교(DB·API), 정재준(화면) |
+| 담당 | **정준교** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정재준(화면) |
 
 ## 1. 목적
 이메일로 계정을 만들어 취향 설문과 추천 기록을 회원별로 저장할 수 있게 한다.
@@ -55,7 +56,7 @@
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — 닉네임 중복 확인 버튼 (FR2)
 ```
-docs/prd/P01_signup.md 의 FR2 를 구현해 줘.
+docs/prd/1-1_signup.md 의 FR2 를 구현해 줘.
 app/signup/page.tsx 의 닉네임 칸 오른쪽에 Figma(노드 157:1355)처럼 "중복 확인" 버튼을 넣고,
 누르면 GET /api/v1/auth/check-nickname/ 결과를 칸 아래에 보여 줘.
 지금 있는 '칸을 벗어나면 자동 확인' 동작은 버튼 방식으로 바꿔 줘.
@@ -64,7 +65,7 @@ app/signup/page.tsx 의 닉네임 칸 오른쪽에 Figma(노드 157:1355)처럼 
 ```
 ### Step 2 — 회원가입 완료 안내 화면 (FR6)
 ```
-docs/prd/P01_signup.md 의 FR6 을 구현해 줘.
+docs/prd/1-1_signup.md 의 FR6 을 구현해 줘.
 Figma 노드 61:591 "회원가입 완료 안내" 를 app/signup/complete/page.tsx 로 만들어 줘.
 문구: "회원가입이 완료되었어요!", "나만의 추천을 위한 다섯 가지 질문 · 약 2분",
 연령대 1/5, 직업 2/5, 선호 장르 3/5, 비선호 장르 4/5, 기억에 남는 작품 5/5,

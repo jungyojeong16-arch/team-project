@@ -1,4 +1,4 @@
-# P03 맞춤 추천 설문
+# 3-1 맞춤 추천 설문
 
 | 항목 | 내용 |
 |---|---|
@@ -6,7 +6,8 @@
 | Figma | [맞춤 추천 설문](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=39-3071) |
 | 코드 | `app/onboarding/page.tsx`, `app/_lib/account.ts`(saveOnboarding), `backend/core/serializers.py`(SurveySerializer), `views.py`(save_survey) |
 | 테이블 | `member`(age_group, job, survey_completed_at), `genre_preference`, `watch_history`(source=survey) |
-| 검수 | 정준교(DB), 정재준(화면) |
+| 담당 | **홍준화** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정준교(DB), 정재준(화면) |
 
 ## 1. 목적
 추천에 필요한 최소한의 정보(나이대·직업·장르 취향·기억에 남는 작품)를 가입 직후에 받는다.
@@ -21,7 +22,7 @@
 | FR1 | 연령대 하나 선택: 14–19세 · 20대 · 30대 · 40대 · 50대 · 60대 이상 · 응답 안 함 | 필수 | ✅ |
 | FR2 | 직업 하나 선택: 학생 · 직장인 · 자영업·프리랜서 · 가사·돌봄 · 구직·휴직 중 · 기타 · 응답 안 함 | 필수 | ✅ |
 | FR3 | 선호 장르 여러 개 + "모든 장르가 좋아요" / 비선호 장르 여러 개 + "딱히 없어요". 같은 장르는 양쪽에 동시에 못 고름 | 필수 | ✅ |
-| FR4 | **기억에 남는 작품**: 제목 검색 → 작품 DB에서 골라 여러 개 등록·삭제 (비워도 됨) | 필수 | ⬜ (P04 작품 데이터 필요) |
+| FR4 | **기억에 남는 작품**: 제목 검색 → 작품 DB에서 골라 여러 개 등록·삭제 (비워도 됨) | 필수 | ⬜ (2-1 작품 데이터 필요) |
 | FR5 | 수면 시간·생활 패턴·스트레스 질문 **삭제** (D2) | 필수 | ⬜ |
 | FR6 | 저장 시 `survey_completed_at` 기록 → 다음 로그인부터 홈으로 바로 이동 | 필수 | ✅ |
 | FR7 | [건너뛰고 둘러볼게요] → 홈 (설문 미완료 상태 유지) | 선택 | ✅ |
@@ -32,7 +33,7 @@
 |---|---|---|---|
 | GET | `/api/v1/options/` | — | 연령대·직업·장르·OTT·상황 선택지 |
 | PUT | `/api/v1/me/survey/` 🔒 | age_group, job, liked_genres[], liked_all, disliked_genres[], **memorable_content_ids[]**(추가 예정) | 저장된 내 정보 |
-| GET | `/api/v1/contents/search/?q=` | 제목 일부 | 작품 목록 (P06) |
+| GET | `/api/v1/contents/search/?q=` | 제목 일부 | 작품 목록 (4-1) |
 
 - 기억에 남는 작품은 `watch_history`에 `source='survey'`로 저장한다. 다시 저장하면 survey 기록만 지우고 새로 넣는다 (직접 기록 `direct`는 건드리지 않음).
 - "응답 안 함"은 DB에 NULL로 저장한다.
@@ -55,14 +56,14 @@
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — 질문 정리 + Figma 모양 (FR5, FR8)
 ```
-docs/prd/P03_survey.md 의 FR5·FR8 을 구현해 줘.
+docs/prd/3-1_survey.md 의 FR5·FR8 을 구현해 줘.
 app/onboarding/page.tsx 에서 평균 수면 시간·생활 패턴·스트레스 질문을 지우고,
 Figma 노드 39:3071 처럼 연령대 → 직업 → 선호 장르 → 비선호 장르 → 기억에 남는 작품 흐름으로 바꿔 줘.
 저장 API(PUT /api/v1/me/survey/)는 그대로 쓰고, 지금 저장되는 값은 바뀌면 안 돼.
 ```
-### Step 2 — 기억에 남는 작품 저장 (FR4) ※ P04·P06 Step 1 이후
+### Step 2 — 기억에 남는 작품 저장 (FR4) ※ 2-1·4-1 Step 1 이후
 ```
-docs/prd/P03_survey.md 의 FR4 를 구현해 줘.
+docs/prd/3-1_survey.md 의 FR4 를 구현해 줘.
 1) backend: SurveySerializer 에 memorable_content_ids(작품 번호 목록, 비어도 됨)를 추가하고,
    save_survey 에서 watch_history 의 source='survey' 행만 지우고 새로 넣어 줘. 없는 번호면 400.
 2) frontend: 기억에 남는 작품 칸에 제목을 입력하면 GET /api/v1/contents/search/?q= 로 찾고,

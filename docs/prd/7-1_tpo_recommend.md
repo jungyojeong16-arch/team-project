@@ -1,4 +1,4 @@
-# P09 맞춤 추천 (TPO · AI)
+# 7-1 맞춤 추천 (TPO · AI)
 
 | 항목 | 내용 |
 |---|---|
@@ -7,7 +7,8 @@
 | 코드(예정) | `backend/core/recommend.py`, `backend/core/curation.py`(LLM 문구), `views.py`(recommendations), `app/recommend/page.tsx` |
 | 테이블 | `recommendation`(member, content, tpo, rank, feedback, recommended_at), `content_tpo`, `genre_preference`, `watch_history`, `rating`, `content_like` |
 | 필요한 것 | LLM API 키 (D10) — 없으면 정해진 문장 틀로 동작 |
-| 검수 | 홍준화(추천 기준), 정준교(DB) |
+| 담당 | **홍준화** (PRD 확정·바이브 코딩) |
+| 함께 확인 | 정준교(DB) |
 
 ## 1. 목적
 "지금 이 순간에 딱 맞는 이야기" — 회원의 **취향**과 **상황(TPO: 시간·장소·함께하는 사람)** 을 함께 고려해 작품 50개를 추천하고, 왜 추천했는지 한 줄로 설명한다. ViewFit의 핵심 기능이다.
@@ -26,7 +27,7 @@
 | FR4 | TOP 50: 1~20위 먼저, [펼치기] 21–40, 41–50. 각 작품에 상황 라벨(예: "늦은 밤 · 혼자")과 한 줄 이유 | 필수 |
 | FR5 | 추천 점수 계산 (아래) → 상위 50개를 `recommendation`에 저장 | 필수 |
 | FR6 | 한 줄 이유: LLM이 작품 정보 + 상황 + 회원 취향으로 20자 안팎 문장 생성. 키가 없거나 실패하면 문장 틀("{상황}에 어울리는 {장르} 한 편") | 필수 |
-| FR7 | 추천을 새로 만드는 때: 하루 첫 방문, 설문·취향 수정 저장(P13), 최근 관심사 반영 동의(P14) | 필수 |
+| FR7 | 추천을 새로 만드는 때: 하루 첫 방문, 설문·취향 수정 저장(8-1), 최근 관심사 반영 동의(8-2) | 필수 |
 | FR8 | 로그인 필요. 설문 안 한 회원 → 설문으로 안내 | 필수 |
 
 ### 추천 점수 (처음 버전 — 규칙 기반 + AI 문구)
@@ -46,7 +47,7 @@
 | 방식 | 주소 | 내용 |
 |---|---|---|
 | GET | `/api/v1/recommendations/?tpo=혼자 보는 밤&type=&platform=&genre=&offset=0&limit=20` 🔒 | 최근 추천 묶음 조회. 오늘 만든 게 없으면 새로 만든 뒤 응답 |
-| POST | `/api/v1/recommendations/refresh/` 🔒 | 지금 바로 새로 만들기 (P13·P14에서 호출) |
+| POST | `/api/v1/recommendations/refresh/` 🔒 | 지금 바로 새로 만들기 (8-1·8-2에서 호출) |
 
 응답 항목: `{rank, tpo, situation_label, reason, content:{...}}`
 - 한 줄 이유 저장 위치는 D9 결정에 따름 (① `content.tagline` ② `recommendation.reason` 추가).
@@ -72,22 +73,22 @@
 ## 8. 바이브 코딩 프롬프트
 ### Step 1 — 추천 점수 계산
 ```
-docs/prd/P09_tpo_recommend.md 의 '추천 점수' 표를 backend/core/recommend.py 에 함수로 만들어 줘.
+docs/prd/7-1_tpo_recommend.md 의 '추천 점수' 표를 backend/core/recommend.py 에 함수로 만들어 줘.
 build_recommendations(member, tpo=None, limit=50) 이 비선호 장르·이미 평가/시청한 작품을 빼고 점수를 계산해
 recommendation 에 저장하고 저장한 목록을 돌려주게 해 줘. 점수 항목별로 작은 함수로 나눠서 나중에 조정하기 쉽게 해 줘.
 tests.py 에 '비선호 장르 제외', '평가한 작품 제외', '상황 필터' 테스트를 추가해 줘.
 ```
 ### Step 2 — 한 줄 큐레이션 (D9·D10 결정 후)
 ```
-docs/prd/P09_tpo_recommend.md 의 FR6 을 backend/core/curation.py 에 만들어 줘.
+docs/prd/7-1_tpo_recommend.md 의 FR6 을 backend/core/curation.py 에 만들어 줘.
 작품 제목·장르·줄거리, 상황 이름, 회원의 선호 장르를 넣어 20자 안팎 한국어 한 줄을 만들고,
 작품 정보에 없는 사실은 쓰지 말라고 지시해 줘. 키는 .env 에서 읽고, 키가 없거나 오류면 문장 틀로 대신해.
 같은 (작품, 상황) 결과는 저장해 두고 다시 써. 저장 위치는 D9 결정({결정 내용})대로 해 줘.
 ```
 ### Step 3 — 추천 API
 ```
-docs/prd/P09_tpo_recommend.md 4번의 API 2개를 만들어 줘. GET 은 오늘 만든 추천 묶음이 없으면 새로 만들고,
-tpo/type/platform/genre 필터와 offset/limit 을 지원해 줘. 홈 피드(P05)의 hero 도 이 추천 1위를 쓰게 바꿔 줘.
+docs/prd/7-1_tpo_recommend.md 4번의 API 2개를 만들어 줘. GET 은 오늘 만든 추천 묶음이 없으면 새로 만들고,
+tpo/type/platform/genre 필터와 offset/limit 을 지원해 줘. 홈 피드(0-4)의 hero 도 이 추천 1위를 쓰게 바꿔 줘.
 ```
 ### Step 4 — 화면
 ```
