@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework.authtoken",  # 로그인 토큰 (authtoken_token 테이블)
     "corsheaders",
     "core",
 ]
@@ -109,5 +110,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
 
 REST_FRAMEWORK = {
+    # 로그인하면 토큰을 받고, 이후 요청 헤더에 "Authorization: Token <토큰>" 을 붙여 보냅니다.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",  # 브라우저에서 API 화면 볼 때
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
 }

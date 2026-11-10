@@ -74,6 +74,38 @@ python manage.py runserver
 
 `health` 에서 `"database": "mysql"` 이 보이면 MariaDB 에 연결된 것입니다. (MariaDB 도 Django 에서는 mysql 로 표시됩니다)
 
+## API 목록
+주소 앞에 `http://127.0.0.1:8000/api/v1` 이 붙습니다. 🔒 는 로그인 필요 (요청 헤더 `Authorization: Token <토큰>`).
+
+| 방식 | 주소 | 하는 일 |
+|---|---|---|
+| GET | `/health/` | 서버·DB 연결 상태 |
+| GET | `/options/` | 설문 선택지 (연령대·직업·장르·OTT·상황) |
+| GET | `/auth/check-nickname/?nickname=준교` | 닉네임 사용 가능 여부 |
+| POST | `/auth/signup/` | 회원가입 → 토큰 |
+| POST | `/auth/login/` | 로그인 → 토큰 |
+| POST | `/auth/logout/` 🔒 | 로그아웃 (토큰 삭제) |
+| GET | `/me/` 🔒 | 내 정보 + 설문 결과 |
+| PUT | `/me/survey/` 🔒 | 취향 설문 저장 (연령대·직업·선호/비선호 장르) |
+
+## 자동 테스트
+```powershell
+python manage.py test core
+```
+회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지 9가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
+> MariaDB 로 테스트하려면 viewfit 계정에 테스트용 DB 권한이 필요합니다. MariaDB 클라이언트에서 한 번만:
+> `GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'127.0.0.1'; GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'localhost';`
+
+## 프론트엔드(화면)와 연결하기
+1. 프론트엔드 프로젝트 폴더(`package.json` 이 있는 곳)에 **`.env.local`** 파일을 만들고 아래 한 줄을 넣습니다.
+   ```
+   NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+   ```
+2. 백엔드(`python manage.py runserver`)와 프론트(`npm run dev`)를 **둘 다** 켭니다.
+3. http://localhost:3000/signup 에서 가입 → 설문 → 홈 순서로 진행하고, 관리자 페이지(/admin)의 **회원**, **장르 취향** 표에 저장됐는지 확인합니다.
+
+`.env.local` 이 없으면 예전처럼 브라우저에만 임시 저장됩니다 (백엔드 없이 화면만 볼 때).
+
 ---
 
 ## 자주 나는 오류

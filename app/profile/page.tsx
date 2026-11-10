@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Clapperboard, Heart, LogOut, RotateCcw, ThumbsDown, Timer, UserRound } from "lucide-react";
 import { AuthHeader, AuthPage, FormCard, PRIMARY_BUTTON, PlatformTag, SECONDARY_BUTTON } from "../_components/onboarding-ui";
 import { PLATFORM_STYLES, type PlatformCode } from "../_lib/viewfit";
-import { getAccount, getOnboarding, signOut, type Account, type SavedOnboarding } from "../_lib/account";
+import { fetchMe, getAccount, getOnboarding, signOut, type Account, type SavedOnboarding } from "../_lib/account";
 
 /* ============================================================================
  * 내 프로필 (임시 레이아웃 — Figma "내 프로필" 시안 반영 예정)
@@ -23,6 +23,18 @@ const LIFESTYLE_LABELS: { key: keyof SavedOnboarding["lifestyle"]; label: string
 const formatDate = (iso: string) => {
   const d = new Date(iso);
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/** 이 브라우저에 설문 기록이 없으면 서버(DB)에 저장된 설문 결과로 화면을 채움 */
+const surveyFromServer = (account: Account): SavedOnboarding | null => {
+  if (!account.survey_completed || !account.survey) return null;
+  const { age_group, occupation, liked, disliked } = account.survey;
+  return {
+    lifestyle: { age_group, occupation, sleep: null, pattern: null, stress: null },
+    genres: { liked, liked_all: false, disliked, disliked_none: disliked.length === 0 },
+    history: { watched: [], none: false, daily_watch_time: null },
+    completed_at: "",
+  };
 };
 
 const isPlatformCode = (value: string | null): value is PlatformCode => !!value && value in PLATFORM_STYLES;
@@ -124,12 +136,17 @@ export default function ProfilePage() {
       router.replace("/signup");
       return;
     }
-    setAccount(saved);
-    setSurvey(getOnboarding());
+    const show = (a: Account) => {
+      setAccount(a);
+      setSurvey(getOnboarding() ?? surveyFromServer(a));
+    };
+    show(saved);
+    // 서버에서 최신 정보로 다시 받아옴 (로그인이 만료됐으면 회원가입 화면으로)
+    fetchMe().then((fresh) => (fresh ? show(fresh) : router.replace("/signup")));
   }, [router]);
 
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    await signOut();
     router.push("/");
   };
 
@@ -150,11 +167,12 @@ export default function ProfilePage() {
           <FormCard>
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-indigo-600 text-3xl font-black uppercase ring-1 ring-white/20">
-                {account.email.charAt(0)}
+                {(account.nickname || account.email).charAt(0)}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-fuchsia-300">내 프로필</p>
-                <h1 className="mt-1 break-all text-xl font-black md:text-2xl">{account.email}</h1>
+                <h1 className="mt-1 break-all text-xl font-black md:text-2xl">{account.nickname || account.email}</h1>
+                {account.nickname && <p className="mt-1 break-all text-sm text-white/60">{account.email}</p>}
                 <p className="mt-1 text-sm text-white/50">{formatDate(account.created_at)} 가입</p>
               </div>
               <div className="flex gap-3">

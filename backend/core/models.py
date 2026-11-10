@@ -103,6 +103,8 @@ class Member(AbstractBaseUser, PermissionsMixin):
     job = models.CharField("직업", max_length=10, choices=Job.choices, null=True, blank=True)
     marketing_opt_in = models.BooleanField("마케팅 수신 동의", default=False)
     terms_agreed_at = models.DateTimeField("약관 동의 일시", null=True, blank=True)
+    # 비어 있으면 아직 취향 설문을 안 한 회원 → 로그인 후 설문 화면으로 보냄
+    survey_completed_at = models.DateTimeField("설문 완료 일시", null=True, blank=True)
     date_joined = models.DateTimeField("가입일", default=timezone.now)
     is_active = models.BooleanField("활성 계정", default=True)
     is_staff = models.BooleanField("관리자 페이지 접근", default=False)

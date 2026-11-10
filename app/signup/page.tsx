@@ -16,13 +16,14 @@ import {
   StoryHeadline,
   type CheckState,
 } from "../_components/onboarding-ui";
-import { signUp, type Agreements } from "../_lib/account";
+import { ApiError, checkNickname, signUp, type Agreements } from "../_lib/account";
 
 /* ============================================================================
  * Figma: "ViewFit 회원가입"
  * ========================================================================== */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NICKNAME_RE = /^[가-힣A-Za-z0-9_]{2,12}$/;
 const isValidPassword = (pw: string) =>
   pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw) && /[^A-Za-z0-9]/.test(pw);
 
@@ -42,17 +43,32 @@ const AGREEMENT_ITEMS: { key: keyof Agreements; required: boolean; label: string
 export default function SignUpPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [nicknameCheck, setNicknameCheck] = useState<{ value: string; available: boolean; reason: string | null } | null>(null);
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [agreements, setAgreements] = useState<Agreements>({ age14: false, terms: false, privacy: false, marketing: false });
-  const [touched, setTouched] = useState({ email: false, password: false, confirm: false });
+  const [touched, setTouched] = useState({ email: false, nickname: false, password: false, confirm: false });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [openDetail, setOpenDetail] = useState<keyof Agreements | null>(null);
 
+  const nicknameTaken = nicknameCheck?.value === nickname && !nicknameCheck.available ? nicknameCheck.reason : null;
   const errors = {
-    email: !EMAIL_RE.test(email) ? (email ? "올바른 이메일 주소를 입력해 주세요." : "이메일을 입력해 주세요.") : null,
-    password: !isValidPassword(password) ? "영문, 숫자, 특수문자를 포함해 8자 이상 입력해 주세요." : null,
+    email: !EMAIL_RE.test(email)
+      ? email
+        ? "올바른 이메일 주소를 입력해 주세요."
+        : "이메일을 입력해 주세요."
+      : (serverErrors.email ?? null),
+    nickname: !NICKNAME_RE.test(nickname)
+      ? nickname
+        ? "한글·영문·숫자·밑줄(_)로 2~12자까지 쓸 수 있어요."
+        : "닉네임을 입력해 주세요."
+      : (nicknameTaken ?? serverErrors.nickname ?? null),
+    password: !isValidPassword(password)
+      ? "영문, 숫자, 특수문자를 포함해 8자 이상 입력해 주세요."
+      : (serverErrors.password ?? null),
     confirm: !confirm ? "비밀번호를 한 번 더 입력해 주세요." : confirm !== password ? "비밀번호가 일치하지 않아요." : null,
     agreements: AGREEMENT_ITEMS.some((a) => a.required && !agreements[a.key]) ? "필수 항목에 모두 동의해 주세요." : null,
   };
@@ -68,14 +84,45 @@ export default function SignUpPage() {
     setAgreements({ age14: next, terms: next, privacy: next, marketing: next });
   };
 
+  const clearServerError = (key: string) =>
+    setServerErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
+  const nicknameOk = nicknameCheck?.value === nickname && nicknameCheck.available && !errors.nickname;
+
+  // 닉네임 칸에서 나가면 바로 중복 확인
+  const onNicknameBlur = async () => {
+    setTouched((t) => ({ ...t, nickname: true }));
+    if (!NICKNAME_RE.test(nickname) || nicknameCheck?.value === nickname) return;
+    try {
+      const result = await checkNickname(nickname);
+      setNicknameCheck({ value: nickname, ...result });
+    } catch {
+      setNicknameCheck(null); // 서버 확인 실패 시 가입할 때 다시 검사
+    }
+  };
+
+  const [formError, setFormError] = useState<string | null>(null);
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setFormError(null);
     if (Object.values(errors).some(Boolean)) return;
     setSubmitting(true);
     try {
-      await signUp({ email, password, agreements });
+      await signUp({ email, nickname, password, agreements });
       router.push("/onboarding");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setServerErrors(err.fields);
+        if (!err.fields.email && !err.fields.nickname && !err.fields.password) setFormError(err.message);
+      } else {
+        setFormError("가입 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -137,11 +184,37 @@ export default function SignUpPage() {
                   type="email"
                   autoComplete="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearServerError("email");
+                  }}
                   onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                   placeholder="이메일 주소를 입력해 주세요"
                   aria-invalid={Boolean(show("email"))}
                   className={inputClass(Boolean(show("email")))}
+                />
+              </Field>
+
+              <Field
+                id="signup-nickname"
+                label="닉네임"
+                error={show("nickname")}
+                hint={nicknameOk ? "사용할 수 있는 닉네임이에요." : "한글·영문·숫자·밑줄(_) 2~12자"}
+              >
+                <input
+                  id="signup-nickname"
+                  type="text"
+                  autoComplete="nickname"
+                  maxLength={12}
+                  value={nickname}
+                  onChange={(e) => {
+                    setNickname(e.target.value);
+                    clearServerError("nickname");
+                  }}
+                  onBlur={onNicknameBlur}
+                  placeholder="다른 회원에게 보일 이름이에요"
+                  aria-invalid={Boolean(show("nickname"))}
+                  className={inputClass(Boolean(show("nickname")))}
                 />
               </Field>
 
@@ -154,7 +227,10 @@ export default function SignUpPage() {
                 <PasswordInput
                   id="signup-password"
                   value={password}
-                  onChange={setPassword}
+                  onChange={(v) => {
+                    setPassword(v);
+                    clearServerError("password");
+                  }}
                   onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                   placeholder="비밀번호를 입력해 주세요"
                   invalid={Boolean(show("password"))}
@@ -232,6 +308,11 @@ export default function SignUpPage() {
               </p>
             </div>
 
+            {formError && (
+              <p role="alert" className="mt-6 rounded-lg border border-rose-400/40 bg-rose-400/10 px-4 py-3 text-sm text-rose-300">
+                {formError}
+              </p>
+            )}
             <button type="submit" disabled={submitting} className={`${PRIMARY_BUTTON} mt-8 h-[54px] text-lg`}>
               {submitting ? "가입하는 중…" : "회원가입"}
               {!submitting && <ArrowRight className="h-5 w-5" />}

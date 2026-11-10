@@ -31,7 +31,7 @@
 
 | 테이블 | 칸 (PK 기본키 · FK 외래키 · UK 중복 불가 · ? 비어 있어도 됨) |
 |---|---|
-| member | PK id, UK email, UK nickname, password, age_group?, job?, marketing_opt_in, terms_agreed_at?, date_joined, is_active, is_staff |
+| member | PK id, UK email, UK nickname, password, age_group?, job?, marketing_opt_in, terms_agreed_at?, survey_completed_at?, date_joined, is_active, is_staff |
 | content | PK id, tmdb_id?, title, content_type, overview, poster_url, release_year?, tagline |
 | genre | PK id, UK name, UK tmdb_id? |
 | ott_platform | PK id, UK code, UK name |
@@ -86,6 +86,7 @@
 |---|---|
 | member.nickname | 회원가입 화면의 닉네임(중복 확인) |
 | member.marketing_opt_in, terms_agreed_at | 회원가입 화면의 약관·마케팅 동의 |
+| member.survey_completed_at | 로그인 후 설문을 안 한 회원은 설문 화면으로 보내기 (11/10 추가) |
 | content.tmdb_id | 작품 정보·포스터를 TMDB에서 가져오기 위한 번호 |
 | content.tagline | 맞춤 추천 화면의 한 줄 큐레이션 |
 | ranking.period, ranked_on | 통합 랭킹의 주간/월간 탭, 날짜별 순위 등락 계산 |

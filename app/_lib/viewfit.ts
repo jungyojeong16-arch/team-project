@@ -523,13 +523,17 @@ export async function fetchHomeFeed(signal?: AbortSignal): Promise<HomeFeed> {
   if (API_BASE_URL) {
     const res = await fetch(`${API_BASE_URL}/api/v1/home/feed/`, {
       signal,
-      credentials: "include",
       headers: { Accept: "application/json" },
-    });
-    if (!res.ok) throw new Error(`홈 피드를 불러오지 못했습니다. (HTTP ${res.status})`);
-    const json: ApiResponse<HomeFeed> = await res.json();
-    if (!json.success) throw new Error("홈 피드 응답이 올바르지 않습니다.");
-    return json.data;
+    }).catch(() => null);
+    // TODO(11/17 주): 홈 피드 API 를 만들면 이 404 대체 처리를 지우기
+    if (res?.status === 404 || res === null) {
+      console.warn("홈 피드 API 가 아직 없어 샘플 데이터를 보여 줍니다.");
+    } else {
+      if (!res.ok) throw new Error(`홈 피드를 불러오지 못했습니다. (HTTP ${res.status})`);
+      const json: ApiResponse<HomeFeed> = await res.json();
+      if (!json.success) throw new Error("홈 피드 응답이 올바르지 않습니다.");
+      return json.data;
+    }
   }
   await new Promise((resolve) => setTimeout(resolve, 450));
   return MOCK_HOME_FEED_RESPONSE.data;
@@ -557,11 +561,13 @@ export async function fetchContent(id: number, signal?: AbortSignal): Promise<Mo
   if (API_BASE_URL) {
     const res = await fetch(`${API_BASE_URL}/api/v1/contents/${id}/`, {
       signal,
-      credentials: "include",
       headers: { Accept: "application/json" },
-    });
-    if (!res.ok) throw new Error(`콘텐츠를 불러오지 못했습니다. (HTTP ${res.status})`);
-    return res.json();
+    }).catch(() => null);
+    // TODO(11/17 주): 작품 API 를 만들면 이 404 대체 처리를 지우기
+    if (res && res.status !== 404) {
+      if (!res.ok) throw new Error(`콘텐츠를 불러오지 못했습니다. (HTTP ${res.status})`);
+      return res.json();
+    }
   }
   await new Promise((resolve) => setTimeout(resolve, 250));
   const movie = MOCK_MOVIES.find((m) => m.id === id);

@@ -28,7 +28,7 @@ class MemberAdmin(UserAdmin):
     fieldsets = [
         (None, {"fields": ["email", "nickname", "password"]}),
         ("설문 정보", {"fields": ["age_group", "job"]}),
-        ("동의·가입", {"fields": ["marketing_opt_in", "terms_agreed_at", "date_joined"]}),
+        ("동의·가입", {"fields": ["marketing_opt_in", "terms_agreed_at", "survey_completed_at", "date_joined"]}),
         ("권한", {"fields": ["is_active", "is_staff", "is_superuser"]}),
     ]
     add_fieldsets = [(None, {"classes": ["wide"], "fields": ["email", "nickname", "password1", "password2"]})]

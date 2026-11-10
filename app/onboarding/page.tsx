@@ -32,7 +32,7 @@ import {
   StoryHeadline,
 } from "../_components/onboarding-ui";
 import { MOCK_MOVIES, PLATFORM_STYLES, type PlatformCode } from "../_lib/viewfit";
-import { saveOnboarding, type OnboardingAnswers, type WatchedItem } from "../_lib/account";
+import { ApiError, getAccount, saveOnboarding, type OnboardingAnswers, type WatchedItem } from "../_lib/account";
 
 /* ============================================================================
  * Figma: "ViewFit 설문 — 생활 정보 / 장르 취향 / 시청 이력"
@@ -119,7 +119,13 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>(1);
   const [answers, setAnswers] = useState<OnboardingAnswers>(INITIAL);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const story = STORY[step];
+
+  // 설문은 로그인한 회원만 저장할 수 있음
+  useEffect(() => {
+    if (!getAccount()) router.replace("/login");
+  }, [router]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -132,9 +138,16 @@ export default function OnboardingPage() {
       return;
     }
     setSaving(true);
+    setSaveError(null);
     try {
       await saveOnboarding(answers);
       router.push("/");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      setSaveError(err instanceof ApiError ? err.message : "설문을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
       setSaving(false);
     }
@@ -183,6 +196,11 @@ export default function OnboardingPage() {
             {step === 3 && <HistoryStep answers={answers} setAnswers={setAnswers} />}
 
             <div className="mt-10 border-t border-white/10 pt-8">
+              {saveError && (
+                <p role="alert" className="mb-5 rounded-lg border border-rose-400/40 bg-rose-400/10 px-4 py-3 text-sm text-rose-300">
+                  {saveError}
+                </p>
+              )}
               <div className="flex gap-4">
                 <button type="button" onClick={goPrev} className={`${SECONDARY_BUTTON} h-[54px] w-28 shrink-0`}>
                   <ArrowLeft className="h-5 w-5" /> 이전
