@@ -6,7 +6,7 @@
 | Figma | [맞춤 추천 설문](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=39-3071) |
 | 코드 | `app/onboarding/page.tsx`, `app/_lib/account.ts`(saveOnboarding), `backend/core/serializers.py`(SurveySerializer), `views.py`(save_survey) |
 | 테이블 | `member`(age_group, job, survey_completed_at), `genre_preference`, `watch_history`(source=survey) |
-| 담당 | **홍준화** (PRD 확정·바이브 코딩) |
+| 담당 | **정준교** (바이브 코딩) · 검토: 홍준화 |
 | 함께 확인 | 정준교(DB), 정재준(화면) |
 
 ## 1. 목적

@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchHomeFeed, type HomeFeed, type Movie } from "./_lib/viewfit";
+import { useAccount } from "./_lib/use-account";
+import { StartScreen } from "./_components/start-screen";
 import { SiteShell } from "./_components/site-shell";
 import { ErrorState, LoadingCards } from "./_components/status-view";
 import { TodayPick } from "./_components/home/today-pick";
 import { CrossAgePicks, PeerPicks, RankingTop10, RecommendRow } from "./_components/home/home-rows";
 
 /* ============================================================================
- * 0-4 홈 화면 (Figma Home Feed 9:5) — 3명 공동
+ * 0-4 홈 화면 (Figma Home Feed 9:5) — 로그인 안 했으면 1-2 웹 시작 화면(Figma 179:1801)
  * 화면 순서: ① 오늘의 추천 → ② 맞춤 추천작품 → ③ 통합 랭킹 TOP 10 → ④ 세대별 교차 평점 → ⑤ 또래 추천
  * 영역별 부품: app/_components/home/ , 데이터: GET /api/v1/home/feed/ (지금은 가짜 데이터)
  * ========================================================================== */
@@ -42,6 +44,13 @@ function HomeSkeleton() {
 }
 
 export default function HomePage() {
+  const { account, ready } = useAccount();
+  if (!ready) return <div className="min-h-screen bg-[#0a0a0a]" />;
+  if (!account) return <StartScreen />;
+  return <HomeFeedView />;
+}
+
+function HomeFeedView() {
   const { feed, error, retry } = useHomeFeed();
 
   // 또래 추천 후보: 랭킹 + 교차 평점 작품 (6-2 API 가 생기면 그 결과로 바꿈)

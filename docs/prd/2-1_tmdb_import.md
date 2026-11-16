@@ -7,7 +7,7 @@
 | 코드(예정) | `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, `backend/core/tmdb.py` |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |
 | 필요한 것 | TMDB API Read Access Token (`backend/.env` 의 `TMDB_API_TOKEN`) |
-| 담당 | **홍준화** (PRD 확정·바이브 코딩) |
+| 담당 | **정준교** (바이브 코딩) · 검토: 홍준화 |
 | 함께 확인 | 정준교(DB) |
 
 ## 1. 목적

@@ -6,7 +6,7 @@
 | Figma | 상단 검색창 "어떤 이야기를 찾으세요?"(모든 화면), [상세 정보]·[바로 보기] 버튼([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)). 상세 화면 자체는 Figma에 없음 (D5) |
 | 코드(예정) | `backend/core/views.py`(content_search, content_detail, content_watch), `app/_components/content-modal.tsx` |
 | 테이블 | `content`, `content_genre`, `content_platform`, `rating`, `content_like`, `watch_history`(source=direct) |
-| 담당 | **정재준** (PRD 확정·바이브 코딩) |
+| 담당 | **정준교** (바이브 코딩) · 검토: 정재준 |
 | 함께 확인 | 정준교(API) |
 
 ## 1. 목적

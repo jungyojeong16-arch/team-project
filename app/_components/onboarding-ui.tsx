@@ -1,24 +1,25 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Check, Lock, Minus } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import { PLATFORM_STYLES, type PlatformCode } from "../_lib/viewfit";
 
 /* ============================================================================
  * 회원가입 · 온보딩 공용 UI (Figma: ViewFit 회원가입 / ViewFit 설문)
  * ========================================================================== */
 
+/* Figma 공통 값: 강조색 #f0abfc · 본문 #eceef4 · 보조 글자 #9ca3b5 · 흐린 글자 #6b7487 · 테두리 white 12% */
 export const PRIMARY_BUTTON =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-fuchsia-300 font-bold text-[#1f1029] transition hover:bg-fuchsia-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2.5 rounded-md bg-[#f0abfc] font-bold text-[#241229] transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const SECONDARY_BUTTON =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.02] font-medium text-white/85 transition hover:border-white/30 hover:bg-white/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-300";
+  "inline-flex items-center justify-center gap-2 rounded-md border border-white/[0.12] bg-white/[0.02] font-medium text-white/85 transition hover:border-white/30 hover:bg-white/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-300";
 
 const OTT_STRIP: PlatformCode[] = ["NETFLIX", "TVING", "DISNEY_PLUS", "WATCHA"];
 
 export function Logo() {
   return (
-    <Link href="/" className="text-3xl font-black tracking-tight" aria-label="ViewFit 홈">
-      <span className="text-fuchsia-300">View</span>
+    <Link href="/" className="text-2xl font-black tracking-[-0.48px]" aria-label="ViewFit 홈">
+      <span className="bg-gradient-to-r from-[#d946ef] to-[#f43f5e] bg-clip-text text-transparent">View</span>
       <span className="text-white">Fit</span>
     </Link>
   );
@@ -26,7 +27,7 @@ export function Logo() {
 
 export function AuthHeader({ right }: { right: ReactNode }) {
   return (
-    <header className="relative z-10 border-b border-white/[0.08]">
+    <header className="relative z-10 border-b border-white/[0.12]">
       <div className="mx-auto flex h-[88px] max-w-[1440px] items-center justify-between px-4 md:px-16">
         <Logo />
         {right}
@@ -37,10 +38,10 @@ export function AuthHeader({ right }: { right: ReactNode }) {
 
 export function AuthFooter() {
   return (
-    <footer className="relative z-10 border-t border-white/[0.08]">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-8 text-sm text-white/45 md:flex-row md:items-center md:justify-between md:px-16">
+    <footer className="relative z-10 border-t border-white/[0.12]">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-7 text-xs text-[#6b7487] md:flex-row md:items-center md:justify-between md:px-16">
         <p>© 2026 ViewFit. 나의 상황에 딱 맞는 OTT 큐레이션</p>
-        <nav className="flex gap-6 text-white/60">
+        <nav className="flex gap-6 text-[#9ca3b5]">
           <a href="#" className="hover:text-white">이용약관</a>
           <a href="#" className="hover:text-white">개인정보처리방침</a>
           <a href="#" className="hover:text-white">고객센터</a>
@@ -83,26 +84,28 @@ export function AuthPage({ header, children }: { header: ReactNode; children: Re
 
 export function MoodChip({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-sm text-white/90">
-      <span className="text-fuchsia-300">{icon}</span>
+    <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/5 px-3 py-1.5 text-xs font-medium text-[#eceef4]">
+      <span className="text-[#f0abfc]">{icon}</span>
       {children}
     </span>
   );
 }
 
-export function StoryHeadline({ first, accent }: { first: string; accent: string }) {
+/** 큰 제목 두 줄 — 둘째 줄의 lead 는 흰색, accent 는 분홍 (예: "오늘 밤," / "당신의 " + "취향으로.") */
+export function StoryHeadline({ first, lead = "", accent }: { first: string; lead?: string; accent: string }) {
   return (
-    <h1 className="break-keep text-[40px] font-black leading-[1.15] tracking-tight md:text-[52px]">
+    <h1 className="break-keep text-[40px] font-black leading-[1.28] tracking-[-1.2px] md:text-[52px] md:tracking-[-1.56px]">
       {first}
       <br />
-      <span className="text-fuchsia-300">{accent}</span>
+      {lead}
+      <span className="text-[#f0abfc]">{accent}</span>
     </h1>
   );
 }
 
 export function StoryDescription({ lines }: { lines: string[] }) {
   return (
-    <p className="break-keep text-base leading-relaxed text-white/60 md:text-lg">
+    <p className="break-keep text-base leading-[1.8] text-[#9ca3b5]">
       {lines.map((line, i) => (
         <span key={line}>
           {line}
@@ -135,7 +138,7 @@ export function InfoNote({ title, lines }: { title: string; lines: string[] }) {
 export function PlatformTag({ code }: { code: PlatformCode }) {
   const style = PLATFORM_STYLES[code];
   return (
-    <span className={`inline-flex rounded px-2 py-0.5 text-[11px] font-black tracking-wide ${style.className}`}>
+    <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-black tracking-[0.4px] drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${style.className}`}>
       {style.label}
     </span>
   );
@@ -143,22 +146,22 @@ export function PlatformTag({ code }: { code: PlatformCode }) {
 
 export function OttStrip({ more = false, note }: { more?: boolean; note?: string }) {
   return (
-    <div className="border-t border-white/10 pt-8">
-      <p className="text-sm text-white/45">다양한 OTT의 이야기를, 한곳에서</p>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+    <div className="border-t border-white/[0.12] pt-6">
+      <p className="text-xs text-[#6b7487]">다양한 OTT의 이야기를, 한곳에서</p>
+      <div className="mt-3.5 flex flex-wrap items-center gap-3.5">
         {OTT_STRIP.map((code) => (
           <PlatformTag key={code} code={code} />
         ))}
-        {more && <span className="text-sm text-white/45">외 다양한 OTT</span>}
+        {more && <span className="text-xs text-[#6b7487]">외 다양한 OTT</span>}
       </div>
-      {note && <p className="mt-4 text-sm text-white/40">{note}</p>}
+      {note && <p className="mt-3.5 text-[11px] text-[#6b7487]">{note}</p>}
     </div>
   );
 }
 
 export function FormCard({ children }: { children: ReactNode }) {
   return (
-    <section className="rounded-[28px] border border-white/10 bg-[#0d1017]/90 p-6 shadow-2xl shadow-black/60 backdrop-blur-xl md:p-10">
+    <section className="rounded-2xl border border-white/[0.12] bg-[rgba(13,17,27,0.8)] p-6 shadow-[0_24px_64px_rgba(0,0,0,0.31)] backdrop-blur-xl md:p-10">
       {children}
     </section>
   );
@@ -207,18 +210,18 @@ export function CheckMark({ state, disabled = false }: { state: CheckState; disa
   return (
     <span
       aria-hidden
-      className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] border transition ${
+      className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[3px] border transition ${
         disabled
           ? "border-white/10"
           : state === "checked"
-            ? "border-fuchsia-300 bg-fuchsia-300 text-[#1f1029]"
+            ? "border-[#f0abfc] bg-[#f0abfc] text-[#241229]"
             : on
-              ? "border-fuchsia-300 text-fuchsia-300"
-              : "border-white/30"
+              ? "border-[#f0abfc] bg-[rgba(240,171,252,0.13)]"
+              : "border-white/25"
       }`}
     >
-      {state === "checked" && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
-      {state === "indeterminate" && <Minus className="h-3.5 w-3.5" strokeWidth={3} />}
+      {state === "checked" && <Check className="h-3 w-3" strokeWidth={3} />}
+      {state === "indeterminate" && <span className="h-0.5 w-2.5 bg-[#f0abfc]" />}
     </span>
   );
 }

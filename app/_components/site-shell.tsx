@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { SiteFooter } from "./site-footer";
+import { LoginModalHost } from "./login-modal";
 import { SiteHeader } from "./site-header";
 
 /* ============================================================================
@@ -23,6 +24,7 @@ export function SiteShell({
       <SiteHeader onSearch={onSearch} />
       <main className={`flex-1 ${underHeader ? "" : "pt-16"}`}>{children}</main>
       <SiteFooter />
+      <LoginModalHost />
     </div>
   );
 }

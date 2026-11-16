@@ -7,7 +7,7 @@
 | 코드(예정) | `backend/core/recommend.py`, `backend/core/curation.py`(LLM 문구), `views.py`(recommendations), `app/recommend/page.tsx` |
 | 테이블 | `recommendation`(member, content, tpo, rank, feedback, recommended_at), `content_tpo`, `genre_preference`, `watch_history`, `rating`, `content_like` |
 | 필요한 것 | LLM API 키 (D10) — 없으면 정해진 문장 틀로 동작 |
-| 담당 | **홍준화** (PRD 확정·바이브 코딩) |
+| 담당 | **정준교** (바이브 코딩) · 검토: 홍준화 |
 | 함께 확인 | 정준교(DB) |
 
 ## 1. 목적

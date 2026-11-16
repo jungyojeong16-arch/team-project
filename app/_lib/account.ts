@@ -140,6 +140,28 @@ const toAccount = (m: MemberResponse): Account => ({
 const ACCOUNT_KEY = "viewfit.account";
 const ONBOARDING_KEY = "viewfit.onboarding";
 const TOKEN_KEY = "viewfit.token";
+const MOCK_ACCOUNT_KEY = "viewfit.mock.account"; // 백엔드 미연결 모드: 로그아웃 후 다시 로그인할 때 쓰는 가입 기록
+
+/** 로그인·로그아웃 등으로 계정이 바뀌면 화면(상단 바·홈)에 알려 주는 신호 */
+export const AUTH_EVENT = "viewfit:auth";
+const notifyAuth = () => {
+  try {
+    window.dispatchEvent(new Event(AUTH_EVENT));
+  } catch {
+    /* 서버에서 실행될 때는 무시 */
+  }
+};
+
+/** 계정이 바뀔 때마다 callback 호출 (다른 탭에서 바뀐 것 포함). 돌려주는 함수로 구독 해제 */
+export function onAuthChange(callback: () => void): () => void {
+  const onStorage = (e: StorageEvent) => e.key === ACCOUNT_KEY && callback();
+  window.addEventListener(AUTH_EVENT, callback);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(AUTH_EVENT, callback);
+    window.removeEventListener("storage", onStorage);
+  };
+}
 
 const save = (key: string, value: unknown) => {
   try {
@@ -147,6 +169,7 @@ const save = (key: string, value: unknown) => {
   } catch {
     /* 저장소를 쓸 수 없는 환경(시크릿 모드 등)은 무시 */
   }
+  if (key === ACCOUNT_KEY) notifyAuth();
 };
 
 const load = <T>(key: string): T | null => {
@@ -164,6 +187,7 @@ const remove = (...keys: string[]) => {
   } catch {
     /* 무시 */
   }
+  if (keys.includes(ACCOUNT_KEY)) notifyAuth();
 };
 
 const startSession = (token: string, account: Account) => {
@@ -244,7 +268,7 @@ export async function signUp({ email, nickname, password, agreements }: SignUpPa
   if (!API_BASE_URL) {
     await new Promise((resolve) => setTimeout(resolve, 500));
     const account: Account = {
-      email,
+      email: email.trim().toLowerCase(),
       nickname,
       marketing_opt_in: agreements.marketing,
       created_at: new Date().toISOString(),
@@ -266,8 +290,9 @@ export async function signUp({ email, nickname, password, agreements }: SignUpPa
 export async function logIn({ email, password }: LogInPayload): Promise<Account> {
   if (!API_BASE_URL) {
     await new Promise((resolve) => setTimeout(resolve, 400));
-    const saved = load<Account>(ACCOUNT_KEY);
-    if (!saved || saved.email !== email) throw new ApiError("이 브라우저에 가입한 기록이 없어요. (백엔드 미연결 모드)", 400);
+    const saved = load<Account>(ACCOUNT_KEY) ?? load<Account>(MOCK_ACCOUNT_KEY);
+    if (!saved || saved.email !== email.trim().toLowerCase()) throw new ApiError("이 브라우저에 가입한 기록이 없어요. (백엔드 미연결 모드)", 400);
+    save(ACCOUNT_KEY, saved);
     return saved;
   }
   const res = await request<{ token: string; member: MemberResponse }>("/auth/login/", {
@@ -282,6 +307,8 @@ export async function logIn({ email, password }: LogInPayload): Promise<Account>
 }
 
 export async function signOut(): Promise<void> {
+  const current = load<Account>(ACCOUNT_KEY);
+  if (!API_BASE_URL && current) save(MOCK_ACCOUNT_KEY, current); // 미연결 모드에서 다시 로그인할 수 있게
   if (API_BASE_URL && load<string>(TOKEN_KEY)) {
     await request("/auth/logout/", { method: "POST", auth: true }).catch(() => undefined);
   }

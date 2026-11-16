@@ -17,6 +17,7 @@ export function Modal({
   children,
   width = "max-w-[600px]",
   closeOnBackdrop = true,
+  panelClassName = "bg-[#141416]",
 }: {
   open: boolean;
   onClose: () => void;
@@ -27,6 +28,8 @@ export function Modal({
   children: ReactNode;
   width?: string;
   closeOnBackdrop?: boolean;
+  /** 상자 배경 바꾸기 (예: 로그인 창의 푸른 그라데이션) */
+  panelClassName?: string;
 }) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -55,7 +58,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative max-h-[90vh] w-full ${width} overflow-y-auto rounded-2xl border border-white/10 bg-[#141416] p-8 text-white shadow-[0_24px_80px_rgba(0,0,0,0.6)] outline-none`}
+        className={`relative max-h-[90vh] w-full ${width} overflow-y-auto rounded-2xl border border-white/[0.12] ${panelClassName} p-6 text-white md:p-10 shadow-[0_24px_80px_rgba(0,0,0,0.6)] outline-none`}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">{eyebrow}</div>
@@ -69,7 +72,7 @@ export function Modal({
           </button>
         </div>
         {title && (
-          <h2 id={titleId} className="mt-4 text-[28px] font-black leading-tight tracking-tight">
+          <h2 id={titleId} className="mt-2.5 text-[26px] font-bold leading-[1.4] tracking-[-0.6px] md:text-[30px]">
             {title}
           </h2>
         )}

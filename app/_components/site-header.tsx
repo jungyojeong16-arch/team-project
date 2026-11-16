@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Bell, Search, User } from "lucide-react";
-import { getAccount, type Account } from "../_lib/account";
 import { NAV_LINKS } from "../_lib/catalog";
+import { useAccount } from "../_lib/use-account";
+import { openLoginModal } from "./login-modal";
 import { ProfileMenu } from "./profile-menu";
 
 /* ============================================================================
@@ -16,13 +17,10 @@ import { ProfileMenu } from "./profile-menu";
 
 export function SiteHeader({ onSearch }: { onSearch?: (query: string) => void }) {
   const pathname = usePathname();
-  const [account, setAccount] = useState<Account | null>(null);
+  const { account } = useAccount();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [query, setQuery] = useState("");
-
-  // 로그인 정보는 브라우저에만 있으므로 화면이 뜬 뒤에 읽습니다
-  useEffect(() => setAccount(getAccount()), [pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -108,9 +106,9 @@ export function SiteHeader({ onSearch }: { onSearch?: (query: string) => void })
               </button>
             ) : (
               <div className="flex shrink-0 items-center gap-2 text-sm">
-                <Link href="/login" className="rounded-md px-3 py-1.5 text-white/80 transition hover:text-white">
+                <button type="button" onClick={openLoginModal} className="rounded-md px-3 py-1.5 text-white/80 transition hover:text-white">
                   로그인
-                </Link>
+                </button>
                 <Link
                   href="/signup"
                   className="rounded-md bg-gradient-to-r from-[#d946ef] to-[#f43f5e] px-3 py-1.5 font-bold text-white transition hover:brightness-110"
