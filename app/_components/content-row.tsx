@@ -16,12 +16,15 @@ export function ContentRow({
   subtitle,
   icon,
   seeAllHref,
+  tight = false,
   children,
 }: {
   title: string;
   subtitle?: string;
   icon?: ReactNode;
   seeAllHref?: string;
+  /** 제목과 카드 사이 간격 — 기본 20px (Figma 9:73), tight 면 4px (Figma 40:1954) */
+  tight?: boolean;
   children: ReactNode;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -52,21 +55,21 @@ export function ContentRow({
     <section className="group/row relative">
       <div className="flex items-end justify-between gap-4 px-4 md:px-12">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-white md:text-2xl">
+          <h2 className="flex items-center gap-2 text-lg font-bold leading-normal text-white md:text-2xl">
             {icon}
             {title}
           </h2>
           {subtitle && <p className="mt-1 text-xs text-white/50 md:text-sm">{subtitle}</p>}
         </div>
         {seeAllHref && (
-          <Link href={seeAllHref} className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-white/50 transition hover:text-white md:text-sm">
+          <Link href={seeAllHref} className="mb-0.5 flex shrink-0 items-center gap-0.5 text-xs font-medium text-white/50 transition hover:text-white md:text-sm">
             전체보기
             <ChevronRight className="h-4 w-4" />
           </Link>
         )}
       </div>
 
-      <div className="relative">
+      <div className={`relative ${tight ? "mt-1" : "mt-5"}`}>
         <button
           type="button"
           aria-label="이전"
@@ -78,7 +81,7 @@ export function ContentRow({
         <div
           ref={scrollerRef}
           onScroll={updateArrows}
-          className={`${SCROLLBAR_HIDE} flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 py-5 md:scroll-px-12 md:gap-4 md:px-12`}
+          className={`${SCROLLBAR_HIDE} flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 py-5 md:scroll-px-12 md:gap-4 md:pl-12 md:pr-12`}
         >
           {children}
         </div>

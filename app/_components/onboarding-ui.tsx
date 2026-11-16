@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Check, Lock } from "lucide-react";
 import { PLATFORM_STYLES, type PlatformCode } from "../_lib/viewfit";
+import { FONT_FAMILY, ViewFitFont } from "./viewfit-font";
 
 /* ============================================================================
  * 회원가입 · 온보딩 공용 UI (Figma: ViewFit 회원가입 / ViewFit 설문)
@@ -73,7 +74,11 @@ export function AmbientBackdrop() {
 
 export function AuthPage({ header, children }: { header: ReactNode; children: ReactNode }) {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#0a0a0a] text-white antialiased selection:bg-fuchsia-500/40">
+    <div
+      className="relative flex min-h-screen flex-col overflow-hidden bg-[#0a0a0a] text-white antialiased selection:bg-fuchsia-500/40"
+      style={{ fontFamily: FONT_FAMILY }}
+    >
+      <ViewFitFont />
       <AmbientBackdrop />
       {header}
       <main className="relative z-10 flex-1">{children}</main>

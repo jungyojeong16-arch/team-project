@@ -35,8 +35,8 @@ function useHomeFeed() {
 function HomeSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-[85vh] min-h-[580px] w-full bg-gradient-to-b from-white/[0.06] to-[#0a0a0a]" />
-      <div className="-mt-16 px-4 md:-mt-24 md:px-12">
+      <div className="h-[720px] w-full bg-gradient-to-b from-white/[0.06] to-[#0a0a0a]" />
+      <div className="px-4 pt-2 md:px-12">
         <LoadingCards rows={2} count={8} />
       </div>
     </div>
@@ -62,7 +62,7 @@ function HomeFeedView() {
   }, [feed]);
 
   return (
-    <SiteShell underHeader>
+    <SiteShell variant="home" underHeader>
       {error ? (
         <div className="pt-16">
           <ErrorState message={error} onRetry={retry} />
@@ -72,9 +72,12 @@ function HomeFeedView() {
       ) : (
         <>
           <TodayPick hero={feed.hero} user={feed.user} tpo={feed.tpo} />
-          <div className="relative z-10 -mt-20 space-y-6 pb-16 md:-mt-28 md:space-y-10">
-            <RecommendRow nickname={feed.user.nickname} movies={feed.recommendations ?? []} />
-            <RankingTop10 items={feed.rankings} />
+          {/* Figma "Content Rows": 위 8 · 아래 72 · 줄 사이 48 (맞춤 추천작품과 랭킹 TOP 10 은 한 묶음, 사이 20) */}
+          <div className="flex flex-col gap-12 pb-[72px] pt-2">
+            <div className="flex flex-col gap-5">
+              <RecommendRow nickname={feed.user.nickname} movies={feed.recommendations ?? []} />
+              <RankingTop10 items={feed.rankings} />
+            </div>
             <CrossAgePicks movies={feed.cross_age_picks} myAge={feed.user.age_group} />
             <PeerPicks nickname={feed.user.nickname} myAge={feed.user.age_group} movies={peerCandidates} />
           </div>

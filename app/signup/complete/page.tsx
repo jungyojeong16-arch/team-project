@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { AmbientBackdrop, Logo, PRIMARY_BUTTON } from "../../_components/onboarding-ui";
 import { getAccount } from "../../_lib/account";
+import { FONT_FAMILY, ViewFitFont } from "../../_components/viewfit-font";
 
 /* ============================================================================
  * 1-1 회원가입 완료 안내 (Figma "ViewFit 회원가입 완료 안내" 61:591)
@@ -27,7 +28,11 @@ export default function SignUpCompletePage() {
   if (!ready) return <div className="min-h-screen bg-[#0a0a0a]" />;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0a0a] px-4 py-12 text-white antialiased">
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0a0a] px-4 py-12 text-white antialiased"
+      style={{ fontFamily: FONT_FAMILY }}
+    >
+      <ViewFitFont />
       <AmbientBackdrop />
       <section className="relative w-full max-w-[600px] overflow-hidden rounded-2xl border border-white/[0.12] bg-gradient-to-b from-[#14213a] via-[#0d111b] via-[52%] to-[#0d111b] p-6 shadow-[0_24px_64px_rgba(0,0,0,0.5)] md:p-10">
         <div

@@ -30,11 +30,14 @@ export type PosterCardProps = {
   size?: "md" | "lg";
 };
 
+/** 포스터가 없을 때 Figma 랭킹 카드처럼 쓰는 색 (124° 그라데이션) */
 const FALLBACK_GRADIENTS = [
-  "from-[#fda4af] via-[#7c3aed] to-[#1e1b4b]",
-  "from-[#f59e0b] via-[#c2410c] to-[#431407]",
-  "from-[#38bdf8] via-[#1d4ed8] to-[#0b1020]",
-  "from-[#34d399] via-[#0f766e] to-[#042f2e]",
+  "linear-gradient(124deg, #f59e0b 0%, #c2410c 50%, #431407 100%)",
+  "linear-gradient(124deg, #fda4af 0%, #7c3aed 50%, #1e1b4b 100%)",
+  "linear-gradient(124deg, #38bdf8 0%, #1d4ed8 50%, #0b1020 100%)",
+  "linear-gradient(124deg, #34d399 0%, #0f766e 50%, #042f2e 100%)",
+  "linear-gradient(124deg, #f472b6 0%, #be185d 50%, #3b0a24 100%)",
+  "linear-gradient(124deg, #a78bfa 0%, #4338ca 50%, #111033 100%)",
 ];
 
 export function PosterCard({
@@ -52,7 +55,7 @@ export function PosterCard({
 }: PosterCardProps) {
   const [primary, ...others] = platforms;
   const [broken, setBroken] = useState(false);
-  const fallback = FALLBACK_GRADIENTS[title.length % FALLBACK_GRADIENTS.length];
+  const fallback = FALLBACK_GRADIENTS[[...title].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % FALLBACK_GRADIENTS.length];
   const width = size === "lg" ? "w-[150px] sm:w-[170px] md:w-[200px]" : "w-[140px] sm:w-[160px] md:w-[190px]";
 
   const body = (
@@ -67,8 +70,8 @@ export function PosterCard({
             className="h-full w-full object-cover transition duration-500 group-hover/card:scale-110"
           />
         ) : (
-          <div className={`flex h-full w-full items-start justify-center bg-gradient-to-br ${fallback} px-3 pt-[15%]`}>
-            <span className="text-center text-xl font-black text-white/90">{title}</span>
+          <div className="flex h-full w-full items-start justify-center px-3 pt-[15%]" style={{ backgroundImage: fallback }}>
+            <span className="text-center text-xl font-black text-white/[0.92]">{title}</span>
           </div>
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/10 via-45% to-black/90" />
@@ -84,7 +87,7 @@ export function PosterCard({
         {topRight && <div className="absolute right-[7px] top-[7px] z-10">{topRight}</div>}
 
         {rank !== undefined && (
-          <span className="pointer-events-none absolute -bottom-2 left-[9px] font-[Inter,sans-serif] text-[64px] font-black italic leading-none text-transparent drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] [-webkit-text-stroke:2px_rgba(255,255,255,0.95)] md:text-[76px]">
+          <span style={{ fontFamily: "Inter, sans-serif" }} className="pointer-events-none absolute -bottom-2 left-[9px] text-[64px] font-black italic leading-none text-transparent drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] [-webkit-text-stroke:2px_rgba(255,255,255,0.95)] md:text-[76px]">
             {rank}
           </span>
         )}

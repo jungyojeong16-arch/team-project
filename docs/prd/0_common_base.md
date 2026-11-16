@@ -101,6 +101,9 @@
 | `app/_components/content-row.tsx` | 가로로 넘기는 카드 줄 |
 | `app/_components/coming-soon.tsx` + `app/ranking`, `recommend`, `generation`, `me/likes`, `me/ratings`, `me/taste` | 아직 없는 화면 자리 ("준비 중") — 담당자가 진짜 화면으로 교체 |
 | `app/dev/components/page.tsx` | 부품 모음 페이지 |
+| `app/_components/viewfit-font.tsx` | Figma 글꼴(Noto Sans KR · 순위 숫자 Inter) — 화면 틀에서 직접 불러옴 (11/16) |
+
+> 11/16: 홈은 Figma 9:5 전용 상단 바(돋보기 아이콘·테두리 없음)와 하단을 쓰도록 `variant="home"` 추가, 오늘의 추천 영역을 높이 720·빛 번짐 배경으로 Figma와 맞춤.
 
 > `layout.tsx` 는 GitHub에 없고 각자 PC에만 있어서, 상단 바는 `layout.tsx` 대신 화면마다 `<SiteShell>` 로 감싸는 방식으로 했습니다.
 

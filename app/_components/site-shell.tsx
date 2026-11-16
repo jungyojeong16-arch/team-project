@@ -1,29 +1,38 @@
 import type { ReactNode } from "react";
-import { SiteFooter } from "./site-footer";
 import { LoginModalHost } from "./login-modal";
+import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
+import { FONT_FAMILY, ViewFitFont } from "./viewfit-font";
 
 /* ============================================================================
  * 0-3 공통 화면 틀 — 상단 바 + 내용 + 하단
  * 회원가입·로그인·설문처럼 Figma 에서 상단 바가 다른 화면을 빼고, 모든 화면을 이걸로 감쌉니다.
- *   <SiteShell>…</SiteShell>                 내용이 상단 바 아래(64px)부터 시작
- *   <SiteShell underHeader>…</SiteShell>     홈처럼 큰 배경 위에 상단 바가 겹치는 화면
+ *   <SiteShell>…</SiteShell>                       내용이 상단 바 아래(64px)부터 시작 (통합 랭킹 등)
+ *   <SiteShell variant="home" underHeader>…        홈: 상단 바가 큰 배경 위에 겹치고, 홈 전용 상단 바·하단 (Figma 9:5)
  * ========================================================================== */
+
+export type ShellVariant = "home" | "default";
 
 export function SiteShell({
   children,
   underHeader = false,
+  variant = "default",
   onSearch,
 }: {
   children: ReactNode;
   underHeader?: boolean;
+  variant?: ShellVariant;
   onSearch?: (query: string) => void;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#0a0a0a] text-white antialiased selection:bg-fuchsia-500/40">
-      <SiteHeader onSearch={onSearch} />
+    <div
+      className="flex min-h-screen flex-col bg-[#0a0a0a] text-white antialiased selection:bg-fuchsia-500/40"
+      style={{ fontFamily: FONT_FAMILY }}
+    >
+      <ViewFitFont />
+      <SiteHeader variant={variant} onSearch={onSearch} />
       <main className={`flex-1 ${underHeader ? "" : "pt-16"}`}>{children}</main>
-      <SiteFooter />
+      <SiteFooter variant={variant} />
       <LoginModalHost />
     </div>
   );

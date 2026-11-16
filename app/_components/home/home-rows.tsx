@@ -117,6 +117,7 @@ export function CrossAgePicks({ movies, myAge }: { movies: Movie[]; myAge: AgeGr
       subtitle="포스터에 마우스를 올려 20대 · 30대 · 40대 평점을 비교해 보세요"
       icon={<Users className="h-5 w-5 text-sky-400 md:h-6 md:w-6" />}
       seeAllHref="/generation"
+      tight
     >
       {movies.map((movie) => (
         <CrossAgeCard key={movie.id} movie={movie} highlightAge={myAge} />
@@ -135,6 +136,7 @@ export function PeerPicks({ nickname, myAge, movies }: { nickname: string; myAge
       subtitle={`${label} 평균 평점 기준 정렬`}
       icon={<Sparkles className="h-5 w-5 text-fuchsia-400 md:h-6 md:w-6" />}
       seeAllHref="/generation"
+      tight
     >
       {sorted.map((movie) => (
         <CrossAgeCard key={movie.id} movie={movie} highlightAge={myAge} />

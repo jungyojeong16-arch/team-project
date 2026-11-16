@@ -158,8 +158,9 @@ export const MOCK_GENRES = {
   HISTORY: { id: 36, name: "역사" },
 } satisfies Record<string, Genre>;
 
-export const poster = (seed: string) => `https://picsum.photos/seed/viewfit-${seed}/500/750`;
-export const backdrop = (seed: string) => `https://picsum.photos/seed/viewfit-${seed}-bd/1920/1080`;
+// 예시 데이터는 Figma 처럼 사진 없이 색 배경 + 제목으로 보여 줍니다 (진짜 포스터는 2-1 TMDB 연결 후)
+export const poster = (_seed: string) => "";
+export const backdrop = (_seed: string) => "";
 
 export const MOCK_MOVIES: Movie[] = [
   {
