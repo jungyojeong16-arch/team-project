@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ✅ 틀 완료(11/10, 가짜 데이터) — 영역 부품 `app/_components/home/` (today-pick, home-rows). 영역별 진짜 데이터 연결은 2-1·6-1·7-1이 끝난 뒤 ⬜ |
+| 상태 | ✅ 틀 완료(11/10) · 🟡 진짜 데이터 연결(11/17) — `GET /api/v1/home/feed/`(`backend/core/home.py`)가 수집한 작품으로 홈을 채움. 오늘의 추천·맞춤 추천은 취향 점수 간단 버전, 통합 랭킹은 평균 평점 임시 계산, 상황은 시간대 규칙(밤 → 혼자 보는 밤, 평일 저녁 → 퇴근 후 …). 6-1·7-1이 끝나면 그 결과로 교체 ⬜ |
 | Figma | [Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5) · [프로필 메뉴 열림](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=40-1849) |
 | 코드 | `app/page.tsx`, `app/_lib/viewfit.ts`(fetchHomeFeed — 지금은 404면 가짜 데이터) |
 | 테이블 | 조회만: content, recommendation, ranking, rating, member |

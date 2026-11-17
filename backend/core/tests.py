@@ -397,3 +397,119 @@ class SeedDemoTests(TestCase):
         Content.objects.all().delete()
         with self.assertRaisesMessage(CommandError, "import_tmdb"):
             call_command("seed_demo", stdout=StringIO())
+
+
+# =============================================================================
+# 4-1 작품 검색·상세·바로 보기 (백엔드) / 0-4 홈 피드
+# =============================================================================
+
+
+class ContentDetailAndHomeFeedTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentGenre, ContentPlatform, ContentTpo, Genre, Platform, Tpo
+
+        g = {n: Genre.objects.get(name=n) for n in ["드라마", "공포", "스릴러"]}
+        netflix, tving = Platform.objects.get(code="NETFLIX"), Platform.objects.get(code="TVING")
+        night = Tpo.objects.get(name="혼자 보는 밤")
+
+        def make(title, genre, platform=netflix):
+            c = Content.objects.create(title=title, content_type="movie", release_year=2024)
+            ContentGenre.objects.create(content=c, genre=g[genre])
+            if platform:
+                ContentPlatform.objects.create(content=c, platform=platform, deeplink_url=f"https://x/{title}")
+            return c
+
+        cls.thriller = make("밤의 추적자", "스릴러")
+        ContentTpo.objects.create(content=cls.thriller, tpo=night)
+        cls.horror = make("공포의 밤", "공포", tving)
+        cls.drama = make("가족 드라마", "드라마")
+        cls.no_ott = make("OTT 없는 작품", "스릴러", platform=None)
+        cls.member = Member.objects.create_user("me@x.kr", "나", "viewfit123!", age_group="20s", job="student")
+        cls.member.genre_preferences.create(genre=g["스릴러"], kind="like")
+        cls.member.genre_preferences.create(genre=g["공포"], kind="dislike")
+        for i, age in enumerate(["20s", "30s", "40s"] * 3):
+            rater = Member.objects.create_user(f"r{i}@x.kr", f"평가{i}", "viewfit123!", age_group=age)
+            Rating.objects.create(member=rater, content=cls.drama, score=Decimal("4.5"))
+
+    # --- 4-1 ---
+    def test_search(self):
+        self.assertEqual(self.client.get("/api/v1/contents/search/", {"q": "밤"}).status_code, 400)  # 1글자
+        res = self.client.get("/api/v1/contents/search/", {"q": "드라마"})
+        self.assertEqual([r["title"] for r in res.data], ["가족 드라마"])
+        self.assertEqual(set(res.data[0]), {"id", "title", "content_type", "release_year", "poster_url"})
+
+    def test_detail_has_card_fields_and_my(self):
+        res = self.client.get(f"/api/v1/contents/{self.drama.id}/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["rating"]["total_count"], 9)
+        self.assertIsNone(res.data["my"])  # 로그인 안 하면 null
+        self.client.force_authenticate(self.member)
+        Rating.objects.create(member=self.member, content=self.drama, score=Decimal("3.5"))
+        self.assertEqual(self.client.get(f"/api/v1/contents/{self.drama.id}/").data["my"], {"score": 3.5, "liked": False})
+        res = self.client.get("/api/v1/contents/999999/")
+        self.assertEqual((res.status_code, res.data["detail"]), (404, "작품을 찾을 수 없어요."))
+
+    def test_watch_records_direct_history(self):
+        from .models import WatchHistory
+
+        url = f"/api/v1/contents/{self.thriller.id}/watch/"
+        self.assertEqual(self.client.post(url, {"platform": "NETFLIX"}, format="json").status_code, 401)
+        self.client.force_authenticate(self.member)
+        self.assertEqual(self.client.post(url, {"platform": "TVING"}, format="json").status_code, 400)  # 이 작품엔 없는 OTT
+        self.assertEqual(self.client.post(url, {"platform": "NETFLIX"}, format="json").status_code, 204)
+        self.assertEqual(WatchHistory.objects.get(member=self.member).source, "direct")
+
+    # --- 0-4 ---
+    def feed(self, hour=23):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        from .home import build_home_feed
+
+        now = datetime(2026, 11, 17, hour, 0, tzinfo=ZoneInfo("Asia/Seoul"))  # 화요일
+        return build_home_feed(self.member, now=now)
+
+    def test_feed_shape_matches_frontend(self):
+        self.client.force_authenticate(self.member)
+        res = self.client.get("/api/v1/home/feed/")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.data["success"])
+        data = res.data["data"]
+        self.assertEqual(set(data), {"user", "tpo", "hero", "recommendations", "rankings", "cross_age_picks"})
+        self.assertEqual(data["user"], {"id": self.member.id, "nickname": "나", "age_group": "20s", "occupation": "학생"})
+        self.assertEqual(set(data["rankings"][0]), {"rank", "rank_change", "is_new", "movie"})
+
+    def test_recommendations_follow_taste(self):
+        data = self.feed(hour=23)  # 밤 11시 → 혼자 보는 밤
+        self.assertEqual(data["tpo"]["situation"], "혼자 보는 밤")
+        self.assertEqual(data["tpo"]["time_slot"], "late_night")
+        titles = [m["title"] for m in data["recommendations"]]
+        self.assertEqual(titles[0], "밤의 추적자")  # 선호 장르 + 상황 연결
+        self.assertEqual(data["hero"]["movie"]["title"], "밤의 추적자")
+        self.assertNotIn("공포의 밤", titles)  # 비선호 장르 제외
+        self.assertNotIn("OTT 없는 작품", titles)  # OTT 없는 작품 제외
+
+    def test_rated_content_not_recommended_and_cross_age(self):
+        Rating.objects.create(member=self.member, content=self.thriller, score=Decimal("3.0"))
+        data = self.feed()
+        self.assertNotIn("밤의 추적자", [m["title"] for m in data["recommendations"]])
+        self.assertEqual([m["title"] for m in data["cross_age_picks"]], ["가족 드라마"])  # 20·30·40대 각 3개 이상
+        self.assertEqual(data["rankings"][0]["movie"]["title"], "가족 드라마")
+
+    def test_situation_by_time(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        from .home import situation_for
+
+        seoul = ZoneInfo("Asia/Seoul")
+        self.assertEqual(situation_for(datetime(2026, 11, 17, 19, tzinfo=seoul)), "퇴근 후")  # 화 저녁
+        self.assertEqual(situation_for(datetime(2026, 11, 21, 19, tzinfo=seoul)), "주말에 함께")  # 토 저녁
+        self.assertEqual(situation_for(datetime(2026, 11, 22, 14, tzinfo=seoul)), "가족과 함께")  # 일 오후
+
+    def test_empty_db_feed(self):
+        Content.objects.all().delete()
+        data = self.feed()
+        self.assertIsNone(data["hero"])
+        self.assertEqual(data["recommendations"], [])

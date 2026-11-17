@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/19) |
+| 상태 | 🟡 백엔드 API 3개 완료 (11/17, 홍준화 — 검색·상세(`my` 포함)·바로 보기 기록, 테스트 통과) · 화면(검색창 동작, 상세 팝업, [바로 보기]·[상세 정보] 버튼 연결) ⬜ 정재준 |
 | Figma | 상단 검색창 "어떤 이야기를 찾으세요?"(모든 화면), [상세 정보]·[바로 보기] 버튼([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)). 상세 화면 자체는 Figma에 없음 (D5) |
 | 코드(예정) | `backend/core/views.py`(content_search, content_detail, content_watch), `app/_components/content-modal.tsx` |
 | 테이블 | `content`, `content_genre`, `content_platform`, `rating`, `content_like`, `watch_history`(source=direct) |

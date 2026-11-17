@@ -7,6 +7,12 @@ API 목록 (주소 앞에 /api/v1 이 붙음)
 
   [0번 공통]
   GET  /contents/              작품 카드 목록 (type·platform·genre·tpo 필터, offset·limit)
+  GET  /home/feed/             홈 화면 데이터 (0-4, 로그인하면 내 취향 반영)
+
+  [4-1 작품]
+  GET  /contents/search/?q=    제목 검색 (2글자 이상, 최대 20개)
+  GET  /contents/<id>/         작품 상세 + my{score, liked}
+  POST /contents/<id>/watch/   [바로 보기] 시청 기록 {platform}   * 로그인 필요
 
   [회원]
   GET  /auth/check-nickname/?nickname=  닉네임 사용 가능 여부
@@ -19,15 +25,18 @@ API 목록 (주소 앞에 /api/v1 이 붙음)
 로그인이 필요한 API 는 요청 헤더에  Authorization: Token <토큰>  을 붙입니다.
 """
 from django.db import connection, transaction
+from django.db.models import Count
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from . import models as m
 from .common import contents_for_cards, filter_contents, paginate
+from .home import build_home_feed
 from .serializers import (
     ContentCardSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname,
 )
@@ -166,3 +175,78 @@ def save_survey(request):
             + [m.GenrePreference(member=member, genre=genres[n], kind=m.PreferenceKind.DISLIKE) for n in data["disliked_genres"]]
         )
     return Response(me_payload(member))
+
+
+# -----------------------------------------------------------------------------
+# 4-1 작품 검색 · 상세 · OTT 바로가기 (백엔드 — 화면은 정재준)
+# -----------------------------------------------------------------------------
+
+SEARCH_LIMIT = 20
+
+
+def _content_or_404(content_id):
+    content = contents_for_cards(m.Content.objects.filter(pk=content_id)).first()
+    if content is None:
+        raise NotFound("작품을 찾을 수 없어요.")
+    return content
+
+
+@api_view(["GET"])
+def content_search(request):
+    """제목에 q 가 들어간 작품 최대 20개 (FR1). 2글자 미만이면 400."""
+    q = request.query_params.get("q", "").strip()
+    if len(q) < 2:
+        return Response({"q": ["두 글자 이상 입력해 주세요."]}, status=status.HTTP_400_BAD_REQUEST)
+    rows = (
+        m.Content.objects.filter(title__icontains=q)
+        .annotate(rating_count=Count("ratings"))
+        .order_by("-rating_count", "id")
+        .values("id", "title", "content_type", "release_year", "poster_url")[:SEARCH_LIMIT]
+    )
+    return Response(list(rows))
+
+
+@api_view(["GET"])
+def content_detail(request, content_id):
+    """작품 상세 = 작품 카드 + my{score, liked} (로그인했을 때만, 아니면 null)"""
+    content = _content_or_404(content_id)
+    data = ContentCardSerializer(content).data
+    my = None
+    if request.user.is_authenticated:
+        rating = m.Rating.objects.filter(member=request.user, content=content).first()
+        my = {
+            "score": float(rating.score) if rating else None,
+            "liked": m.ContentLike.objects.filter(member=request.user, content=content).exists(),
+        }
+    data["my"] = my
+    return Response(data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def content_watch(request, content_id):
+    """[바로 보기] 를 누르면 시청 기록(source=direct) 저장 (FR5). body: {platform: "NETFLIX"}"""
+    content = _content_or_404(content_id)
+    code = (request.data or {}).get("platform", "")
+    if not m.ContentPlatform.objects.filter(content=content, platform__code=code).exists():
+        codes = ", ".join(cp.platform.code for cp in content.contentplatform_set.all())
+        return Response({"platform": [f"이 작품을 볼 수 있는 OTT가 아니에요. ({codes})"]}, status=status.HTTP_400_BAD_REQUEST)
+    m.WatchHistory.objects.create(member=request.user, content=content, source=m.WatchSource.DIRECT)
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# -----------------------------------------------------------------------------
+# 0-4 홈 피드 (3명 공동) — 계산은 core/home.py
+# -----------------------------------------------------------------------------
+
+
+@api_view(["GET"])
+def home_feed(request):
+    member = request.user if request.user.is_authenticated else None
+    return Response(
+        {
+            "success": True,
+            "data": build_home_feed(member),
+            "meta": {"generated_at": timezone.localtime().isoformat(timespec="seconds"), "version": "v1"},
+        }
+    )

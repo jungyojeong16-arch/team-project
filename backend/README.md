@@ -9,6 +9,7 @@ backend/
 ├─ config/              프로젝트 설정 (settings.py, urls.py)
 └─ core/                ViewFit 기능
    ├─ models.py         테이블 14개 정의 (물리 ERD)
+   ├─ home.py           0-4 홈 피드 계산 (랭킹·추천은 6-1·7-1 전 임시 버전)
    ├─ tmdb.py           2-1 TMDB 연결 · 장르/OTT/상황 연결 규칙
    ├─ management/commands/  import_tmdb(작품 수집), seed_demo(시연용 가상 평점)
    ├─ common.py         0번 공통 도구: offset·limit 목록, 필터, 작품 카드용 목록
@@ -86,6 +87,10 @@ python manage.py runserver
 | GET | `/health/` | 서버·DB 연결 상태 |
 | GET | `/options/` | 설문 선택지 (연령대·직업·장르·OTT·상황) |
 | GET | `/contents/?type=movie&platform=NETFLIX&genre=드라마&tpo=혼자 보는 밤&offset=0&limit=20` | 작품 카드 목록 (0번 공통, 평가 수 많은 순) |
+| GET | `/home/feed/` | 홈 화면 데이터 (0-4). 로그인하면 내 취향 반영 — 랭킹·추천은 6-1·7-1 완성 전 임시 계산 |
+| GET | `/contents/search/?q=어벤` | 제목 검색 (4-1, 2글자 이상, 최대 20개) |
+| GET | `/contents/33/` | 작품 상세 + 내 평점·좋아요 `my` (4-1) |
+| POST | `/contents/33/watch/` 🔒 | [바로 보기] 시청 기록 `{"platform": "NETFLIX"}` (4-1) |
 | GET | `/auth/check-nickname/?nickname=준교` | 닉네임 사용 가능 여부 |
 | POST | `/auth/signup/` | 회원가입 → 토큰 |
 | POST | `/auth/login/` | 로그인 → 토큰 |
@@ -129,7 +134,7 @@ python manage.py seed_demo --clear                    # 가상 회원과 그 기
 ```powershell
 python manage.py test core
 ```
-회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지, 0번 공통 목록 규칙(offset·limit·필터·오류 모양·작품 카드 모양), 2-1 작품 수집(가짜 TMDB 응답)·시연 데이터, D6·D7 칸까지 25가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
+회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지, 0번 공통 목록 규칙(offset·limit·필터·오류 모양·작품 카드 모양), 2-1 작품 수집(가짜 TMDB 응답)·시연 데이터, D6·D7 칸, 4-1 검색·상세·바로 보기, 0-4 홈 피드까지 33가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
 > MariaDB 로 테스트하려면 viewfit 계정에 테스트용 DB 권한이 필요합니다. MariaDB 클라이언트에서 한 번만:
 > `GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'127.0.0.1'; GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'localhost';`
 

@@ -71,7 +71,7 @@ function HomeFeedView() {
         <HomeSkeleton />
       ) : (
         <>
-          <TodayPick hero={feed.hero} user={feed.user} tpo={feed.tpo} />
+          {feed.hero && <TodayPick hero={feed.hero} user={feed.user} tpo={feed.tpo} />}
           {/* Figma "Content Rows": 위 8 · 아래 72 · 줄 사이 48 (맞춤 추천작품과 랭킹 TOP 10 은 한 묶음, 사이 20) */}
           <div className="flex flex-col gap-12 pb-[72px] pt-2">
             <div className="flex flex-col gap-5">
@@ -79,7 +79,7 @@ function HomeFeedView() {
               <RankingTop10 items={feed.rankings} />
             </div>
             <CrossAgePicks movies={feed.cross_age_picks} myAge={feed.user.age_group} />
-            <PeerPicks nickname={feed.user.nickname} myAge={feed.user.age_group} movies={peerCandidates} />
+            {feed.user.age_group && <PeerPicks nickname={feed.user.nickname} myAge={feed.user.age_group} movies={peerCandidates} />}
           </div>
         </>
       )}

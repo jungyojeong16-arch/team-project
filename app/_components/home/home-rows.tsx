@@ -55,7 +55,7 @@ export function RankingTop10({ items }: { items: RankingItem[] }) {
 }
 
 /** 포스터에 마우스를 올리면 나오는 세대별 평점 비교 */
-function CrossAgeOverlay({ movie, highlightAge }: { movie: Movie; highlightAge: AgeGroup }) {
+function CrossAgeOverlay({ movie, highlightAge }: { movie: Movie; highlightAge: AgeGroup | null }) {
   const rows = AGE_GROUPS.map((age) => ({ age, average: getAgeAverage(movie, age) }));
   const top = rows.reduce((a, b) => (b.average > a.average ? b : a));
   const gap = Math.max(...rows.map((r) => r.average)) - Math.min(...rows.map((r) => r.average));
@@ -95,7 +95,7 @@ function CrossAgeOverlay({ movie, highlightAge }: { movie: Movie; highlightAge: 
   );
 }
 
-function CrossAgeCard({ movie, highlightAge }: { movie: Movie; highlightAge: AgeGroup }) {
+function CrossAgeCard({ movie, highlightAge }: { movie: Movie; highlightAge: AgeGroup | null }) {
   return (
     <PosterCard
       size="lg"
@@ -110,7 +110,7 @@ function CrossAgeCard({ movie, highlightAge }: { movie: Movie; highlightAge: Age
 }
 
 /** ④ 세대별 교차 평점 추천 */
-export function CrossAgePicks({ movies, myAge }: { movies: Movie[]; myAge: AgeGroup }) {
+export function CrossAgePicks({ movies, myAge }: { movies: Movie[]; myAge: AgeGroup | null }) {
   return (
     <ContentRow
       title="세대별 교차 평점 추천"
@@ -127,6 +127,7 @@ export function CrossAgePicks({ movies, myAge }: { movies: Movie[]; myAge: AgeGr
 }
 
 /** ⑤ 또래가 극찬한 작품 (내 연령대 평균 높은 순) */
+/** 연령대를 모르면(설문 '응답 안 함') 이 줄은 숨김 — 홈에서 myAge 가 있을 때만 그림 */
 export function PeerPicks({ nickname, myAge, movies }: { nickname: string; myAge: AgeGroup; movies: Movie[] }) {
   const label = AGE_GROUP_META[myAge].label;
   const sorted = [...movies].sort((a, b) => getAgeAverage(b, myAge) - getAgeAverage(a, myAge)).slice(0, 10);

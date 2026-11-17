@@ -8,7 +8,8 @@
  * ========================================================================== */
 
 export type PlatformCode = "NETFLIX" | "TVING" | "COUPANG_PLAY" | "WAVVE" | "DISNEY_PLUS" | "WATCHA";
-export type AgeGroup = "20s" | "30s" | "40s";
+/** 회원 연령대 (DB 기본값과 같음). 세대별 비교 화면은 AGE_GROUPS(20·30·40대)만 보여 줌 */
+export type AgeGroup = "10s" | "20s" | "30s" | "40s" | "50s" | "60s+";
 export type ContentType = "movie" | "series";
 export type AgeRating = "ALL" | "7" | "12" | "15" | "19"; // 한국 관람 등급 (DB content.age_rating, D6)
 export type TimeSlot = "morning" | "afternoon" | "evening" | "late_night";
@@ -64,7 +65,7 @@ export interface RankingItem {
 export interface UserPersona {
   id: number;
   nickname: string;
-  age_group: AgeGroup;
+  age_group: AgeGroup | null; // 설문에서 "응답 안 함"이면 null
   occupation: string;
 }
 
@@ -87,7 +88,7 @@ export interface HeroCuration {
 export interface HomeFeed {
   user: UserPersona;
   tpo: TPOContext;
-  hero: HeroCuration;
+  hero: HeroCuration | null; // 작품 데이터가 하나도 없으면 null
   /** 회원 맞춤 추천작품 줄 (7-1 맞춤 추천 상위 10개) */
   recommendations?: Movie[];
   rankings: RankingItem[];
@@ -117,9 +118,12 @@ export const PLATFORM_STYLES: Record<PlatformCode, { label: string; className: s
 };
 
 export const AGE_GROUP_META: Record<AgeGroup, { label: string; barClass: string; textClass: string }> = {
+  "10s": { label: "10대", barClass: "bg-gradient-to-r from-emerald-500 to-teal-400", textClass: "text-emerald-300" },
   "20s": { label: "20대", barClass: "bg-gradient-to-r from-fuchsia-500 to-pink-400", textClass: "text-fuchsia-300" },
   "30s": { label: "30대", barClass: "bg-gradient-to-r from-sky-500 to-cyan-400", textClass: "text-sky-300" },
   "40s": { label: "40대", barClass: "bg-gradient-to-r from-amber-500 to-yellow-300", textClass: "text-amber-300" },
+  "50s": { label: "50대", barClass: "bg-gradient-to-r from-orange-500 to-red-400", textClass: "text-orange-300" },
+  "60s+": { label: "60대 이상", barClass: "bg-gradient-to-r from-violet-500 to-purple-400", textClass: "text-violet-300" },
 };
 
 export const TIME_SLOT_LABEL: Record<TimeSlot, string> = {
@@ -521,11 +525,22 @@ export const MOCK_HOME_FEED_RESPONSE: ApiResponse<HomeFeed> = {
  * 4. API Layer — NEXT_PUBLIC_API_BASE_URL 설정 시 Django API 호출, 미설정 시 Mock
  * ========================================================================== */
 
+/** 로그인했으면 Authorization 헤더 (토큰 키는 account.ts 의 TOKEN_KEY 와 같음) — 홈 피드가 내 취향을 반영하게 */
+function authHeader(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem("viewfit.token");
+    const token = raw ? (JSON.parse(raw) as string) : null;
+    return token ? { Authorization: `Token ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function fetchHomeFeed(signal?: AbortSignal): Promise<HomeFeed> {
   if (API_BASE_URL) {
     const res = await fetch(`${API_BASE_URL}/api/v1/home/feed/`, {
       signal,
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", ...authHeader() },
     }).catch(() => null);
     // TODO(11/17 주): 홈 피드 API 를 만들면 이 404 대체 처리를 지우기
     if (res?.status === 404 || res === null) {
@@ -550,12 +565,13 @@ export const getAgeAverage = (movie: Movie, age: AgeGroup) =>
 
 export const formatCount = (n: number) => (n >= 10000 ? `${(n / 10000).toFixed(1)}만` : n.toLocaleString("ko-KR"));
 
+/** 상영 시간 · 회차 — 모르면 빈 문자열 (D6 칸이 생기기 전) */
 export const formatDuration = (movie: Movie) =>
   movie.content_type === "movie" && movie.runtime
     ? `${Math.floor(movie.runtime / 60)}시간 ${movie.runtime % 60}분`
-    : movie.episode_count
+    : movie.content_type === "series" && movie.episode_count
       ? `${movie.episode_count}부작`
-      : "시리즈";
+      : "";
 
 export const formatAgeRating = (rating: AgeRating | null) => (!rating ? "" : rating === "ALL" ? "ALL" : `${rating}+`);
 
@@ -563,7 +579,7 @@ export async function fetchContent(id: number, signal?: AbortSignal): Promise<Mo
   if (API_BASE_URL) {
     const res = await fetch(`${API_BASE_URL}/api/v1/contents/${id}/`, {
       signal,
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", ...authHeader() },
     }).catch(() => null);
     // TODO(11/17 주): 작품 API 를 만들면 이 404 대체 처리를 지우기
     if (res && res.status !== 404) {

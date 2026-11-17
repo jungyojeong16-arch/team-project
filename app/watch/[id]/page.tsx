@@ -268,7 +268,7 @@ function Player({ movie }: { movie: Movie }) {
       {/* Stage (더미 영상: 백드롭 + Ken Burns) */}
       <button type="button" aria-label={playing ? "일시정지" : "재생"} onClick={togglePlay} className="absolute inset-0 block h-full w-full">
         <img
-          src={movie.backdrop_url}
+          src={movie.backdrop_url || movie.poster_url || undefined} /* 배경 사진이 없으면(D6 전) 포스터 */
           alt=""
           className="vf-stage h-full w-full object-cover"
           style={{

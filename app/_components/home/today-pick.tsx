@@ -44,7 +44,7 @@ export function TodayPick({ hero, user, tpo }: { hero: HeroCuration; user: UserP
 
         <p className="text-xl font-bold leading-[1.4] text-white/[0.92] md:text-2xl">
           <span className="text-[#f0abfc]">
-            {AGE_GROUP_META[user.age_group].label} {user.occupation} {user.nickname}님,
+            {[user.age_group && AGE_GROUP_META[user.age_group].label, user.occupation, `${user.nickname}님,`].filter(Boolean).join(" ")}
           </span>
           <br />
           {message.headline}
@@ -59,10 +59,8 @@ export function TodayPick({ hero, user, tpo }: { hero: HeroCuration; user: UserP
             <span className="text-white/50">({formatCount(movie.rating.total_count)}명)</span>
           </span>
           <span>{movie.release_year}</span>
-          {movie.age_rating && (
-            <span className="rounded border border-white/40 px-1.5 text-xs">{formatAgeRating(movie.age_rating)}</span>
-          )}
-          <span>{formatDuration(movie)}</span>
+          {movie.age_rating && <span className="rounded border border-white/40 px-1.5 text-xs">{formatAgeRating(movie.age_rating)}</span>}
+          {formatDuration(movie) && <span>{formatDuration(movie)}</span>}
           <span>{movie.genres.map((g) => g.name).join(" · ")}</span>
           {movie.platforms.map((p) => (
             <PlatformBadge key={p.code} code={p.code} />
