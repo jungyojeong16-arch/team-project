@@ -27,17 +27,17 @@
 | [0-4](0-4_home.md) | 홈 화면 (틀 → 영역별 연결) | Home Feed | 조회만 | P1 | 11/10 틀 · 11/24 연결 | 3명 공동 | 🟡 틀 ✅ |
 | [1-1](1-1_signup.md) | 회원가입 | 회원가입, 회원가입 완료 안내 | member | P1 | 11/16 | 정준교 | ✅ |
 | [1-2](1-2_login.md) | 웹 시작 화면·로그인·로그아웃 | 웹 시작 화면, 로그인 창 | member, authtoken | P1 (소셜 P2) | 11/16 | 정준교 | ✅ (소셜 로그인 P2 제외) |
-| [2-1](2-1_tmdb_import.md) | 작품 데이터 수집·시연 데이터 | (관리자 명령) | content, content_genre, content_platform, content_tpo | P1 | 11/17 | 정준교 (검토: 홍준화) | ⬜ |
-| [3-1](3-1_survey.md) | 맞춤 추천 설문 | 맞춤 추천 설문 | member, genre_preference, watch_history | P1 | 11/17 | 정준교 (검토: 홍준화) | 🟡 |
-| [4-1](4-1_search_detail.md) | 작품 검색·상세·OTT 바로가기 | 상단 검색창, 상세 정보·바로 보기 버튼 | content, content_platform, watch_history | P1 | 11/24 | 정준교 (검토: 정재준) | ⬜ |
+| [2-1](2-1_tmdb_import.md) | 작품 데이터 수집·시연 데이터 | (관리자 명령) | content, content_genre, content_platform, content_tpo | P1 | 11/17 | 홍준화 | ⬜ |
+| [3-1](3-1_survey.md) | 맞춤 추천 설문 | 맞춤 추천 설문 | member, genre_preference, watch_history | P1 | 11/17 | 홍준화 | 🟡 |
+| [4-1](4-1_search_detail.md) | 작품 검색·상세·OTT 바로가기 | 상단 검색창, 상세 정보·바로 보기 버튼 | content, content_platform, watch_history | P1 | 11/24 | 정재준 | ⬜ |
 | [5-1](5-1_rating.md) | 평점 (작성·나의 평점·반영 결과) | 나의 평점, 평점 반영 결과 | rating, ranking | P1 | 12/1 | 정준교 | ⬜ |
 | [5-2](5-2_like.md) | 좋아요 | 좋아요 표시한 작품 | content_like | P1 | 12/1 | 정준교 | ⬜ |
 | [6-1](6-1_total_ranking.md) | 통합 랭킹 | 통합 랭킹 | ranking | P1 | 11/24 | 정준교 | ⬜ |
 | [6-2](6-2_generation_ranking.md) | 세대별 랭킹 | 세대별 평점 | rating | P1 | 11/24 | 정준교 | ⬜ |
-| [7-1](7-1_tpo_recommend.md) | 맞춤 추천 (TPO·AI) | 맞춤 추천 | recommendation, content_tpo | P1 | 11/24 | 정준교 (검토: 홍준화) | ⬜ |
-| [7-2](7-2_revisit_feedback.md) | 재방문 추천 피드백 | 재방문 추천 피드백 | recommendation, rating | P1 | 12/1 | 정준교 (검토: 홍준화) | ⬜ |
-| [8-1](8-1_profile_taste.md) | 프로필·취향 수정 | 프로필 정보, 취향 수정 | member, genre_preference, rating, content_like | P1 | 12/1 | 정준교 (검토: 정재준) | 🟡 |
-| [8-2](8-2_interest_update.md) | 최근 관심사 반영 | 최근 관심사 반영 확인 | recommendation, watch_history | P2 | 12/1 | 정준교 (검토: 정재준) | ⬜ |
+| [7-1](7-1_tpo_recommend.md) | 맞춤 추천 (TPO·AI) | 맞춤 추천 | recommendation, content_tpo | P1 | 11/24 | 홍준화 | ⬜ |
+| [7-2](7-2_revisit_feedback.md) | 재방문 추천 피드백 | 재방문 추천 피드백 | recommendation, rating | P1 | 12/1 | 홍준화 | ⬜ |
+| [8-1](8-1_profile_taste.md) | 프로필·취향 수정 | 프로필 정보, 취향 수정 | member, genre_preference, rating, content_like | P1 | 12/1 | 정재준 | 🟡 |
+| [8-2](8-2_interest_update.md) | 최근 관심사 반영 | 최근 관심사 반영 확인 | recommendation, watch_history | P2 | 12/1 | 정재준 | ⬜ |
 
 - 담당 = 바이브 코딩으로 만드는 사람(전부 정준교), 검토 = 결과를 확인하고 의견을 주는 사람.
 - Figma의 Watch 화면 2개는 쓰지 않습니다 (OTT 바로가기로 대신 — 4-1).
