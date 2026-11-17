@@ -114,3 +114,232 @@ class TableRuleTests(APITestCase):
         Rating.objects.create(member=self.member, content=self.content, score=Decimal("4.0"))
         with self.assertRaises(IntegrityError):
             Rating.objects.create(member=self.member, content=self.content, score=Decimal("3.0"))
+
+
+# =============================================================================
+# 0번 공통 — 목록 규칙(offset·limit·필터·오류 모양)과 작품 카드 모양
+# =============================================================================
+
+
+class CommonContentListTests(APITestCase):
+    URL = "/api/v1/contents/"
+
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentGenre, ContentPlatform, ContentTpo, Genre, Platform, Tpo
+
+        drama, horror = Genre.objects.get(name="드라마"), Genre.objects.get(name="공포")
+        netflix, tving = Platform.objects.get(code="NETFLIX"), Platform.objects.get(code="TVING")
+        night = Tpo.objects.get(name="혼자 보는 밤")
+        cls.contents = []
+        for i in range(25):
+            c = Content.objects.create(title=f"작품{i:02d}", content_type="movie" if i % 2 else "series", release_year=2020)
+            ContentGenre.objects.create(content=c, genre=drama if i < 20 else horror)
+            ContentPlatform.objects.create(content=c, platform=netflix, deeplink_url="https://www.netflix.com/search?q=x")
+            if i == 0:
+                # 장르·OTT 가 여러 개여도 목록에 한 번만, 평균도 그대로여야 함
+                ContentGenre.objects.create(content=c, genre=horror)
+                ContentPlatform.objects.create(content=c, platform=tving)
+                ContentTpo.objects.create(content=c, tpo=night)
+            cls.contents.append(c)
+        twenties = Member.objects.create_user("a@x.kr", "가", "viewfit123!", age_group="20s")
+        thirties = Member.objects.create_user("b@x.kr", "나", "viewfit123!", age_group="30s")
+        Rating.objects.create(member=twenties, content=cls.contents[0], score=Decimal("4.0"))
+        Rating.objects.create(member=thirties, content=cls.contents[0], score=Decimal("3.0"))
+
+    def test_default_page_is_20_and_next_offset(self):
+        res = self.client.get(self.URL)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["count"], 25)
+        self.assertEqual(len(res.data["results"]), 20)
+        self.assertEqual(res.data["next_offset"], 20)
+        res = self.client.get(self.URL, {"offset": 20})
+        self.assertEqual(len(res.data["results"]), 5)
+        self.assertIsNone(res.data["next_offset"])
+
+    def test_card_shape_and_rating(self):
+        card = self.client.get(self.URL).data["results"][0]  # 평가 수 많은 순 → 작품00
+        self.assertEqual(card["title"], "작품00")
+        self.assertEqual({p["code"] for p in card["platforms"]}, {"NETFLIX", "TVING"})
+        self.assertEqual(card["platforms"][0]["watch_url"], "https://www.netflix.com/search?q=x")
+        self.assertEqual({g["name"] for g in card["genres"]}, {"드라마", "공포"})
+        self.assertEqual(card["rating"]["overall"], 3.5)
+        self.assertEqual(card["rating"]["total_count"], 2)
+        self.assertEqual(
+            card["rating"]["by_age_group"],
+            [{"age_group": "20s", "average": 4.0, "count": 1}, {"age_group": "30s", "average": 3.0, "count": 1}],
+        )
+        for name in ["original_title", "backdrop_url", "runtime", "episode_count", "age_rating"]:
+            self.assertIn(name, card)  # D6 칸이 생기기 전에도 프론트 타입과 같은 칸 이름
+
+    def test_filters(self):
+        self.assertEqual(self.client.get(self.URL, {"genre": "공포"}).data["count"], 6)
+        self.assertEqual(self.client.get(self.URL, {"platform": "TVING"}).data["count"], 1)
+        self.assertEqual(self.client.get(self.URL, {"type": "movie"}).data["count"], 12)
+        self.assertEqual(self.client.get(self.URL, {"type": "all", "platform": "all"}).data["count"], 25)
+        res = self.client.get(self.URL, {"tpo": "혼자 보는 밤", "platform": "NETFLIX"})
+        self.assertEqual(res.data["count"], 1)
+        self.assertEqual(res.data["results"][0]["rating"]["overall"], 3.5)  # 필터해도 평균 그대로
+
+    def test_bad_values_are_400_with_field_message(self):
+        for params, field in [
+            ({"limit": "abc"}, "limit"), ({"limit": 0}, "limit"), ({"limit": 101}, "limit"),
+            ({"offset": -1}, "offset"), ({"type": "drama"}, "type"),
+            ({"platform": "HULU"}, "platform"), ({"genre": "뮤지컬"}, "genre"), ({"tpo": "출근길"}, "tpo"),
+        ]:
+            res = self.client.get(self.URL, params)
+            self.assertEqual(res.status_code, 400, params)
+            self.assertIsInstance(res.data[field][0], str)
+
+    def test_login_required_api_is_401(self):
+        self.assertEqual(self.client.get("/api/v1/me/").status_code, 401)
+
+
+# =============================================================================
+# 2-1 작품 데이터 수집 — TMDB 응답은 가짜(mock)로 테스트
+# =============================================================================
+
+from io import StringIO
+from unittest import mock
+
+from django.core.management import CommandError, call_command
+from django.test import TestCase, override_settings
+
+
+def _kr_providers(*names):
+    return {"results": {"KR": {"flatrate": [{"provider_name": n} for n in names]}}}
+
+
+FAKE_TMDB = {
+    "/discover/movie": {"page": 1, "total_pages": 1, "results": [{"id": 1}, {"id": 2}, {"id": 3}]},
+    "/discover/tv": {"page": 1, "total_pages": 1, "results": [{"id": 10}]},
+    # 드라마+공포, 넷플릭스+디즈니+ (TMDB 표기 "Disney Plus")
+    "/movie/1": {
+        "id": 1, "title": "가짜 영화", "overview": "줄거리", "poster_path": "/p1.jpg", "release_date": "2024-05-01",
+        "genres": [{"id": 18}, {"id": 27}],
+        "watch/providers": _kr_providers("Netflix", "Disney Plus", "Apple TV"),
+        "release_dates": {"results": [{"iso_3166_1": "KR", "release_dates": [{"certification": "15"}]}]},
+    },
+    # 6개 OTT 어디에도 없음 → 저장 안 함
+    "/movie/2": {"id": 2, "title": "OTT 없는 영화", "genres": [{"id": 18}], "watch/providers": _kr_providers("Apple TV")},
+    # 코미디 + 12세 → 가족과 함께
+    "/movie/3": {
+        "id": 3, "title": "가족 코미디", "release_date": "2023-01-01", "genres": [{"id": 35}],
+        "watch/providers": _kr_providers("Coupang Play"),
+        "release_dates": {"results": [{"iso_3166_1": "KR", "release_dates": [{"certification": "12"}]}]},
+    },
+    # 시리즈: Sci-Fi & Fantasy + 키워드 romance → SF·판타지·로맨스
+    "/tv/10": {
+        "id": 10, "name": "가짜 시리즈", "first_air_date": "2025-03-01", "genres": [{"id": 10765}],
+        "keywords": {"results": [{"name": "romance"}]},
+        "watch/providers": _kr_providers("TVING", "wavve"),
+        "content_ratings": {"results": [{"iso_3166_1": "KR", "rating": "15"}]},
+    },
+}
+
+
+def fake_get(path, **params):
+    return FAKE_TMDB[path]
+
+
+@override_settings(TMDB_API_TOKEN="test-token")
+class ImportTmdbTests(TestCase):
+    def run_import(self, **opts):
+        out = StringIO()
+        with mock.patch("core.tmdb.get", side_effect=fake_get):
+            call_command("import_tmdb", stdout=out, stderr=StringIO(), **opts)
+        return out.getvalue()
+
+    def test_import_saves_contents_with_genres_platforms_tpos(self):
+        from .models import ContentPlatform
+
+        out = self.run_import(movies=5, series=5)
+        self.assertIn("영화 2개", out)
+        self.assertIn("시리즈 1개", out)
+        self.assertIn("OTT 없어서 건너뜀 1", out)
+
+        movie = Content.objects.get(tmdb_id=1, content_type="movie")
+        self.assertEqual(movie.poster_url, "https://image.tmdb.org/t/p/w500/p1.jpg")
+        self.assertEqual(movie.release_year, 2024)
+        self.assertEqual({g.name for g in movie.genres.all()}, {"드라마", "공포"})
+        self.assertEqual({p.code for p in movie.platforms.all()}, {"NETFLIX", "DISNEY_PLUS"})
+        self.assertEqual({t.name for t in movie.tpos.all()}, {"혼자 보는 밤", "여행이 필요할 때"})
+        link = ContentPlatform.objects.get(content=movie, platform__code="NETFLIX").deeplink_url
+        self.assertTrue(link.startswith("https://www.netflix.com/search?q="))
+
+        self.assertFalse(Content.objects.filter(tmdb_id=2).exists())
+        family = Content.objects.get(tmdb_id=3)
+        self.assertIn("가족과 함께", {t.name for t in family.tpos.all()})
+
+        series = Content.objects.get(tmdb_id=10, content_type="series")
+        self.assertEqual({g.name for g in series.genres.all()}, {"SF", "판타지", "로맨스"})
+        self.assertEqual({p.code for p in series.platforms.all()}, {"TVING", "WAVVE"})
+
+    def test_running_twice_updates_instead_of_duplicating(self):
+        self.run_import(movies=5, series=5)
+        out = self.run_import(movies=5, series=5)
+        self.assertEqual(Content.objects.count(), 3)
+        self.assertIn("수정 2", out)
+
+    def test_limit_is_respected(self):
+        self.run_import(movies=1, series=0)
+        self.assertEqual(Content.objects.count(), 1)
+
+    @override_settings(TMDB_API_TOKEN="")
+    def test_missing_token_stops_with_message(self):
+        with self.assertRaisesMessage(CommandError, "TMDB_API_TOKEN"):
+            call_command("import_tmdb", stdout=StringIO())
+
+    def test_retries_three_times_then_fails(self):
+        import urllib.error
+
+        from . import tmdb
+
+        with mock.patch("core.tmdb.time.sleep"), mock.patch(
+            "core.tmdb.urllib.request.urlopen", side_effect=urllib.error.URLError("down")
+        ) as urlopen:
+            with self.assertRaises(tmdb.TmdbError):
+                tmdb.get("/discover/movie")
+        self.assertEqual(urlopen.call_count, 3)
+
+
+class SeedDemoTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentGenre, Genre
+
+        names = list(Genre.objects.values_list("name", flat=True))
+        for i in range(45):
+            c = Content.objects.create(title=f"작품{i}", content_type="movie")
+            ContentGenre.objects.create(content=c, genre=Genre.objects.get(name=names[i % len(names)]))
+        cls.real = Member.objects.create_user("real@viewfit.kr", "진짜회원", "viewfit123!")
+
+    def test_seed_and_clear(self):
+        from .models import ContentLike
+
+        call_command("seed_demo", stdout=StringIO())
+        demo = Member.objects.filter(email__endswith="@demo.viewfit.local")
+        self.assertEqual(demo.count(), 60)
+        self.assertEqual(demo.filter(age_group="20s").count(), 10)
+        ratings = Rating.objects.filter(member__in=demo)
+        self.assertTrue(60 * 20 <= ratings.count() <= 60 * 40)
+        self.assertFalse(ratings.filter(age_group_at_rating__isnull=True).exists())
+        self.assertTrue(all((s * 2) % 1 == 0 for s in ratings.values_list("score", flat=True)))
+        self.assertFalse(demo.first().has_usable_password())  # 가상 회원은 로그인 불가
+
+        # 다시 실행해도 60명 그대로 (지우고 새로), 결과도 같음
+        first_count = ratings.count()
+        call_command("seed_demo", stdout=StringIO())
+        self.assertEqual(Member.objects.filter(email__endswith="@demo.viewfit.local").count(), 60)
+        self.assertEqual(Rating.objects.filter(member__email__endswith="@demo.viewfit.local").count(), first_count)
+
+        call_command("seed_demo", "--clear", stdout=StringIO())
+        self.assertEqual(Member.objects.filter(email__endswith="@demo.viewfit.local").count(), 0)
+        self.assertEqual(Rating.objects.count(), 0)
+        self.assertEqual(ContentLike.objects.count(), 0)
+        self.assertTrue(Member.objects.filter(pk=self.real.pk).exists())  # 진짜 회원은 그대로
+
+    def test_needs_contents_first(self):
+        Content.objects.all().delete()
+        with self.assertRaisesMessage(CommandError, "import_tmdb"):
+            call_command("seed_demo", stdout=StringIO())

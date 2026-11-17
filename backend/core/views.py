@@ -5,6 +5,9 @@ API 목록 (주소 앞에 /api/v1 이 붙음)
   GET  /health/                서버·DB 연결 상태, 테이블별 행 개수
   GET  /options/               설문 선택지 (연령대, 직업, 장르, OTT, 상황)
 
+  [0번 공통]
+  GET  /contents/              작품 카드 목록 (type·platform·genre·tpo 필터, offset·limit)
+
   [회원]
   GET  /auth/check-nickname/?nickname=  닉네임 사용 가능 여부
   POST /auth/signup/           회원가입 → 로그인 토큰
@@ -24,7 +27,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from . import models as m
-from .serializers import LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname
+from .common import contents_for_cards, filter_contents, paginate
+from .serializers import (
+    ContentCardSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname,
+)
 
 
 def me_payload(member):
@@ -69,6 +75,22 @@ def options(request):
             "tpos": list(m.Tpo.objects.values("id", "name")),
         }
     )
+
+
+# -----------------------------------------------------------------------------
+# 0번 공통 — 작품 카드 목록
+# -----------------------------------------------------------------------------
+
+
+@api_view(["GET"])
+def contents(request):
+    """작품 카드 목록. 공통 규칙(필터·offset/limit·카드 모양)을 보여 주는 기본 목록이기도 합니다.
+
+    정렬: 평가 수 많은 순 → 작품 번호 순
+    """
+    qs = filter_contents(m.Content.objects.all(), request.query_params)
+    qs = contents_for_cards(qs).order_by("-rating_count", "id")
+    return paginate(qs, request, ContentCardSerializer)
 
 
 # -----------------------------------------------------------------------------

@@ -5,8 +5,8 @@
 | 번호 | 내용 | 담당 | 상태 |
 |---|---|---|---|
 | 0-1 | 개발 환경 · DB 스키마 | 3명 공동 (코드: 정준교 · 전원 각자 PC 세팅) | ✅ 코드 완료 / 팀원 PC 세팅 ⬜ |
-| 0-2 | 공통 규칙 (폴더·API·이름·GitHub) | 3명 회의로 확정 | 🟡 아래 초안 |
-| 0-3 | 공통 레이아웃 · 공통 컴포넌트 | 3명 공동 (화면 검수: 정재준) | ✅ 11/10 (화면 검수: 정재준) |
+| 0-2 | 공통 규칙 (폴더·API·이름·GitHub) | 3명 회의로 확정 | 🟡 아래 초안 · API 규칙은 백엔드 코드로 만듦 ✅ 11/17 |
+| 0-3 | 공통 레이아웃 · 공통 컴포넌트 | 3명 공동 (화면 검수: 정재준) | ✅ 화면 11/10 · 작품 카드 API 모양 11/17 (화면 검수: 정재준) |
 | 0-4 | 홈 화면 틀 | 3명 공동 → [0-4_home.md](0-4_home.md) | ✅ 틀 11/10 / 영역별 진짜 데이터 연결 ⬜ |
 
 ---
@@ -52,7 +52,18 @@
 - 올린 뒤 목록표의 상태를 ✅로 바꾸기
 - `.env`, 비밀번호, API 키는 절대 올리지 않음
 
-**완료 기준**: 3명이 이 규칙을 읽고 동의, 바뀐 점을 이 문서에 반영.
+### 백엔드 공통 도구 (11/17 — API 규칙을 코드로)
+위 API 규칙을 `backend/core/common.py` 에 만들어 두었습니다. 1~8번 API 는 이것을 가져다 씁니다 (사용법: [backend/README.md](../../backend/README.md) "새 API 를 만들 때").
+
+| 규칙 | 코드 |
+|---|---|
+| 목록은 `offset`·`limit` (기본 20, 최대 100) | `paginate()` → `{count, offset, limit, next_offset, results}` |
+| 필터 바 값 (`type`·`platform`·`genre`·`tpo`, `all` = 거르지 않음) | `filter_contents()` |
+| 오류는 `{"칸이름": ["한국어 안내"]}` | 위 두 함수가 잘못된 값을 이 모양의 400으로 |
+| 평균·개수는 조회할 때 계산 | `contents_for_cards()` |
+| 로그인 필요한 API는 401 | 기존 설정 (토큰 인증) — 테스트로 확인 |
+
+**완료 기준**: 3명이 이 규칙을 읽고 동의, 바뀐 점을 이 문서에 반영. (코드 부분: `python manage.py test core` 의 `CommonContentListTests` 통과 ✅)
 
 ---
 
@@ -102,6 +113,8 @@
 | `app/_components/coming-soon.tsx` + `app/ranking`, `recommend`, `generation`, `me/likes`, `me/ratings`, `me/taste` | 아직 없는 화면 자리 ("준비 중") — 담당자가 진짜 화면으로 교체 |
 | `app/dev/components/page.tsx` | 부품 모음 페이지 |
 | `app/_components/viewfit-font.tsx` | Figma 글꼴(Noto Sans KR · 순위 숫자 Inter) — 화면 틀에서 직접 불러옴 (11/16) |
+| `backend/core/serializers.py` `ContentCardSerializer` | FR5·FR8·FR13 작품 카드에 들어갈 데이터 모양 (프론트 `Movie` 타입과 같은 칸: 장르, OTT `watch_url`, 평점 `overall`·`total_count`·연령대별) — D6 칸(`backdrop_url`·`runtime` 등)은 DB에 생기면 자동으로 채워짐 (11/17) |
+| `GET /api/v1/contents/` | 작품 카드 목록 — 필터 바(FR9)·펼치기(FR10)와 같은 값을 받음 (11/17) |
 
 > 11/16: 홈은 Figma 9:5 전용 상단 바(돋보기 아이콘·테두리 없음)와 하단을 쓰도록 `variant="home"` 추가, 오늘의 추천 영역을 높이 720·빛 번짐 배경으로 Figma와 맞춤.
 
