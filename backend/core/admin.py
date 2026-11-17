@@ -51,7 +51,7 @@ class ContentTpoInline(admin.TabularInline):
 
 @admin.register(Content)
 class ContentAdmin(admin.ModelAdmin):
-    list_display = ["title", "content_type", "release_year", "tmdb_id"]
+    list_display = ["title", "content_type", "release_year", "age_rating", "tmdb_rating", "tmdb_id"]
     list_filter = ["content_type"]
     search_fields = ["title"]
     inlines = [ContentGenreInline, ContentPlatformInline, ContentTpoInline]
@@ -64,7 +64,7 @@ class LookupAdmin(admin.ModelAdmin):
 
 @admin.register(Ranking)
 class RankingAdmin(admin.ModelAdmin):
-    list_display = ["ranked_on", "period", "rank", "content"]
+    list_display = ["ranked_on", "period", "rank", "content", "score"]
     list_filter = ["period", "ranked_on"]
 
 
