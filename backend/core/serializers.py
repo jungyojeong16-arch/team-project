@@ -13,7 +13,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import AgeGroup, Genre, Job, Member, PreferenceKind
+from .models import AgeGroup, Content, Genre, Job, Member, PreferenceKind
 
 NICKNAME_RE = re.compile(r"^[가-힣A-Za-z0-9_]{2,12}$")
 
@@ -144,3 +144,75 @@ class SurveySerializer(serializers.Serializer):
         if both:
             raise serializers.ValidationError(f"선호와 비선호에 같은 장르가 있어요: {', '.join(sorted(both))}")
         return attrs
+
+
+# =============================================================================
+# 0번 공통 — 작품 카드 (0-3 FR5·FR8·FR13)
+# 홈·랭킹·추천·좋아요·검색 등 작품을 보여 주는 API 는 모두 이 모양을 씁니다.
+# 프론트엔드 app/_lib/viewfit.ts 의 Movie 타입과 같은 칸 이름입니다.
+# 작품 목록은 core/common.py 의 contents_for_cards() 로 불러와야 평점이 한 번에 계산됩니다.
+# =============================================================================
+
+# 아직 DB 에 칸이 없는 값 (D6 결정 후 content 에 추가 예정) — 칸이 생기면 자동으로 채워짐
+_PENDING_D6_FIELDS = {
+    "original_title": "",
+    "backdrop_url": "",
+    "runtime": None,
+    "episode_count": None,
+    "age_rating": None,
+}
+
+
+def _round1(value):
+    return round(float(value), 1) if value is not None else 0.0
+
+
+class ContentCardSerializer(serializers.ModelSerializer):
+    genres = serializers.SerializerMethodField()
+    platforms = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Content
+        fields = [
+            "id", "tmdb_id", "title", "content_type", "overview", "poster_url",
+            "release_year", "tagline", "genres", "platforms", "rating",
+        ]
+
+    def to_representation(self, content):
+        data = super().to_representation(content)
+        for name, empty in _PENDING_D6_FIELDS.items():
+            # D6 칸 이름: runtime_minutes → runtime
+            source = "runtime_minutes" if name == "runtime" else name
+            data[name] = getattr(content, source, empty)
+        return data
+
+    def get_genres(self, content):
+        return [{"id": g.id, "name": g.name} for g in content.genres.all()]
+
+    def get_platforms(self, content):
+        return [
+            {"code": cp.platform.code, "name": cp.platform.name, "watch_url": cp.deeplink_url}
+            for cp in content.contentplatform_set.all()
+        ]
+
+    def get_rating(self, content):
+        ratings = list(content.ratings.all())
+        by_age = {}
+        for r in ratings:
+            if r.age_group_at_rating:
+                by_age.setdefault(r.age_group_at_rating, []).append(r.score)
+        # contents_for_cards() 로 불러왔으면 DB 가 계산한 값, 아니면 여기서 계산
+        total = getattr(content, "rating_count", None)
+        avg = getattr(content, "rating_avg", None)
+        if total is None:
+            total = len(ratings)
+            avg = sum(r.score for r in ratings) / total if total else None
+        return {
+            "overall": _round1(avg),
+            "total_count": total,
+            "by_age_group": [
+                {"age_group": age, "average": _round1(sum(s) / len(s)), "count": len(s)}
+                for age, s in sorted(by_age.items())
+            ],
+        }

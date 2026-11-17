@@ -7,6 +7,7 @@ app_name = "core"
 urlpatterns = [
     path("health/", views.health, name="health"),
     path("options/", views.options, name="options"),
+    path("contents/", views.contents, name="contents"),  # 0번 공통
     path("auth/check-nickname/", views.check_nickname_view, name="check-nickname"),
     path("auth/signup/", views.signup, name="signup"),
     path("auth/login/", views.login, name="login"),
