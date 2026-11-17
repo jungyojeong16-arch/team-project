@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 일부 완료 — 프로필에 닉네임·이메일·설문 결과 표시 ✅(11/10), Figma 프로필 전체·취향 수정 화면 ⬜ (12/1주) |
+| 상태 | 🟡 일부 완료 — 프로필에 닉네임·이메일·설문 결과 표시 ✅(11/10), Figma 프로필 전체·취향 수정 화면 ⬜ (11/27) |
 | Figma | [프로필 정보](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=130-846) · [취향 수정](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=220-5925) |
 | 코드 | `app/profile/page.tsx`, `views.py`(me, save_survey) / 예정: `views.py`(profile_summary), `app/me/taste/page.tsx` |
 | 테이블 | `member`, `genre_preference`, `watch_history`, `rating`, `content_like`, `recommendation` |

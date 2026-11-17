@@ -6,7 +6,7 @@
 | Figma | [웹 시작 화면](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=179-1801) · [로그인 창 열림](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=161-1637) · [프로필 메뉴(로그아웃)](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=40-1849) |
 | 코드 | `app/login/page.tsx`, `app/_components/start-screen.tsx`, `login-form.tsx`, `login-modal.tsx`, `app/_lib/use-account.ts`, `app/_lib/account.ts`(logIn, signOut), `backend/core/views.py`(login, logout) |
 | 테이블 | `member`, `authtoken_token` |
-| 담당 | **정준교** (바이브 코딩) · 검토: 정재준 |
+| 담당 | **정준교** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 정재준(화면) |
 
 ## 1. 목적

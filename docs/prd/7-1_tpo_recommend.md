@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/24주) |
+| 상태 | ⬜ 예정 (11/23~24) |
 | Figma | [맞춤 추천 (TPO TOP 50)](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-36577), 홈의 오늘의 추천 영역([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)) |
 | 코드(예정) | `backend/core/recommend.py`, `backend/core/curation.py`(LLM 문구), `views.py`(recommendations), `app/recommend/page.tsx` |
 | 테이블 | `recommendation`(member, content, tpo, rank, feedback, recommended_at), `content_tpo`, `genre_preference`, `watch_history`, `rating`, `content_like` |

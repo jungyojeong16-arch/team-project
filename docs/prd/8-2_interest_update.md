@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (12/1주) · 우선순위 P2 |
+| 상태 | ⬜ 예정 (11/30, P2) · 우선순위 P2 |
 | Figma | [최근 관심사 반영 확인](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=224-5091) (홈 위에 뜨는 팝업) |
 | 코드(예정) | `views.py`(interest_check, interest_apply), `backend/core/recommend.py`(최근 활동 점수), `app/_components/interest-modal.tsx` |
 | 테이블 | `watch_history`(direct), `content_like`, `rating`, `recommendation` |

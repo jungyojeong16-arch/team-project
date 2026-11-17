@@ -6,7 +6,7 @@
 | Figma | [회원가입](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=157-1355) · [회원가입 완료 안내](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=61-591) |
 | 코드 | `app/signup/page.tsx`, `app/signup/complete/page.tsx`, `app/_components/onboarding-ui.tsx`, `app/_lib/account.ts`, `backend/core/serializers.py`(SignupSerializer), `views.py`(signup, check_nickname_view) |
 | 테이블 | `member` (+ Django `authtoken_token`) |
-| 담당 | **정준교** (바이브 코딩) · 검토: 정재준 |
+| 담당 | **정준교** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 정재준(화면) |
 
 ## 1. 목적

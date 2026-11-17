@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/24주) |
+| 상태 | ⬜ 예정 (11/21~22) |
 | Figma | [세대별 평점](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-33778) (상단 메뉴 이름은 "세대별 랭킹") |
 | 코드(예정) | `views.py`(generation_rankings), `app/generation/page.tsx` |
 | 테이블 | `rating`(score, age_group_at_rating), `content` |

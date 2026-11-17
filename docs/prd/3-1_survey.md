@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 일부 완료 — 연령대·직업·선호/비선호 장르 저장 ✅(11/10), 기억에 남는 작품 DB 저장·Figma 모양·추가 질문 정리 ⬜ |
+| 상태 | 🟡 일부 완료 — 연령대·직업·선호/비선호 장르 저장 ✅(11/10), 기억에 남는 작품 DB 저장·Figma 모양·추가 질문 정리 ⬜ (11/17~18) |
 | Figma | [맞춤 추천 설문](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=39-3071) |
 | 코드 | `app/onboarding/page.tsx`, `app/_lib/account.ts`(saveOnboarding), `backend/core/serializers.py`(SurveySerializer), `views.py`(save_survey) |
 | 테이블 | `member`(age_group, job, survey_completed_at), `genre_preference`, `watch_history`(source=survey) |

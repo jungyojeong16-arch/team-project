@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/17주, 가장 먼저) |
+| 상태 | ⬜ 예정 (11/18) |
 | Figma | 화면 없음 (관리자 명령). 모든 화면의 작품 카드가 이 데이터를 씀 |
 | 코드(예정) | `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, `backend/core/tmdb.py` |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |

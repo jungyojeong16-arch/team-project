@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (12/1주) — 테이블(`content_like`, 중복 금지)은 ✅ |
+| 상태 | ⬜ 예정 (11/26) — 테이블(`content_like`, 중복 금지)은 ✅ |
 | Figma | [좋아요 표시한 작품](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=220-2521), 프로필의 "최근 좋아요 표시한 작품"([프로필 정보](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=130-846)) |
 | 코드(예정) | `views.py`(like_content, my_likes), `app/me/likes/page.tsx`, `app/_components/like-button.tsx` |
 | 테이블 | `content_like`(member, content, liked_at) |

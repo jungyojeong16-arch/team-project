@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (12/1주) — 테이블·규칙(별점 CHECK, 평가 당시 연령대)은 ✅ |
+| 상태 | ⬜ 예정 (11/25) — 테이블·규칙(별점 CHECK, 평가 당시 연령대)은 ✅ |
 | Figma | [나의 평점](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=220-2672) · [평점 반영 결과 · 랭킹 변화](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=224-4225) |
 | 코드(예정) | `views.py`(rate_content, my_ratings, rating_result), `app/me/ratings/page.tsx`, `app/me/ratings/result/[id]/page.tsx` |
 | 테이블 | `rating`(member, content, score, comment, age_group_at_rating, rated_at, updated_at), `ranking` |
