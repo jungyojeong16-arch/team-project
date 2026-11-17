@@ -18,6 +18,8 @@ export function Modal({
   width = "max-w-[600px]",
   closeOnBackdrop = true,
   panelClassName = "bg-[#141416]",
+  backdropClassName = "bg-black/70 backdrop-blur-sm",
+  labelledBy,
 }: {
   open: boolean;
   onClose: () => void;
@@ -30,6 +32,10 @@ export function Modal({
   closeOnBackdrop?: boolean;
   /** 상자 배경 바꾸기 (예: 로그인 창의 푸른 그라데이션) */
   panelClassName?: string;
+  /** 뒤 배경 바꾸기 (예: 작품 상세는 뒤 화면이 비쳐 보이게 블러 없이 — Figma 375:1667) */
+  backdropClassName?: string;
+  /** title 없이 children 안에 제목을 그릴 때, 그 제목의 id */
+  labelledBy?: string;
 }) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -51,12 +57,12 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeOnBackdrop ? onClose : undefined} aria-hidden />
+      <div className={`absolute inset-0 ${backdropClassName}`} onClick={closeOnBackdrop ? onClose : undefined} aria-hidden />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? titleId : undefined}
+        aria-labelledby={title ? titleId : labelledBy}
         tabIndex={-1}
         className={`relative max-h-[90vh] w-full ${width} overflow-y-auto rounded-2xl border border-white/[0.12] ${panelClassName} p-6 text-white md:p-10 shadow-[0_24px_80px_rgba(0,0,0,0.6)] outline-none`}
       >

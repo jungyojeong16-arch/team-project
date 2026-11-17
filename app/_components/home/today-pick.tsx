@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Info, Play, Sparkles, Star } from "lucide-react";
 import {
   AGE_GROUP_META,
@@ -10,13 +9,14 @@ import {
   type TPOContext,
   type UserPersona,
 } from "../../_lib/viewfit";
+import { openContentDetail, watchOn } from "../content-detail-modal";
 import { PlatformBadge } from "../platform-badge";
 
 /* ============================================================================
  * 0-4 홈 ① 오늘의 추천 (Figma Home Feed "Hero (TPO)" 9:6 — 높이 720)
  * 배경: Figma 처럼 깊은 바다 빛 번짐 (작품 배경 사진은 D6 결정 후 backdrop_url 이 생기면 교체)
  * 데이터 연결: 7-1 맞춤 추천 — 추천 1위 작품 + 한 줄 문구
- * 버튼 연결: 4-1 작품 탐색 — [바로 보기] OTT 이동, [상세 정보] 상세 팝업
+ * 버튼 연결: 4-1 작품 탐색 — [바로 보기] OTT 이동(여러 개면 팝업), [상세 정보] 작품 상세 공통 오버레이
  * ========================================================================== */
 
 function Glow({ className, color }: { className: string; color: string }) {
@@ -25,6 +25,9 @@ function Glow({ className, color }: { className: string; color: string }) {
 
 export function TodayPick({ hero, user, tpo }: { hero: HeroCuration; user: UserPersona; tpo: TPOContext }) {
   const { movie, message } = hero;
+  const context = `오늘의 추천 · ${tpo.situation}`;
+  // [바로 보기]: 볼 수 있는 OTT 가 하나면 바로 그 OTT 로, 여러 개면 상세 팝업에서 고르게 (4-1 FR4)
+  const watchNow = () => (movie.platforms.length === 1 ? watchOn(movie, movie.platforms[0]) : openContentDetail(movie, context));
 
   return (
     <section className="relative h-[720px] w-full overflow-hidden bg-[#0a0a0a]" aria-label="오늘의 추천">
@@ -78,14 +81,13 @@ export function TodayPick({ hero, user, tpo }: { hero: HeroCuration; user: UserP
         </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-3">
-          {/* TODO(4-1): 제공 OTT 의 deeplink_url 을 새 탭으로 열고 시청 기록 남기기 */}
-          <Link href={`/watch/${movie.id}`} className="inline-flex items-center gap-2 rounded-md bg-white px-8 py-3 text-base font-bold text-black transition hover:bg-white/80">
+          <button type="button" onClick={watchNow} className="inline-flex items-center gap-2 rounded-md bg-white px-8 py-3 text-base font-bold text-black transition hover:bg-white/80">
             <Play className="h-5 w-5 fill-black" />
             바로 보기
-          </Link>
-          {/* TODO(4-1): 작품 상세 팝업 열기 */}
+          </button>
           <button
             type="button"
+            onClick={() => openContentDetail(movie, context)}
             className="inline-flex items-center gap-2 rounded-md bg-white/20 px-8 py-3 text-base font-bold text-white backdrop-blur-[6px] transition hover:bg-white/30"
           >
             <Info className="h-5 w-5" />

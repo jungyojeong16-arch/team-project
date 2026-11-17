@@ -1,5 +1,6 @@
 import { Flame, Sparkles, Star, Users } from "lucide-react";
 import { AGE_GROUPS, AGE_GROUP_META, getAgeAverage, type AgeGroup, type Movie, type RankingItem } from "../../_lib/viewfit";
+import { openContentDetail } from "../content-detail-modal";
 import { ContentRow } from "../content-row";
 import { PosterCard, RankChange } from "../poster-card";
 
@@ -14,8 +15,8 @@ import { PosterCard, RankChange } from "../poster-card";
 
 const codes = (movie: Movie) => movie.platforms.map((p) => p.code);
 const ratingStat = (movie: Movie) => `★ ${movie.rating.overall.toFixed(1)} · ${movie.release_year}`;
-// TODO(4-1): 카드를 누르면 작품 상세 팝업 열기 — 지금은 예전 상세 주소
-const detailHref = (movie: Movie) => `/watch/${movie.id}`;
+/** 카드를 누르면 작품 상세 공통 오버레이 (4-1, Figma 375:1666). context = 팝업 맨 위 분홍 글씨 */
+const openDetail = (movie: Movie, context: string) => () => openContentDetail(movie, context);
 
 /** ② 맞춤 추천작품 (Figma "Tab / 정준교님 맞춤 추천작품" 9:74) */
 export function RecommendRow({ nickname, movies }: { nickname: string; movies: Movie[] }) {
@@ -23,7 +24,7 @@ export function RecommendRow({ nickname, movies }: { nickname: string; movies: M
   return (
     <ContentRow title={`${nickname}님 맞춤 추천작품`} icon={<Flame className="h-5 w-5 text-rose-500 md:h-6 md:w-6" />} seeAllHref="/recommend">
       {movies.map((movie, i) => (
-        <PosterCard key={movie.id} rank={i + 1} title={movie.title} posterUrl={movie.poster_url} platforms={codes(movie)} stat={ratingStat(movie)} href={detailHref(movie)} />
+        <PosterCard key={movie.id} rank={i + 1} title={movie.title} posterUrl={movie.poster_url} platforms={codes(movie)} stat={ratingStat(movie)} onClick={openDetail(movie, `${nickname}님 맞춤 추천작품 · ${i + 1}위`)} />
       ))}
     </ContentRow>
   );
@@ -47,7 +48,7 @@ export function RankingTop10({ items }: { items: RankingItem[] }) {
           platforms={codes(item.movie)}
           stat={ratingStat(item.movie)}
           trailing={<RankChange change={item.rank_change} isNew={item.is_new} />}
-          href={detailHref(item.movie)}
+          onClick={openDetail(item.movie, `오늘의 통합 OTT랭킹 TOP 10 · ${item.rank}위`)}
         />
       ))}
     </ContentRow>
@@ -95,7 +96,7 @@ function CrossAgeOverlay({ movie, highlightAge }: { movie: Movie; highlightAge: 
   );
 }
 
-function CrossAgeCard({ movie, highlightAge }: { movie: Movie; highlightAge: AgeGroup | null }) {
+function CrossAgeCard({ movie, highlightAge, context }: { movie: Movie; highlightAge: AgeGroup | null; context: string }) {
   return (
     <PosterCard
       size="lg"
@@ -104,7 +105,7 @@ function CrossAgeCard({ movie, highlightAge }: { movie: Movie; highlightAge: Age
       platforms={codes(movie).slice(0, 1)}
       stat={`${movie.release_year} · ${movie.genres.map((g) => g.name).join(" · ")}`}
       hoverOverlay={<CrossAgeOverlay movie={movie} highlightAge={highlightAge} />}
-      href={detailHref(movie)}
+      onClick={openDetail(movie, context)}
     />
   );
 }
@@ -120,7 +121,7 @@ export function CrossAgePicks({ movies, myAge }: { movies: Movie[]; myAge: AgeGr
       tight
     >
       {movies.map((movie) => (
-        <CrossAgeCard key={movie.id} movie={movie} highlightAge={myAge} />
+        <CrossAgeCard key={movie.id} movie={movie} highlightAge={myAge} context="세대별 교차 평점 추천" />
       ))}
     </ContentRow>
   );
@@ -140,7 +141,7 @@ export function PeerPicks({ nickname, myAge, movies }: { nickname: string; myAge
       tight
     >
       {sorted.map((movie) => (
-        <CrossAgeCard key={movie.id} movie={movie} highlightAge={myAge} />
+        <CrossAgeCard key={movie.id} movie={movie} highlightAge={myAge} context={`또래 ${label}가 극찬한 작품`} />
       ))}
     </ContentRow>
   );

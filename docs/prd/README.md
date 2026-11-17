@@ -30,7 +30,7 @@
 | [1-2](1-2_login.md) | 웹 시작 화면·로그인·로그아웃 | 웹 시작 화면, 로그인 창 | member, authtoken | P1 (소셜 P2) | 11/16 | 정준교 | ✅ (소셜 로그인 P2 제외) |
 | [2-1](2-1_tmdb_import.md) | 작품 데이터 수집·시연 데이터 | (관리자 명령) | content, content_genre, content_platform, content_tpo | P1 | 11/18 | 홍준화 | 🟡 코드·실제 수집 확인 ✅ / 각자 PC 수집 ⬜ |
 | [3-1](3-1_survey.md) | 맞춤 추천 설문 | 맞춤 추천 설문 | member, genre_preference, watch_history | P1 | 11/17 | 홍준화 | 🟡 |
-| [4-1](4-1_search_detail.md) | 작품 검색·상세·OTT 바로가기 | 상단 검색창, 상세 정보·바로 보기 버튼 | content, content_platform, watch_history | P1 | 11/19 | 정재준 | 🟡 API ✅ / 화면 ⬜ |
+| [4-1](4-1_search_detail.md) | 작품 검색·상세·OTT 바로가기 | 상단 검색창, 상세 정보·바로 보기 버튼 | content, content_platform, watch_history | P1 | 11/19 | 정재준 | 🟡 API·상세 팝업 ✅ / 검색창 ⬜ |
 | [5-1](5-1_rating.md) | 평점 (작성·나의 평점·반영 결과) | 나의 평점, 평점 반영 결과 | rating, ranking | P1 | 11/25 | 정준교 | ⬜ |
 | [5-2](5-2_like.md) | 좋아요 | 좋아요 표시한 작품 | content_like | P1 | 11/26 | 정준교 | ⬜ |
 | [6-1](6-1_total_ranking.md) | 통합 랭킹 | 통합 랭킹 | ranking | P1 | 11/20 | 정준교 | ⬜ |

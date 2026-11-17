@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ContentDetailHost } from "./content-detail-modal";
 import { LoginModalHost } from "./login-modal";
 import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
@@ -34,6 +35,7 @@ export function SiteShell({
       <main className={`flex-1 ${underHeader ? "" : "pt-16"}`}>{children}</main>
       <SiteFooter variant={variant} />
       <LoginModalHost />
+      <ContentDetailHost />
     </div>
   );
 }

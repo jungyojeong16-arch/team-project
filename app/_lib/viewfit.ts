@@ -575,6 +575,17 @@ export const formatDuration = (movie: Movie) =>
 
 export const formatAgeRating = (rating: AgeRating | null) => (!rating ? "" : rating === "ALL" ? "ALL" : `${rating}+`);
 
+/** 4-1 [바로 보기] 시청 기록 (watch_history source=direct). 로그인 안 했거나 백엔드가 없으면 조용히 건너뜀 */
+export async function recordWatch(contentId: number, platform: PlatformCode): Promise<void> {
+  const auth = authHeader();
+  if (!API_BASE_URL || !auth.Authorization) return;
+  await fetch(`${API_BASE_URL}/api/v1/contents/${contentId}/watch/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({ platform }),
+  }).catch(() => undefined);
+}
+
 export async function fetchContent(id: number, signal?: AbortSignal): Promise<Movie> {
   if (API_BASE_URL) {
     const res = await fetch(`${API_BASE_URL}/api/v1/contents/${id}/`, {

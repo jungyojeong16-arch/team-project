@@ -2,8 +2,8 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 백엔드 API 3개 완료 (11/17, 홍준화 — 검색·상세(`my` 포함)·바로 보기 기록, 테스트 통과) · 화면(검색창 동작, 상세 팝업, [바로 보기]·[상세 정보] 버튼 연결) ⬜ 정재준 |
-| Figma | 상단 검색창 "어떤 이야기를 찾으세요?"(모든 화면), [상세 정보]·[바로 보기] 버튼([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)). 상세 화면 자체는 Figma에 없음 (D5) |
+| 상태 | 🟡 백엔드 API 3개 ✅ (11/17 — 검색·상세(`my` 포함)·바로 보기 기록) · **작품 상세 공통 오버레이 ✅** (11/17, Figma 375:1666 — `app/_components/content-detail-modal.tsx`, 홈 카드·[상세 정보]·[바로 보기] 연결, OTT 버튼 최대 3개 → 새 탭 + 시청 기록) · 남은 것: 상단 검색창 동작(FR1·FR6), 팝업 안 좋아요·별점(FR3 — 5-1·5-2 후) ⬜ |
+| Figma | 상단 검색창 "어떤 이야기를 찾으세요?"(모든 화면), [상세 정보]·[바로 보기] 버튼([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)), **[작품 상세 · 공통 오버레이](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=375-1666)** · [홈피드 · 작품 상세 팝업 열림](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=375-1802) (11/17 추가) |
 | 코드(예정) | `backend/core/views.py`(content_search, content_detail, content_watch), `app/_components/content-modal.tsx` |
 | 테이블 | `content`, `content_genre`, `content_platform`, `rating`, `content_like`, `watch_history`(source=direct) |
 | 담당 | **정재준** (PRD 확정·바이브 코딩) |
