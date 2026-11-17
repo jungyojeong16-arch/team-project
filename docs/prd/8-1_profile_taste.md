@@ -6,7 +6,7 @@
 | Figma | [프로필 정보](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=130-846) · [취향 수정](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=220-5925) |
 | 코드 | `app/profile/page.tsx`, `views.py`(me, save_survey) / 예정: `views.py`(profile_summary), `app/me/taste/page.tsx` |
 | 테이블 | `member`, `genre_preference`, `watch_history`, `rating`, `content_like`, `recommendation` |
-| 담당 | **정준교** (바이브 코딩) · 검토: 정재준 |
+| 담당 | **정재준** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 정준교(API) |
 
 ## 1. 목적

@@ -6,7 +6,7 @@
 | Figma | [재방문 추천 피드백](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=145-2341) (홈 위에 뜨는 팝업) |
 | 코드(예정) | `views.py`(pending_feedback, submit_feedback), `app/_components/feedback-modal.tsx` |
 | 테이블 | `recommendation.feedback`(pending → rated / not_watched), `rating`(score, comment) |
-| 담당 | **정준교** (바이브 코딩) · 검토: 홍준화 |
+| 담당 | **홍준화** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 정준교(DB), 정재준(화면) |
 
 ## 1. 목적
