@@ -21,3 +21,6 @@ out/
 Thumbs.db
 .vscode/
 *.pem
+
+# Next.js 가 실행할 때마다 자동으로 만드는 파일
+next-env.d.ts
