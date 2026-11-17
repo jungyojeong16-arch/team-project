@@ -23,6 +23,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -91,6 +92,49 @@ def contents(request):
     qs = filter_contents(m.Content.objects.all(), request.query_params)
     qs = contents_for_cards(qs).order_by("-rating_count", "id")
     return paginate(qs, request, ContentCardSerializer)
+
+
+@api_view(["GET"])
+def content_search(request):
+    query = request.query_params.get("q", "").strip()
+    if len(query) < 2:
+        return Response([])
+
+    qs = contents_for_cards(m.Content.objects.filter(title__icontains=query).order_by("title", "id"))[:20]
+    cards = ContentCardSerializer(qs, many=True).data
+    return Response([
+        {key: card[key] for key in ("id", "title", "content_type", "release_year", "poster_url")}
+        for card in cards
+    ])
+
+
+@api_view(["GET"])
+def content_detail(request, content_id):
+    content = contents_for_cards().filter(pk=content_id).first()
+    if content is None:
+        raise NotFound("작품을 찾을 수 없어요")
+    data = dict(ContentCardSerializer(content).data)
+    data["rating"]["by_age_group"] = [
+        group for group in data["rating"]["by_age_group"] if group["count"] >= 3
+    ]
+
+    if request.user.is_authenticated:
+        rating = m.Rating.objects.filter(content=content, member=request.user).first()
+        data["my"] = {
+            "score": round(float(rating.score), 1) if rating else None,
+            "liked": m.ContentLike.objects.filter(content=content, member=request.user).exists(),
+        }
+    return Response(data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def content_watch(request, content_id):
+    content = m.Content.objects.filter(pk=content_id).first()
+    if content is None:
+        raise NotFound("작품을 찾을 수 없어요")
+    m.WatchHistory.objects.create(member=request.user, content=content, source=m.WatchSource.DIRECT)
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # -----------------------------------------------------------------------------

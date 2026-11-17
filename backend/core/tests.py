@@ -221,6 +221,93 @@ class CommonContentListTests(APITestCase):
         self.assertEqual(self.client.get("/api/v1/me/").status_code, 401)
 
 
+class SearchDetailWatchTests(APITestCase):
+    SEARCH_URL = "/api/v1/contents/search/"
+
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentLike, ContentPlatform, Platform
+
+        cls.content = Content.objects.create(
+            title="폭싹 속았수다", content_type="series", release_year=2025, poster_url="https://example.com/poster.jpg"
+        )
+        ContentPlatform.objects.create(
+            content=cls.content,
+            platform=Platform.objects.get(code="NETFLIX"),
+            deeplink_url="https://www.netflix.com/search?q=test",
+        )
+        cls.viewer = Member.objects.create_user("viewer@viewfit.kr", "시청자", "viewfit123!", age_group="20s")
+        cls.twenties = [
+            Member.objects.create_user(f"20s-{i}@viewfit.kr", f"이십{i}", "viewfit123!", age_group="20s")
+            for i in range(3)
+        ]
+        cls.thirties = [
+            Member.objects.create_user(f"30s-{i}@viewfit.kr", f"삼십{i}", "viewfit123!", age_group="30s")
+            for i in range(2)
+        ]
+        for member in cls.twenties + cls.thirties:
+            Rating.objects.create(member=member, content=cls.content, score=Decimal("4.0"))
+        Rating.objects.create(member=cls.viewer, content=cls.content, score=Decimal("5.0"))
+        ContentLike.objects.create(member=cls.viewer, content=cls.content)
+        for i in range(25):
+            Content.objects.create(title=f"검색 작품 {i:02d}", content_type="movie", release_year=2024)
+
+    def auth(self, member):
+        self.client.force_authenticate(user=member)
+
+    def test_search_trims_query_and_limits_to_20(self):
+        res = self.client.get(self.SEARCH_URL, {"q": " 폭싹 "})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data, [{
+            "id": self.content.id,
+            "title": "폭싹 속았수다",
+            "content_type": "series",
+            "release_year": 2025,
+            "poster_url": "https://example.com/poster.jpg",
+        }])
+        self.assertEqual(len(self.client.get(self.SEARCH_URL, {"q": "검색"}).data), 20)
+
+    def test_search_short_query_returns_empty_list(self):
+        self.assertEqual(self.client.get(self.SEARCH_URL, {"q": " 폭 "}).data, [])
+        self.assertEqual(self.client.get(self.SEARCH_URL, {"q": " "}).data, [])
+
+    def test_detail_is_public_and_filters_small_age_groups(self):
+        res = self.client.get(f"/api/v1/contents/{self.content.id}/")
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual(res.data["rating"]["overall"], 4.2)
+        self.assertEqual(res.data["rating"]["total_count"], 6)
+        self.assertEqual(res.data["rating"]["by_age_group"], [
+            {"age_group": "20s", "average": 4.2, "count": 4}
+        ])
+        self.assertNotIn("my", res.data)
+        self.assertEqual(res.data["platforms"][0]["code"], "NETFLIX")
+
+    def test_detail_returns_my_fields_when_authenticated(self):
+        self.auth(self.viewer)
+        res = self.client.get(f"/api/v1/contents/{self.content.id}/")
+        self.assertEqual(res.data["my"], {"score": 5.0, "liked": True})
+
+    def test_missing_content_returns_korean_404(self):
+        res = self.client.get("/api/v1/contents/999999/")
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.data["detail"], "작품을 찾을 수 없어요")
+
+    def test_watch_requires_login(self):
+        self.assertEqual(
+            self.client.post(f"/api/v1/contents/{self.content.id}/watch/", {"platform": "NETFLIX"}, format="json").status_code,
+            401,
+        )
+
+    def test_watch_records_every_request_as_direct(self):
+        from .models import WatchHistory
+
+        self.auth(self.viewer)
+        url = f"/api/v1/contents/{self.content.id}/watch/"
+        self.assertEqual(self.client.post(url, {"platform": "NETFLIX"}, format="json").status_code, 204)
+        self.assertEqual(self.client.post(url, {"platform": "NETFLIX"}, format="json").status_code, 204)
+        self.assertEqual(WatchHistory.objects.filter(member=self.viewer, content=self.content, source="direct").count(), 2)
+
+
 # =============================================================================
 # 2-1 작품 데이터 수집 — TMDB 응답은 가짜(mock)로 테스트
 # =============================================================================
