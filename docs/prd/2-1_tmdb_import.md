@@ -2,9 +2,9 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/18) |
+| 상태 | 🟡 코드 완료 (11/17, Step 1~3 · 가짜 TMDB 응답으로 테스트 통과) — TMDB 키 받아 실제 수집 확인 ⬜ · Step 4(D6 칸)는 D6 결정 후 |
 | Figma | 화면 없음 (관리자 명령). 모든 화면의 작품 카드가 이 데이터를 씀 |
-| 코드(예정) | `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, `backend/core/tmdb.py` |
+| 코드 | `backend/core/tmdb.py`, `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, 테스트 `tests.py`(ImportTmdbTests, SeedDemoTests) |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |
 | 필요한 것 | TMDB API Read Access Token (`backend/.env` 의 `TMDB_API_TOKEN`) |
 | 담당 | **홍준화** (PRD 확정·바이브 코딩) |
@@ -21,7 +21,7 @@
 ## 3. 기능 요구사항
 | ID | 내용 | 구분 |
 |---|---|---|
-| FR1 | `python manage.py import_tmdb` : 한국어(ko-KR)로 인기 영화·시리즈를 가져와 `content`에 저장 (기본 영화 500 + 시리즈 500 = 1,000개) | 필수 |
+| FR1 | `python manage.py import_tmdb` : 한국어(ko-KR)로 인기 영화·시리즈를 가져와 `content`에 저장 (기본 영화 100 + 시리즈 100 = 200개, 11/17 변경 · `--movies 500 --series 500` 으로 1,000개) | 필수 |
 | FR2 | 같은 작품을 다시 가져오면 새로 만들지 않고 **수정** (`tmdb_id` + `content_type` 기준) | 필수 |
 | FR3 | TMDB 장르 → ViewFit 장르 12개로 연결해 `content_genre` 저장 (아래 표) | 필수 |
 | FR4 | TMDB 한국(KR) 제공처 정보로 `content_platform` 저장. ViewFit 6개 OTT만 | 필수 |
@@ -60,6 +60,8 @@
 ## 4. 데이터 · API
 - TMDB 주소: `/discover/movie`, `/discover/tv` (watch_region=KR, 인기순), `/{type}/{id}/watch/providers`, `/genre/{type}/list`
 - 인증: 헤더 `Authorization: Bearer <TMDB_API_TOKEN>` — 키는 `backend/.env` 에만
+- 실제 구현: 목록은 `/discover/{movie|tv}?watch_region=KR&with_watch_monetization_types=flatrate`(한국 구독형 OTT 작품만), 작품마다 `/{type}/{id}?append_to_response=watch/providers,release_dates`(시리즈는 `content_ratings,keywords`)로 **요청 1번**에 제공처·관람 등급·키워드를 같이 받음
+- 장르는 TMDB 장르 **번호**로 연결 (한국어 장르 이름은 바뀔 수 있어서). 가족과 함께의 '코미디 12세 이하'는 KR 관람 등급으로 판단 (DB에는 저장 안 함 — D6)
 - 포스터 주소: `https://image.tmdb.org/t/p/w500` + poster_path
 
 ## 5. 규칙 · 예외

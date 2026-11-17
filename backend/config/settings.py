@@ -107,6 +107,9 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# TMDB API Read Access Token (2-1 작품 데이터 수집). 키는 backend/.env 에만 넣기
+TMDB_API_TOKEN = os.getenv("TMDB_API_TOKEN", "")
+
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
 
 REST_FRAMEWORK = {
