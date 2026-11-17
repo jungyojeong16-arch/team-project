@@ -76,3 +76,14 @@
 | 결과 | 정준교 업로드 커밋 [`89394d8`](https://github.com/jungyojeong16-arch/team-project/commit/89394d8), [`36564f9`](https://github.com/jungyojeong16-arch/team-project/commit/36564f9) · `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.mjs`, `postcss.config.js`, `tailwind.config.js`, `app/layout.tsx`, `app/globals.css` |
 | 확인 | - [x] 오류 없이 빌드 <br> - [x] 만든 화면 6개 Figma와 같음, 설문·프로필은 다름(3번·8번에서 수정), 나머지 8개는 미제작 |
 | 수정 요청 | 남은 것: `layout.tsx` 언어(ko)·밝은 모드 흰 배경, `public` 폴더 업로드 |
+
+### 기록 7 — 0-1 DB 칸 추가 (팀 결정 D6·D7 반영)
+| 칸 | 내용 |
+|---|---|
+| 날짜 | 11/17 |
+| 보낸 프롬프트 | "그럼 이제 docs/prd/readme.md에 있는 0~8번 내용에서 0번부터 실행하자." |
+| 기준 PRD | 0-1 DB 스키마 · README 5번 D6·D7 → 해당 Step 프롬프트: **2-1 Step 4** ("DB 담당이 D6 을 승인했어. content 에 backdrop_url, age_rating, runtime_minutes, episode_count, tmdb_rating, tmdb_vote_count 칸을 추가하는 migration 을 만들고 import_tmdb 에서 채워 줘. docs/erd/ViewFit_ERD_physical.md 의 content 칸 목록도 같이 고쳐 줘.") · **6-1 Step 1** ("DB 담당이 D7 을 승인했어. ranking 테이블에 score DECIMAL(5,1) 칸을 추가하는 migration 을 만들고, docs/erd/ViewFit_ERD_physical.md 의 ranking 칸 목록에 score 와 '집계 당시 값이라 저장' 이유를 적어 줘.") |
+| AI가 한 일 | 0번에서 남은 일 중 코드로 할 수 있는 DB 칸 추가(D6·D7)를 DB 담당(정준교) 요청으로 진행. `content` 에 6칸, `ranking` 에 `score` 추가(`0004` migration). `import_tmdb` 가 TMDB 배경 이미지·KR 관람 등급·상영 시간·회차·TMDB 평점을 저장. 작품 카드 API·프론트 `Movie` 타입을 새 칸에 맞춤(등급 없으면 표시 안 함). ERD 문서·PRD 상태 갱신 |
+| 결과 | 커밋 [`451b5ff`](https://github.com/jungyojeong16-arch/team-project/commit/451b5ff) · `backend/core/models.py`, `migrations/0004_content_card_fields_ranking_score.py`, `tmdb.py`, `serializers.py`, `tests.py`, `app/_lib/viewfit.ts`, `docs/erd/ViewFit_ERD_physical.md` |
+| 확인 | - [x] `python manage.py test core` 25개 통과 (SQLite, MariaDB 둘 다) <br> - [x] MariaDB `show columns` 로 새 칸 7개 확인 (`score decimal(5,1)`) <br> - [x] 프론트 타입 검사 통과 <br> - [ ] 정준교 PC에서 `migrate` → HeidiSQL로 칸 확인 <br> - [ ] `import_tmdb` 다시 실행 → 새 칸이 채워지는지 |
+| 수정 요청 | 없음 |
