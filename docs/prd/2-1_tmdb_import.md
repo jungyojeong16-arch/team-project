@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 코드 완료 (11/17, Step 1~3 · 가짜 TMDB 응답으로 테스트 통과) — TMDB 키 받아 실제 수집 확인 ⬜ · Step 4(D6 칸)는 D6 결정 후 |
+| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 각자 PC 수집, OTT 검색 주소 열어 보기 ⬜ · Step 4(D6 칸)는 D6 결정 후 |
 | Figma | 화면 없음 (관리자 명령). 모든 화면의 작품 카드가 이 데이터를 씀 |
 | 코드 | `backend/core/tmdb.py`, `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, 테스트 `tests.py`(ImportTmdbTests, SeedDemoTests) |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |
