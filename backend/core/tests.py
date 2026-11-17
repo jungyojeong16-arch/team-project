@@ -344,6 +344,30 @@ class ImportTmdbTests(TestCase):
         with self.assertRaisesMessage(CommandError, "TMDB_API_TOKEN"):
             call_command("import_tmdb", stdout=StringIO())
 
+    def test_token_forms(self):
+        """읽기 액세스 토큰은 헤더로, 짧은 API 키는 주소로 — 따옴표·Bearer 는 떼고"""
+        import io
+        import json
+
+        from . import tmdb
+
+        sent = []
+
+        def fake_urlopen(request, timeout=None):
+            sent.append(request)
+            return io.BytesIO(json.dumps({"ok": True}).encode())
+
+        key = "0123456789abcdef0123456789abcdef"
+        with mock.patch("core.tmdb.time.sleep"), mock.patch("core.tmdb.urllib.request.urlopen", side_effect=fake_urlopen):
+            with override_settings(TMDB_API_TOKEN='"Bearer eyJabc.def"'):
+                tmdb.get("/genre/movie/list", language="ko-KR")
+            with override_settings(TMDB_API_TOKEN=f" {key} "):
+                tmdb.get("/genre/movie/list", language="ko-KR")
+        self.assertEqual(sent[0].get_header("Authorization"), "Bearer eyJabc.def")
+        self.assertNotIn("api_key", sent[0].full_url)
+        self.assertIsNone(sent[1].get_header("Authorization"))
+        self.assertIn(f"api_key={key}", sent[1].full_url)
+
     def test_retries_three_times_then_fails(self):
         import urllib.error
 

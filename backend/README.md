@@ -103,7 +103,7 @@ python manage.py runserver
 
 1. **TMDB 키 받기** (한 명만 받아서 단톡방에 공유해도 됨 — GitHub·노션에는 올리지 않기)
    themoviedb.org 가입 → 오른쪽 위 프로필 → **설정 → API** → API 키 신청(개인·학습용) →
-   **"API 읽기 액세스 토큰"**(eyJ… 로 시작하는 긴 문자열)을 복사
+   **"API 읽기 액세스 토큰"**(eyJ… 로 시작하는 긴 문자열)을 복사 (짧은 32자 "API 키"를 넣어도 동작하지만, 긴 토큰을 권장. 따옴표·띄어쓰기 없이 `TMDB_API_TOKEN=eyJ...`)
 2. `backend/.env` 맨 아래 `TMDB_API_TOKEN=` 뒤에 붙여넣기 (`.env` 가 없으면 `.env.example` 을 복사해서 만들기)
 3. 실행
 ```powershell
@@ -134,7 +134,7 @@ python manage.py seed_demo --clear                    # 가상 회원과 그 기
 ```powershell
 python manage.py test core
 ```
-회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지, 0번 공통 목록 규칙(offset·limit·필터·오류 모양·작품 카드 모양), 2-1 작품 수집(가짜 TMDB 응답)·시연 데이터, D6·D7 칸, 4-1 검색·상세·바로 보기, 0-4 홈 피드까지 33가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
+회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지, 0번 공통 목록 규칙(offset·limit·필터·오류 모양·작품 카드 모양), 2-1 작품 수집(가짜 TMDB 응답)·시연 데이터, D6·D7 칸, 4-1 검색·상세·바로 보기, 0-4 홈 피드, TMDB 키 형식까지 34가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
 > MariaDB 로 테스트하려면 viewfit 계정에 테스트용 DB 권한이 필요합니다. MariaDB 클라이언트에서 한 번만:
 > `GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'127.0.0.1'; GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'localhost';`
 

@@ -41,19 +41,33 @@ class MissingToken(TmdbError):
 
 
 def _token():
-    token = getattr(settings, "TMDB_API_TOKEN", "")
+    # 붙여 넣을 때 자주 섞이는 따옴표·공백·"Bearer " 는 떼고 씀
+    token = (getattr(settings, "TMDB_API_TOKEN", "") or "").strip().strip("'\"").strip()
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
     if not token:
         raise MissingToken("backend/.env 에 TMDB_API_TOKEN 을 넣어 주세요.")
     return token
 
 
+def _is_short_api_key(token):
+    """TMDB 화면의 짧은 'API 키'(32자 영문·숫자) 인지 — 긴 '읽기 액세스 토큰'(eyJ…)이 아니면 주소에 붙여 보냄"""
+    return bool(re.fullmatch(r"[0-9a-fA-F]{32}", token))
+
+
 def get(path, **params):
-    """TMDB GET 요청 → JSON. 실패하면 3번까지 다시 시도."""
+    """TMDB GET 요청 → JSON. 실패하면 3번까지 다시 시도.
+    키는 '읽기 액세스 토큰'(권장, 헤더로 보냄)과 짧은 'API 키'(주소의 api_key 로 보냄) 둘 다 받음."""
     token = _token()
+    headers = {"Accept": "application/json"}
+    if _is_short_api_key(token):
+        params = {**params, "api_key": token}
+    else:
+        headers["Authorization"] = f"Bearer {token}"
     url = f"{BASE_URL}{path}"
     if params:
         url += "?" + urllib.parse.urlencode(params)
-    request = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
+    request = urllib.request.Request(url, headers=headers)
     last_error = None
     for attempt in range(1, RETRIES + 1):
         time.sleep(REQUEST_PAUSE)
@@ -62,7 +76,10 @@ def get(path, **params):
                 return json.loads(res.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code == 401:
-                raise TmdbError("TMDB 키가 올바르지 않아요. backend/.env 의 TMDB_API_TOKEN 을 확인해 주세요.") from e
+                raise TmdbError(
+                    "TMDB 키가 올바르지 않아요. backend/.env 의 TMDB_API_TOKEN 을 확인해 주세요. "
+                    f"(지금 키: {len(token)}자, '{token[:3]}…' 로 시작 — 읽기 액세스 토큰은 보통 200자 이상, 'eyJ' 로 시작)"
+                ) from e
             if e.code == 404:
                 raise TmdbError(f"TMDB 에 없는 주소예요: {path}") from e
             last_error = e
