@@ -10,6 +10,7 @@
 import json
 import re
 import time
+from decimal import Decimal
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -18,6 +19,7 @@ from django.conf import settings
 
 BASE_URL = "https://api.themoviedb.org/3"
 POSTER_BASE = "https://image.tmdb.org/t/p/w500"
+BACKDROP_BASE = "https://image.tmdb.org/t/p/w1280"  # 오늘의 추천 큰 배경 (D6)
 REQUEST_PAUSE = 0.25  # 요청 사이 쉬는 시간(초)
 RETRIES = 3
 
@@ -203,6 +205,18 @@ def _age_number(cert):
     return int(digits.group()) if digits else None
 
 
+def age_rating_code(age):
+    """관람 나이 숫자 → content.age_rating 값 (ALL·7·12·15·19). 모르면 "" (D6)"""
+    if age is None:
+        return ""
+    if age == 0:
+        return "ALL"
+    for limit in (7, 12, 15):
+        if age <= limit:
+            return str(limit)
+    return "19"  # 18세·청소년 관람불가
+
+
 def map_tpos(genres, age):
     """ViewFit 장르 + 관람 나이 → 어울리는 상황 이름 집합"""
     tpos = {name for name, rule in TPO_RULES.items() if genres & rule}
@@ -216,10 +230,19 @@ def to_content_fields(content_type, data):
     date = data.get("release_date") if content_type == "movie" else data.get("first_air_date")
     year = int(date[:4]) if date and date[:4].isdigit() else None
     poster = data.get("poster_path")
+    backdrop = data.get("backdrop_path")
     title = data.get("title") if content_type == "movie" else data.get("name")
+    vote = data.get("vote_average")
     return {
         "title": (title or data.get("original_title") or data.get("original_name") or "")[:255],
         "overview": data.get("overview") or "",
         "poster_url": f"{POSTER_BASE}{poster}" if poster else "",
         "release_year": year,
+        # D6 칸
+        "backdrop_url": f"{BACKDROP_BASE}{backdrop}" if backdrop else "",
+        "age_rating": age_rating_code(korean_age(content_type, data)),
+        "runtime_minutes": (data.get("runtime") or None) if content_type == "movie" else None,
+        "episode_count": (data.get("number_of_episodes") or None) if content_type == "series" else None,
+        "tmdb_rating": round(Decimal(str(vote)), 1) if vote else None,
+        "tmdb_vote_count": data.get("vote_count") or 0,
     }

@@ -115,6 +115,21 @@ class TableRuleTests(APITestCase):
         with self.assertRaises(IntegrityError):
             Rating.objects.create(member=self.member, content=self.content, score=Decimal("3.0"))
 
+    def test_ranking_score_d7(self):
+        """D7 — ViewFit 지수는 0~100, 소수 첫째 자리까지 저장"""
+        import datetime
+
+        from django.core.exceptions import ValidationError
+
+        from .models import Ranking
+
+        day = datetime.date(2026, 11, 20)
+        ranking = Ranking.objects.create(content=self.content, ranked_on=day, rank=1, score=Decimal("87.5"))
+        ranking.refresh_from_db()
+        self.assertEqual(ranking.score, Decimal("87.5"))
+        with self.assertRaises(ValidationError):
+            Ranking(content=self.content, ranked_on=day, rank=2, score=Decimal("100.1")).full_clean()
+
 
 # =============================================================================
 # 0번 공통 — 목록 규칙(offset·limit·필터·오류 모양)과 작품 카드 모양
@@ -170,7 +185,18 @@ class CommonContentListTests(APITestCase):
             [{"age_group": "20s", "average": 4.0, "count": 1}, {"age_group": "30s", "average": 3.0, "count": 1}],
         )
         for name in ["original_title", "backdrop_url", "runtime", "episode_count", "age_rating"]:
-            self.assertIn(name, card)  # D6 칸이 생기기 전에도 프론트 타입과 같은 칸 이름
+            self.assertIn(name, card)  # 프론트 Movie 타입과 같은 칸 이름
+        self.assertIsNone(card["age_rating"])  # 등급을 모르면 null
+
+    def test_card_d6_fields(self):
+        c = Content.objects.get(title="작품00")
+        c.backdrop_url, c.age_rating, c.runtime_minutes = "https://image.tmdb.org/t/p/w1280/x.jpg", "12", 95
+        c.save()
+        card = self.client.get(self.URL).data["results"][0]
+        self.assertEqual(
+            (card["backdrop_url"], card["age_rating"], card["runtime"], card["episode_count"]),
+            ("https://image.tmdb.org/t/p/w1280/x.jpg", "12", 95, None),
+        )
 
     def test_filters(self):
         self.assertEqual(self.client.get(self.URL, {"genre": "공포"}).data["count"], 6)
@@ -216,6 +242,7 @@ FAKE_TMDB = {
     # 드라마+공포, 넷플릭스+디즈니+ (TMDB 표기 "Disney Plus")
     "/movie/1": {
         "id": 1, "title": "가짜 영화", "overview": "줄거리", "poster_path": "/p1.jpg", "release_date": "2024-05-01",
+        "backdrop_path": "/b1.jpg", "runtime": 128, "vote_average": 7.86, "vote_count": 1534,
         "genres": [{"id": 18}, {"id": 27}],
         "watch/providers": _kr_providers("Netflix", "Disney Plus", "Apple TV"),
         "release_dates": {"results": [{"iso_3166_1": "KR", "release_dates": [{"certification": "15"}]}]},
@@ -231,6 +258,7 @@ FAKE_TMDB = {
     # 시리즈: Sci-Fi & Fantasy + 키워드 romance → SF·판타지·로맨스
     "/tv/10": {
         "id": 10, "name": "가짜 시리즈", "first_air_date": "2025-03-01", "genres": [{"id": 10765}],
+        "number_of_episodes": 16, "episode_run_time": [60],
         "keywords": {"results": [{"name": "romance"}]},
         "watch/providers": _kr_providers("TVING", "wavve"),
         "content_ratings": {"results": [{"iso_3166_1": "KR", "rating": "15"}]},
@@ -274,6 +302,32 @@ class ImportTmdbTests(TestCase):
         series = Content.objects.get(tmdb_id=10, content_type="series")
         self.assertEqual({g.name for g in series.genres.all()}, {"SF", "판타지", "로맨스"})
         self.assertEqual({p.code for p in series.platforms.all()}, {"TVING", "WAVVE"})
+
+    def test_import_saves_card_fields_d6(self):
+        """D6 — 배경·관람 등급·상영 시간·회차·TMDB 평점"""
+        self.run_import(movies=5, series=5)
+        movie = Content.objects.get(tmdb_id=1, content_type="movie")
+        self.assertEqual(movie.backdrop_url, "https://image.tmdb.org/t/p/w1280/b1.jpg")
+        self.assertEqual(movie.age_rating, "15")
+        self.assertEqual(movie.runtime_minutes, 128)
+        self.assertIsNone(movie.episode_count)
+        self.assertEqual(movie.tmdb_rating, Decimal("7.9"))
+        self.assertEqual(movie.tmdb_vote_count, 1534)
+
+        family = Content.objects.get(tmdb_id=3)  # 정보가 없는 칸은 비워 둠
+        self.assertEqual((family.age_rating, family.backdrop_url, family.runtime_minutes), ("12", "", None))
+        self.assertIsNone(family.tmdb_rating)
+        self.assertEqual(family.tmdb_vote_count, 0)
+
+        series = Content.objects.get(tmdb_id=10, content_type="series")
+        self.assertEqual((series.episode_count, series.runtime_minutes, series.age_rating), (16, None, "15"))
+
+    def test_age_rating_code(self):
+        from . import tmdb
+
+        cases = {None: "", 0: "ALL", 7: "7", 12: "12", 15: "15", 18: "19", 19: "19"}
+        for age, code in cases.items():
+            self.assertEqual(tmdb.age_rating_code(age), code)
 
     def test_running_twice_updates_instead_of_duplicating(self):
         self.run_import(movies=5, series=5)

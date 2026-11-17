@@ -68,6 +68,16 @@ class RankingPeriod(models.TextChoices):
     MONTHLY = "monthly", "월간"
 
 
+class AgeRating(models.TextChoices):
+    """한국 관람 등급 (TMDB KR 등급 기준) — D6"""
+
+    ALL = "ALL", "전체 관람가"
+    AGE_7 = "7", "7세 이상"
+    AGE_12 = "12", "12세 이상"
+    AGE_15 = "15", "15세 이상"
+    AGE_19 = "19", "청소년 관람불가"
+
+
 # 별점은 0.5 단위 (0.5, 1.0, ..., 5.0)
 SCORE_CHOICES = [Decimal(n) / 2 for n in range(1, 11)]
 
@@ -177,6 +187,17 @@ class Content(models.Model):
     release_year = models.PositiveSmallIntegerField("공개연도", null=True, blank=True)
     tagline = models.CharField("한 줄 큐레이션", max_length=100, blank=True)
 
+    # D6 (11/17) — Figma 작품 카드·오늘의 추천에 보이는 값. TMDB 에서 가져와 저장 (import_tmdb)
+    backdrop_url = models.URLField("배경 이미지 주소", max_length=500, blank=True)
+    age_rating = models.CharField("관람 등급", max_length=3, choices=AgeRating.choices, blank=True)
+    runtime_minutes = models.PositiveSmallIntegerField("상영 시간(분, 영화)", null=True, blank=True)
+    episode_count = models.PositiveSmallIntegerField("회차 수(시리즈)", null=True, blank=True)
+    tmdb_rating = models.DecimalField(
+        "TMDB 평점(0~10)", max_digits=3, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(10)],
+    )
+    tmdb_vote_count = models.PositiveIntegerField("TMDB 평가 수", default=0)
+
     genres = models.ManyToManyField(Genre, through="ContentGenre", related_name="contents", verbose_name="장르")
     platforms = models.ManyToManyField(
         Platform, through="ContentPlatform", related_name="contents", verbose_name="제공 OTT"
@@ -202,6 +223,11 @@ class Ranking(models.Model):
     period = models.CharField("집계 기간", max_length=10, choices=RankingPeriod.choices, default=RankingPeriod.WEEKLY)
     ranked_on = models.DateField("집계일")
     rank = models.PositiveSmallIntegerField("순위", validators=[MinValueValidator(1)])
+    # D7 (11/17) — ViewFit 지수(0~100). 집계 당시의 값이라 나중에 다시 계산할 수 없어서 저장
+    score = models.DecimalField(
+        "ViewFit 지수", max_digits=5, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
 
     class Meta:
         db_table = "ranking"

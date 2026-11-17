@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 각자 PC 수집, OTT 검색 주소 열어 보기 ⬜ · Step 4(D6 칸)는 D6 결정 후 |
+| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 각자 PC 수집, OTT 검색 주소 열어 보기 ⬜ · Step 4(D6 칸) ✅ 11/17 — 이미 수집한 PC는 `import_tmdb` 를 한 번 더 실행하면 새 칸이 채워짐 |
 | Figma | 화면 없음 (관리자 명령). 모든 화면의 작품 카드가 이 데이터를 씀 |
 | 코드 | `backend/core/tmdb.py`, `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, 테스트 `tests.py`(ImportTmdbTests, SeedDemoTests) |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |
@@ -30,7 +30,7 @@
 | FR7 | 6개 OTT 중 어디에도 없는 작품은 저장하지 않음 (OTT 큐레이션 서비스라서) | 필수 |
 | FR8 | `python manage.py seed_demo` : 연령대별 가상 회원 60명(`@demo.viewfit.local`)과 평점·좋아요 생성. `--clear` 로 전부 삭제 | 필수 |
 | FR9 | 화면 맨 아래 TMDB 로고와 출처 문구 ("This product uses the TMDB API but is not endorsed or certified by TMDB.") | 필수 |
-| FR10 | (D6 결정 시) `backdrop_url`, `age_rating`, `runtime_minutes`, `episode_count`, `tmdb_rating`, `tmdb_vote_count` 도 저장 | 선택 |
+| FR10 | ✅ (11/17 D6 반영) `backdrop_url`, `age_rating`, `runtime_minutes`, `episode_count`, `tmdb_rating`, `tmdb_vote_count` 도 저장 | 선택 |
 
 ### 장르 연결
 | ViewFit | TMDB 영화 | TMDB 시리즈 |

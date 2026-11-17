@@ -352,7 +352,8 @@ function Player({ movie }: { movie: Movie }) {
           <div className="min-w-0">
             <p className="truncate text-lg font-bold md:text-xl">{movie.title}</p>
             <p className="text-xs text-white/60 md:text-sm">
-              {isSeries ? `${episode}화` : `${movie.release_year} · 영화`} · {formatAgeRating(movie.age_rating)}
+              {isSeries ? `${episode}화` : `${movie.release_year} · 영화`}
+              {movie.age_rating && ` · ${formatAgeRating(movie.age_rating)}`}
             </p>
           </div>
         </div>

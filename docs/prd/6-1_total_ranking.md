@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/20) |
+| 상태 | 🟡 Step 1(`ranking.score` 칸) ✅ 11/17 · Step 2~ 예정 (11/20) |
 | Figma | [통합 랭킹](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-6421) |
 | 코드(예정) | `backend/core/management/commands/build_rankings.py`, `views.py`(rankings), `app/ranking/page.tsx` |
 | 테이블 | `ranking`(content, period, ranked_on, rank (+score, D7)), `content`, `rating` |

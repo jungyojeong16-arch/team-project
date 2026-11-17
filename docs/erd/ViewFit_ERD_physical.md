@@ -32,11 +32,11 @@
 | 테이블 | 칸 (PK 기본키 · FK 외래키 · UK 중복 불가 · ? 비어 있어도 됨) |
 |---|---|
 | member | PK id, UK email, UK nickname, password, age_group?, job?, marketing_opt_in, terms_agreed_at?, survey_completed_at?, date_joined, is_active, is_staff |
-| content | PK id, tmdb_id?, title, content_type, overview, poster_url, release_year?, tagline |
+| content | PK id, tmdb_id?, title, content_type, overview, poster_url, release_year?, tagline, backdrop_url, age_rating, runtime_minutes?, episode_count?, tmdb_rating?, tmdb_vote_count |
 | genre | PK id, UK name, UK tmdb_id? |
 | ott_platform | PK id, UK code, UK name |
 | tpo | PK id, UK name |
-| ranking | PK id, FK content_id, period, ranked_on, rank |
+| ranking | PK id, FK content_id, period, ranked_on, rank, score? |
 | rating | PK id, FK member_id, FK content_id, score, comment, age_group_at_rating?, rated_at, updated_at |
 | content_like | PK id, FK member_id, FK content_id, liked_at |
 | watch_history | PK id, FK member_id, FK content_id, source, watched_at |
@@ -78,7 +78,8 @@
 
 ### ⑥ 값의 범위를 DB에서 막음
 - **별점**: `DECIMAL(2,1)` + 0.5, 1.0, …, 5.0 만 들어가게 `CHECK` 제약을 걸었습니다. 4.3 같은 값은 DB가 거부합니다.
-- **연령대·직업·작품유형·피드백 상태** 등은 정해진 값 목록(선택지)만 쓰게 했습니다.
+- **연령대·직업·작품유형·피드백 상태·관람 등급** 등은 정해진 값 목록(선택지)만 쓰게 했습니다.
+- **TMDB 평점**은 0~10, **ViewFit 지수**는 0~100 범위만 들어가게 했습니다 (11/17).
 - 설문에서 "응답 안 함"을 고르면 연령대·직업은 **비워 둡니다(NULL)**.
 
 ### ⑦ 개념 ERD에서 생략했던 칸을 화면(Figma) 기준으로 보완
@@ -90,6 +91,9 @@
 | content.tmdb_id | 작품 정보·포스터를 TMDB에서 가져오기 위한 번호 |
 | content.tagline | 맞춤 추천 화면의 한 줄 큐레이션 |
 | ranking.period, ranked_on | 통합 랭킹의 주간/월간 탭, 날짜별 순위 등락 계산 |
+| content.backdrop_url, age_rating, runtime_minutes, episode_count (11/17, D6) | 홈 오늘의 추천·작품 카드의 배경 이미지, 관람 등급(ALL·7·12·15·19), 영화 상영 시간(분), 시리즈 회차 수. TMDB에서 가져온 원본 값이라 계산으로 만들 수 없음 |
+| content.tmdb_rating, tmdb_vote_count (11/17, D6) | TMDB 평점(0~10)·평가 수. 통합 랭킹 지수 계산(6-1)에 씀. ViewFit 회원 평점과는 따로 (회원 평점 평균은 ⑤처럼 저장하지 않음) |
+| ranking.score (11/17, D7) | 통합 랭킹 화면의 "ViewFit 지수"(0~100, `DECIMAL(5,1)`). **집계 당시 값이라 저장** — 다음 날 평점·인기도가 바뀌면 다시 계산해도 그날 값이 나오지 않으므로 ⑤의 예외 |
 | recommendation.tpo_id, feedback | 어떤 상황에서 추천했는지, 재방문 추천 피드백 화면 |
 | watch_history.source | 설문에서 입력한 작품인지, 직접 기록한 작품인지 |
 | ott_platform.code | 화면의 OTT 뱃지(NETFLIX, TVING …)와 연결 |

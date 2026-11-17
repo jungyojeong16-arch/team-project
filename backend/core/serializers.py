@@ -153,13 +153,9 @@ class SurveySerializer(serializers.Serializer):
 # 작품 목록은 core/common.py 의 contents_for_cards() 로 불러와야 평점이 한 번에 계산됩니다.
 # =============================================================================
 
-# 아직 DB 에 칸이 없는 값 (D6 결정 후 content 에 추가 예정) — 칸이 생기면 자동으로 채워짐
-_PENDING_D6_FIELDS = {
+# 아직 DB 에 칸이 없는 값 — 칸이 생기면 자동으로 채워짐 (D6 의 나머지 칸은 11/17 추가됨)
+_PENDING_FIELDS = {
     "original_title": "",
-    "backdrop_url": "",
-    "runtime": None,
-    "episode_count": None,
-    "age_rating": None,
 }
 
 
@@ -177,15 +173,21 @@ class ContentCardSerializer(serializers.ModelSerializer):
         fields = [
             "id", "tmdb_id", "title", "content_type", "overview", "poster_url",
             "release_year", "tagline", "genres", "platforms", "rating",
+            # D6 (프론트 Movie 타입의 칸 이름: runtime_minutes → runtime, 등급 모르면 null)
+            "backdrop_url", "runtime", "episode_count", "age_rating",
         ]
+
+    runtime = serializers.IntegerField(source="runtime_minutes", read_only=True)
+    age_rating = serializers.SerializerMethodField()
 
     def to_representation(self, content):
         data = super().to_representation(content)
-        for name, empty in _PENDING_D6_FIELDS.items():
-            # D6 칸 이름: runtime_minutes → runtime
-            source = "runtime_minutes" if name == "runtime" else name
-            data[name] = getattr(content, source, empty)
+        for name, empty in _PENDING_FIELDS.items():
+            data[name] = getattr(content, name, empty)
         return data
+
+    def get_age_rating(self, content):
+        return content.age_rating or None
 
     def get_genres(self, content):
         return [{"id": g.id, "name": g.name} for g in content.genres.all()]

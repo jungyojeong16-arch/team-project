@@ -59,7 +59,9 @@ export function TodayPick({ hero, user, tpo }: { hero: HeroCuration; user: UserP
             <span className="text-white/50">({formatCount(movie.rating.total_count)}명)</span>
           </span>
           <span>{movie.release_year}</span>
-          <span className="rounded border border-white/40 px-1.5 text-xs">{formatAgeRating(movie.age_rating)}</span>
+          {movie.age_rating && (
+            <span className="rounded border border-white/40 px-1.5 text-xs">{formatAgeRating(movie.age_rating)}</span>
+          )}
           <span>{formatDuration(movie)}</span>
           <span>{movie.genres.map((g) => g.name).join(" · ")}</span>
           {movie.platforms.map((p) => (

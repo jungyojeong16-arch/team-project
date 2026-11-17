@@ -10,7 +10,7 @@
 export type PlatformCode = "NETFLIX" | "TVING" | "COUPANG_PLAY" | "WAVVE" | "DISNEY_PLUS" | "WATCHA";
 export type AgeGroup = "20s" | "30s" | "40s";
 export type ContentType = "movie" | "series";
-export type AgeRating = "ALL" | "12" | "15" | "19";
+export type AgeRating = "ALL" | "7" | "12" | "15" | "19"; // 한국 관람 등급 (DB content.age_rating, D6)
 export type TimeSlot = "morning" | "afternoon" | "evening" | "late_night";
 
 export interface Platform {
@@ -48,7 +48,7 @@ export interface Movie {
   release_year: number;
   runtime: number | null; // 분 단위 (시리즈는 null)
   episode_count: number | null;
-  age_rating: AgeRating;
+  age_rating: AgeRating | null; // 등급 정보가 없으면 null
   genres: Genre[];
   platforms: Platform[];
   rating: Rating;
@@ -557,7 +557,7 @@ export const formatDuration = (movie: Movie) =>
       ? `${movie.episode_count}부작`
       : "시리즈";
 
-export const formatAgeRating = (rating: AgeRating) => (rating === "ALL" ? "ALL" : `${rating}+`);
+export const formatAgeRating = (rating: AgeRating | null) => (!rating ? "" : rating === "ALL" ? "ALL" : `${rating}+`);
 
 export async function fetchContent(id: number, signal?: AbortSignal): Promise<Movie> {
   if (API_BASE_URL) {

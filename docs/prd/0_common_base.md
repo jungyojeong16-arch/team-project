@@ -4,7 +4,7 @@
 
 | 번호 | 내용 | 담당 | 상태 |
 |---|---|---|---|
-| 0-1 | 개발 환경 · DB 스키마 | 3명 공동 (코드: 정준교 · 전원 각자 PC 세팅) | ✅ 코드 완료 / 팀원 PC 세팅 ⬜ |
+| 0-1 | 개발 환경 · DB 스키마 | 3명 공동 (코드: 정준교 · 전원 각자 PC 세팅) | ✅ 코드 완료 · D6·D7 칸 추가 11/17 / 팀원 PC 세팅 ⬜ |
 | 0-2 | 공통 규칙 (폴더·API·이름·GitHub) | 3명 회의로 확정 | 🟡 아래 초안 · API 규칙은 백엔드 코드로 만듦 ✅ 11/17 |
 | 0-3 | 공통 레이아웃 · 공통 컴포넌트 | 3명 공동 (화면 검수: 정재준) | ✅ 화면 11/10 · 작품 카드 API 모양 11/17 (화면 검수: 정재준) |
 | 0-4 | 홈 화면 틀 | 3명 공동 → [0-4_home.md](0-4_home.md) | ✅ 틀 11/10 / 영역별 진짜 데이터 연결 ⬜ |
@@ -17,7 +17,7 @@
 | 프론트엔드 | TypeScript (Next.js 15, React, Tailwind) | — |
 | 백엔드 | Python 3.12 (Django 5.2 + DRF) | [backend/README.md](../../backend/README.md) |
 | DBMS | MariaDB, utf8mb4 | — |
-| DB 스키마 | 물리 ERD 테이블 14개 + 기본 데이터(장르 12·OTT 6·상황 5) | [ViewFit_ERD_physical.md](../erd/ViewFit_ERD_physical.md) |
+| DB 스키마 | 물리 ERD 테이블 14개 + 기본 데이터(장르 12·OTT 6·상황 5) · 11/17 D6(작품 카드 칸 6개)·D7(랭킹 지수) 추가 (`0004` migration) | [ViewFit_ERD_physical.md](../erd/ViewFit_ERD_physical.md) |
 | 서버 | 개발: 각자 PC / 12월 초 AWS EC2 + RDS 배포 테스트 | — |
 
 **완료 기준**: 3명 모두 각자 PC에서 http://127.0.0.1:8000/api/v1/health/ 에 `"database": "mysql"`, 가입 → 설문 → 프로필까지 동작.
@@ -113,7 +113,7 @@
 | `app/_components/coming-soon.tsx` + `app/ranking`, `recommend`, `generation`, `me/likes`, `me/ratings`, `me/taste` | 아직 없는 화면 자리 ("준비 중") — 담당자가 진짜 화면으로 교체 |
 | `app/dev/components/page.tsx` | 부품 모음 페이지 |
 | `app/_components/viewfit-font.tsx` | Figma 글꼴(Noto Sans KR · 순위 숫자 Inter) — 화면 틀에서 직접 불러옴 (11/16) |
-| `backend/core/serializers.py` `ContentCardSerializer` | FR5·FR8·FR13 작품 카드에 들어갈 데이터 모양 (프론트 `Movie` 타입과 같은 칸: 장르, OTT `watch_url`, 평점 `overall`·`total_count`·연령대별) — D6 칸(`backdrop_url`·`runtime` 등)은 DB에 생기면 자동으로 채워짐 (11/17) |
+| `backend/core/serializers.py` `ContentCardSerializer` | FR5·FR8·FR13 작품 카드에 들어갈 데이터 모양 (프론트 `Movie` 타입과 같은 칸: 장르, OTT `watch_url`, 평점 `overall`·`total_count`·연령대별) — D6 칸(`backdrop_url`·`runtime`·`episode_count`·`age_rating`)도 11/17부터 DB 값으로 채워짐 |
 | `GET /api/v1/contents/` | 작품 카드 목록 — 필터 바(FR9)·펼치기(FR10)와 같은 값을 받음 (11/17) |
 
 > 11/16: 홈은 Figma 9:5 전용 상단 바(돋보기 아이콘·테두리 없음)와 하단을 쓰도록 `variant="home"` 추가, 오늘의 추천 영역을 높이 720·빛 번짐 배경으로 Figma와 맞춤.
