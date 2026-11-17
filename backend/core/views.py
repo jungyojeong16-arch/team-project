@@ -10,7 +10,7 @@ API 목록 (주소 앞에 /api/v1 이 붙음)
   GET  /home/feed/             홈 화면 데이터 (0-4, 로그인하면 내 취향 반영)
 
   [4-1 작품]
-  GET  /contents/search/?q=    제목 검색 (2글자 이상, 최대 20개)
+  GET  /contents/search/?q=    제목 검색 (2글자 이상, 최대 20개) — 장르·OTT 코드 포함
   GET  /contents/<id>/         작품 상세 + my{score, liked}
   POST /contents/<id>/watch/   [바로 보기] 시청 기록 {platform}   * 로그인 필요
 
@@ -20,7 +20,7 @@ API 목록 (주소 앞에 /api/v1 이 붙음)
   POST /auth/login/            로그인 → 로그인 토큰
   POST /auth/logout/           로그아웃 (토큰 삭제)            * 로그인 필요
   GET  /me/                    내 정보 + 설문 결과              * 로그인 필요
-  PUT  /me/survey/             취향 설문 저장                   * 로그인 필요
+  PUT  /me/survey/             취향 설문 저장 (+ 기억에 남는 작품)  * 로그인 필요
 
 로그인이 필요한 API 는 요청 헤더에  Authorization: Token <토큰>  을 붙입니다.
 """
@@ -38,7 +38,7 @@ from . import models as m
 from .common import contents_for_cards, filter_contents, paginate
 from .home import build_home_feed
 from .serializers import (
-    ContentCardSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname,
+    ContentCardSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname, content_brief,
 )
 
 
@@ -174,6 +174,15 @@ def save_survey(request):
             [m.GenrePreference(member=member, genre=genres[n], kind=m.PreferenceKind.LIKE) for n in data["liked_genres"]]
             + [m.GenrePreference(member=member, genre=genres[n], kind=m.PreferenceKind.DISLIKE) for n in data["disliked_genres"]]
         )
+
+        # 3-1 기억에 남는 작품: 설문에서 넣은 기록(source=survey)만 지우고 새로 넣음 — [바로 보기] 기록(direct)은 그대로
+        member.watch_histories.filter(source=m.WatchSource.SURVEY).delete()
+        m.WatchHistory.objects.bulk_create(
+            [
+                m.WatchHistory(member=member, content_id=cid, source=m.WatchSource.SURVEY)
+                for cid in data["memorable_content_ids"]
+            ]
+        )
     return Response(me_payload(member))
 
 
@@ -201,9 +210,9 @@ def content_search(request):
         m.Content.objects.filter(title__icontains=q)
         .annotate(rating_count=Count("ratings"))
         .order_by("-rating_count", "id")
-        .values("id", "title", "content_type", "release_year", "poster_url")[:SEARCH_LIMIT]
+        .prefetch_related("genres", "contentplatform_set__platform")[:SEARCH_LIMIT]
     )
-    return Response(list(rows))
+    return Response([content_brief(c) for c in rows])
 
 
 @api_view(["GET"])

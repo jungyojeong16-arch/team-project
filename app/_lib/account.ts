@@ -34,6 +34,8 @@ export interface LogInPayload {
 
 export interface WatchedItem {
   id: string;
+  /** 작품 DB 번호 (3-1 기억에 남는 작품 — 서버에 이 번호로 저장). 예전 기록은 없을 수 있음 */
+  content_id?: number | null;
   title: string;
   meta: string; // "2025 · 드라마 · 로맨스" 또는 "직접 입력한 작품"
   platform: string | null; // PlatformCode
@@ -316,9 +318,9 @@ export async function signOut(): Promise<void> {
 }
 
 /**
- * 취향 설문 저장
- * - 서버(DB)에는 연령대·직업·선호/비선호 장르를 저장
- * - 시청 이력·수면 시간 등 나머지 답변은 아직 DB 칸이 없어서 브라우저에만 저장
+ * 취향 설문 저장 (3-1)
+ * - 서버(DB)에는 연령대·직업·선호/비선호 장르·기억에 남는 작품(작품 번호 → watch_history source=survey)을 저장
+ * - 화면 표시용으로 브라우저에도 한 벌 저장
  */
 export async function saveOnboarding(answers: OnboardingAnswers): Promise<void> {
   if (API_BASE_URL) {
@@ -332,6 +334,7 @@ export async function saveOnboarding(answers: OnboardingAnswers): Promise<void> 
         liked_genres: genres.liked_all ? [] : genres.liked,
         liked_all: genres.liked_all,
         disliked_genres: genres.disliked_none ? [] : genres.disliked,
+        memorable_content_ids: answers.history.watched.flatMap((w) => (w.content_id ? [w.content_id] : [])),
       },
     });
     save(ACCOUNT_KEY, toAccount(me));

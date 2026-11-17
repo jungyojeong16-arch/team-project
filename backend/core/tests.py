@@ -461,7 +461,8 @@ class ContentDetailAndHomeFeedTests(APITestCase):
         self.assertEqual(self.client.get("/api/v1/contents/search/", {"q": "밤"}).status_code, 400)  # 1글자
         res = self.client.get("/api/v1/contents/search/", {"q": "드라마"})
         self.assertEqual([r["title"] for r in res.data], ["가족 드라마"])
-        self.assertEqual(set(res.data[0]), {"id", "title", "content_type", "release_year", "poster_url"})
+        self.assertEqual(set(res.data[0]), {"id", "title", "content_type", "release_year", "poster_url", "genres", "platforms"})
+        self.assertEqual((res.data[0]["genres"], res.data[0]["platforms"]), (["드라마"], ["NETFLIX"]))
 
     def test_detail_has_card_fields_and_my(self):
         res = self.client.get(f"/api/v1/contents/{self.drama.id}/")
@@ -537,3 +538,69 @@ class ContentDetailAndHomeFeedTests(APITestCase):
         data = self.feed()
         self.assertIsNone(data["hero"])
         self.assertEqual(data["recommendations"], [])
+
+
+# =============================================================================
+# 3-1 맞춤 추천 설문 — 기억에 남는 작품 (watch_history source=survey)
+# =============================================================================
+
+
+class SurveyMemorableContentTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentGenre, ContentPlatform, Genre, Platform
+
+        cls.a = Content.objects.create(title="폭싹 속았수다", content_type="series", release_year=2025)
+        cls.b = Content.objects.create(title="선재 업고 튀어", content_type="series", release_year=2024)
+        ContentGenre.objects.create(content=cls.a, genre=Genre.objects.get(name="드라마"))
+        ContentPlatform.objects.create(content=cls.a, platform=Platform.objects.get(code="NETFLIX"))
+        cls.member = Member.objects.create_user("s@x.kr", "설문", "viewfit123!")
+
+    def setUp(self):
+        self.client.force_authenticate(self.member)
+
+    def save(self, ids, **extra):
+        return self.client.put("/api/v1/me/survey/", {"liked_genres": ["드라마"], "memorable_content_ids": ids, **extra}, format="json")
+
+    def survey_ids(self):
+        from .models import WatchHistory
+
+        return list(WatchHistory.objects.filter(member=self.member, source="survey").values_list("content_id", flat=True))
+
+    def test_two_then_one_leaves_one(self):
+        res = self.save([self.a.id, self.b.id])
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual(sorted(self.survey_ids()), sorted([self.a.id, self.b.id]))
+        self.assertEqual([c["title"] for c in res.data["memorable_contents"]], ["폭싹 속았수다", "선재 업고 튀어"])
+        self.assertEqual(res.data["memorable_contents"][0]["genres"], ["드라마"])
+        self.assertEqual(res.data["memorable_contents"][0]["platforms"], ["NETFLIX"])
+
+        res = self.save([self.b.id])
+        self.assertEqual(self.survey_ids(), [self.b.id])
+        self.assertEqual([c["title"] for c in res.data["memorable_contents"]], ["선재 업고 튀어"])
+
+    def test_empty_and_duplicates(self):
+        self.save([self.a.id, self.a.id])
+        self.assertEqual(self.survey_ids(), [self.a.id])  # 같은 작품은 한 번만
+        self.save([])
+        self.assertEqual(self.survey_ids(), [])  # 비워도 됨
+        self.assertEqual(self.client.put("/api/v1/me/survey/", {}, format="json").status_code, 200)  # 칸이 없어도 됨
+
+    def test_unknown_content_is_400_and_nothing_saved(self):
+        self.save([self.a.id])
+        res = self.save([self.b.id, 999999])
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("없는 작품이에요: 999999", res.data["memorable_content_ids"][0])
+        self.assertEqual(self.survey_ids(), [self.a.id])  # 실패하면 예전 기록 그대로
+
+    def test_direct_watch_history_is_kept(self):
+        from .models import WatchHistory
+
+        WatchHistory.objects.create(member=self.member, content=self.b, source="direct")
+        self.save([self.a.id])
+        self.save([])
+        self.assertEqual(WatchHistory.objects.filter(member=self.member, source="direct").count(), 1)
+
+    def test_me_shows_memorable_contents(self):
+        self.save([self.a.id])
+        self.assertEqual([c["id"] for c in self.client.get("/api/v1/me/").data["memorable_contents"]], [self.a.id])

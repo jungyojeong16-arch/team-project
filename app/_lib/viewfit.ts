@@ -586,6 +586,44 @@ export async function recordWatch(contentId: number, platform: PlatformCode): Pr
   }).catch(() => undefined);
 }
 
+/** 작품 검색 결과 한 줄 (GET /api/v1/contents/search/?q=) — 3-1 설문·4-1 검색창에서 사용 */
+export interface ContentBrief {
+  id: number;
+  title: string;
+  content_type: ContentType;
+  release_year: number | null;
+  poster_url: string;
+  genres: string[];
+  platforms: PlatformCode[];
+}
+
+export const SEARCH_MIN_LENGTH = 2;
+
+/** 제목으로 작품 찾기 (2글자 이상, 최대 20개). 백엔드가 없으면 샘플 작품에서 찾음 */
+export async function searchContents(query: string, signal?: AbortSignal): Promise<ContentBrief[]> {
+  const q = query.trim();
+  if (q.length < SEARCH_MIN_LENGTH) return [];
+  if (API_BASE_URL) {
+    const res = await fetch(`${API_BASE_URL}/api/v1/contents/search/?q=${encodeURIComponent(q)}`, {
+      signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`작품을 찾지 못했어요. (HTTP ${res.status})`);
+    return res.json();
+  }
+  return MOCK_MOVIES.filter((m) => m.title.includes(q))
+    .slice(0, 20)
+    .map((m) => ({
+      id: m.id,
+      title: m.title,
+      content_type: m.content_type,
+      release_year: m.release_year,
+      poster_url: m.poster_url,
+      genres: m.genres.map((g) => g.name),
+      platforms: m.platforms.map((p) => p.code),
+    }));
+}
+
 export async function fetchContent(id: number, signal?: AbortSignal): Promise<Movie> {
   if (API_BASE_URL) {
     const res = await fetch(`${API_BASE_URL}/api/v1/contents/${id}/`, {

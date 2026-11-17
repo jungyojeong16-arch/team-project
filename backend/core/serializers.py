@@ -13,7 +13,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import AgeGroup, Content, Genre, Job, Member, PreferenceKind
+from .models import AgeGroup, Content, Genre, Job, Member, PreferenceKind, WatchSource
 
 NICKNAME_RE = re.compile(r"^[가-힣A-Za-z0-9_]{2,12}$")
 
@@ -96,18 +96,34 @@ class LoginSerializer(serializers.Serializer):
         return attrs
 
 
+def content_brief(content):
+    """작품 요약 — 검색 결과(4-1)·기억에 남는 작품(3-1) 목록 한 줄
+    {id, title, content_type, release_year, poster_url, genres: [이름], platforms: [OTT 코드]}
+    """
+    return {
+        "id": content.id,
+        "title": content.title,
+        "content_type": content.content_type,
+        "release_year": content.release_year,
+        "poster_url": content.poster_url,
+        "genres": [g.name for g in content.genres.all()],
+        "platforms": [cp.platform.code for cp in content.contentplatform_set.all()],
+    }
+
+
 class MeSerializer(serializers.ModelSerializer):
     """내 정보 (프로필·헤더에서 사용)"""
 
     survey_completed = serializers.SerializerMethodField()
     liked_genres = serializers.SerializerMethodField()
     disliked_genres = serializers.SerializerMethodField()
+    memorable_contents = serializers.SerializerMethodField()  # 3-1 설문의 기억에 남는 작품
 
     class Meta:
         model = Member
         fields = [
             "id", "email", "nickname", "age_group", "job", "marketing_opt_in", "date_joined",
-            "survey_completed", "survey_completed_at", "liked_genres", "disliked_genres",
+            "survey_completed", "survey_completed_at", "liked_genres", "disliked_genres", "memorable_contents",
         ]
 
     def get_survey_completed(self, member):
@@ -122,6 +138,15 @@ class MeSerializer(serializers.ModelSerializer):
     def get_disliked_genres(self, member):
         return self._genres(member, PreferenceKind.DISLIKE)
 
+    def get_memorable_contents(self, member):
+        histories = (
+            member.watch_histories.filter(source=WatchSource.SURVEY)
+            .select_related("content")
+            .prefetch_related("content__genres", "content__contentplatform_set__platform")
+            .order_by("id")
+        )
+        return [content_brief(h.content) for h in histories]
+
 
 class SurveySerializer(serializers.Serializer):
     """취향 설문 저장 — 연령대·직업은 회원 테이블, 장르는 장르 취향 테이블"""
@@ -131,6 +156,15 @@ class SurveySerializer(serializers.Serializer):
     liked_genres = serializers.ListField(child=serializers.CharField(), required=False, default=list)
     liked_all = serializers.BooleanField(required=False, default=False)  # "모든 장르가 좋아요"
     disliked_genres = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    # 기억에 남는 작품 (작품 번호 목록, 비어도 됨) → watch_history 에 source='survey' 로 저장
+    memorable_content_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), required=False, default=list)
+
+    def validate_memorable_content_ids(self, ids):
+        ids = list(dict.fromkeys(ids))  # 같은 작품을 두 번 넣어도 한 번만 (순서 유지)
+        missing = set(ids) - set(Content.objects.filter(pk__in=ids).values_list("pk", flat=True))
+        if missing:
+            raise serializers.ValidationError(f"없는 작품이에요: {', '.join(map(str, sorted(missing)))}")
+        return ids
 
     def validate(self, attrs):
         names = set(attrs["liked_genres"]) | set(attrs["disliked_genres"])
