@@ -536,12 +536,28 @@ function authHeader(): Record<string, string> {
   }
 }
 
+/**
+ * 로그인 토큰을 붙여 GET. 토큰이 만료·삭제돼 401 이 오면 (예: DB 를 새로 만듦)
+ * 저장된 로그인 정보를 지우고(→ 화면이 웹 시작 화면으로 바뀜, PRD 1-2 5번) 토큰 없이 한 번 더 요청합니다.
+ * (account.ts 가 이 파일을 불러오므로 여기서는 같은 저장소 키·신호 이름을 직접 씁니다)
+ */
+async function getWithLogin(url: string, signal?: AbortSignal): Promise<Response> {
+  const auth = authHeader();
+  const res = await fetch(url, { signal, headers: { Accept: "application/json", ...auth } });
+  if (res.status !== 401 || !auth.Authorization) return res;
+  try {
+    localStorage.removeItem("viewfit.token");
+    localStorage.removeItem("viewfit.account");
+    window.dispatchEvent(new Event("viewfit:auth"));
+  } catch {
+    /* 무시 */
+  }
+  return fetch(url, { signal, headers: { Accept: "application/json" } });
+}
+
 export async function fetchHomeFeed(signal?: AbortSignal): Promise<HomeFeed> {
   if (API_BASE_URL) {
-    const res = await fetch(`${API_BASE_URL}/api/v1/home/feed/`, {
-      signal,
-      headers: { Accept: "application/json", ...authHeader() },
-    }).catch(() => null);
+    const res = await getWithLogin(`${API_BASE_URL}/api/v1/home/feed/`, signal).catch(() => null);
     // TODO(11/17 주): 홈 피드 API 를 만들면 이 404 대체 처리를 지우기
     if (res?.status === 404 || res === null) {
       console.warn("홈 피드 API 가 아직 없어 샘플 데이터를 보여 줍니다.");
@@ -626,10 +642,7 @@ export async function searchContents(query: string, signal?: AbortSignal): Promi
 
 export async function fetchContent(id: number, signal?: AbortSignal): Promise<Movie> {
   if (API_BASE_URL) {
-    const res = await fetch(`${API_BASE_URL}/api/v1/contents/${id}/`, {
-      signal,
-      headers: { Accept: "application/json", ...authHeader() },
-    }).catch(() => null);
+    const res = await getWithLogin(`${API_BASE_URL}/api/v1/contents/${id}/`, signal).catch(() => null);
     // TODO(11/17 주): 작품 API 를 만들면 이 404 대체 처리를 지우기
     if (res && res.status !== 404) {
       if (!res.ok) throw new Error(`콘텐츠를 불러오지 못했습니다. (HTTP ${res.status})`);
