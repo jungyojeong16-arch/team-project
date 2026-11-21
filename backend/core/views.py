@@ -35,7 +35,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from . import models as m
-from .common import contents_for_cards, filter_contents, paginate
+from . import ranking
+from .common import contents_for_cards, filter_contents, page_bounds, paginate
 from .home import build_home_feed
 from .serializers import (
     ContentCardSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname, content_brief,
@@ -242,6 +243,66 @@ def content_watch(request, content_id):
         return Response({"platform": [f"이 작품을 볼 수 있는 OTT가 아니에요. ({codes})"]}, status=status.HTTP_400_BAD_REQUEST)
     m.WatchHistory.objects.create(member=request.user, content=content, source=m.WatchSource.DIRECT)
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# -----------------------------------------------------------------------------
+# 6-1 통합 랭킹 (정준교) — 계산·저장은 core/ranking.py, 집계 명령 build_rankings
+# -----------------------------------------------------------------------------
+
+RANKING_FILTERS = ("type", "platform", "genre")
+
+
+@api_view(["GET"])
+def rankings(request):
+    """통합 랭킹 TOP 100 (가장 최근 집계일).
+
+    ?period=weekly|monthly &type= &platform= &genre= &offset=0 &limit=20
+    - 필터를 걸면 조건에 맞는 작품만 1위부터 다시 번호를 매김 (rank). 전체 순위는 overall_rank.
+    - rank_change(+상승/−하락)·is_new 는 전체 순위로 바로 전 집계와 비교
+    """
+    params = request.query_params
+    period = params.get("period") or m.RankingPeriod.WEEKLY
+    if period not in m.RankingPeriod.values:
+        return Response({"period": ["weekly, monthly 중 하나로 입력해 주세요."]}, status=status.HTTP_400_BAD_REQUEST)
+    offset, limit = page_bounds(params)
+
+    ranked_on = ranking.latest_date(period)
+    rows = ranking.ranking_rows(period, ranked_on) if ranked_on else []
+    if rows and any((params.get(k) or "all") != "all" for k in RANKING_FILTERS):
+        ids = [r.content_id for r in rows]
+        allowed = set(filter_contents(m.Content.objects.filter(pk__in=ids), params).values_list("pk", flat=True))
+        rows = [r for r in rows if r.content_id in allowed]
+    else:
+        filter_contents(m.Content.objects.none(), params)  # 잘못된 필터 값은 집계가 없어도 400
+
+    page = rows[offset : offset + limit]
+    prev = ranking.previous_ranks(period, ranked_on) if ranked_on else None
+    page_contents = list(contents_for_cards(m.Content.objects.filter(pk__in=[r.content_id for r in page])))
+    cards = dict(zip((c.id for c in page_contents), ContentCardSerializer(page_contents, many=True).data))
+    items = []
+    for i, row in enumerate(page, start=offset + 1):
+        change, is_new = ranking.change_of(row, prev)
+        items.append(
+            {
+                "rank": i,
+                "overall_rank": row.rank,
+                "rank_change": change,
+                "is_new": is_new,
+                "score": float(row.score) if row.score is not None else None,
+                "movie": cards[row.content_id],
+            }
+        )
+    return Response(
+        {
+            "period": period,
+            "ranked_on": ranked_on,
+            "total": len(rows),
+            "offset": offset,
+            "limit": limit,
+            "next_offset": offset + limit if offset + limit < len(rows) else None,
+            "items": items,
+        }
+    )
 
 
 # -----------------------------------------------------------------------------

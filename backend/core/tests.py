@@ -604,3 +604,195 @@ class SurveyMemorableContentTests(APITestCase):
     def test_me_shows_memorable_contents(self):
         self.save([self.a.id])
         self.assertEqual([c["id"] for c in self.client.get("/api/v1/me/").data["memorable_contents"]], [self.a.id])
+
+
+# =============================================================================
+# 6-1 통합 랭킹 — 집계 명령(build_rankings) · 지수 · 순위 변동 · API · 홈 TOP 10
+# =============================================================================
+
+
+import datetime
+
+from django.utils import timezone
+
+
+@override_settings(TMDB_API_TOKEN="test-token")
+class TotalRankingTests(APITestCase):
+    URL = "/api/v1/rankings/"
+
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentGenre, ContentPlatform, Genre, Platform
+
+        drama, comedy = Genre.objects.get(name="드라마"), Genre.objects.get(name="코미디")
+        netflix, tving = Platform.objects.get(code="NETFLIX"), Platform.objects.get(code="TVING")
+        # 작품 A~E: A·C·E 영화, B·D 시리즈 / A·B·C 넷플릭스, D·E 티빙 / A·D 코미디
+        cls.c = {}
+        for i, name in enumerate("ABCDE"):
+            kind = "movie" if name in "ACE" else "series"
+            c = Content.objects.create(
+                title=f"작품{name}", content_type=kind, tmdb_id=100 + i, tmdb_vote_count=1000 - i * 100
+            )
+            ContentGenre.objects.create(content=c, genre=comedy if name in "AD" else drama)
+            ContentPlatform.objects.create(content=c, platform=netflix if name in "ABC" else tving, deeplink_url="https://x")
+            cls.c[name] = c
+        Content.objects.create(title="OTT 없는 작품", content_type="movie", tmdb_id=999)  # 랭킹에서 빠져야 함
+
+    def build(self, date, popularity=None, period="weekly"):
+        """popularity: {작품이름: 인기도} → 가짜 TMDB 인기 목록. None 이면 --offline"""
+        from io import StringIO
+
+        out = StringIO()
+        if popularity is None:
+            call_command("build_rankings", period=period, date=date, offline=True, stdout=out)
+            return out.getvalue()
+
+        def fake(path, **params):
+            kind = "movie" if path.endswith("/movie") else "series"
+            results = [
+                {"id": self.c[n].tmdb_id, "popularity": p}
+                for n, p in popularity.items()
+                if self.c[n].content_type == kind
+            ]
+            return {"page": 1, "total_pages": 1, "results": results}
+
+        with mock.patch("core.tmdb.get", side_effect=fake):
+            call_command("build_rankings", period=period, date=date, stdout=out)
+        return out.getvalue()
+
+    def ranks(self, date, period="weekly"):
+        from .models import Ranking
+
+        return {
+            r.content.title[-1]: r.rank
+            for r in Ranking.objects.filter(period=period, ranked_on=date).select_related("content")
+        }
+
+    def test_build_saves_ranking_with_score_by_tmdb_popularity(self):
+        from .models import Ranking
+
+        out = self.build("2026-11-20", {"A": 10, "B": 50, "C": 30, "D": 40, "E": 20})
+        self.assertIn("랭킹 5개 저장", out)
+        self.assertEqual(self.ranks("2026-11-20"), {"B": 1, "D": 2, "C": 3, "E": 4, "A": 5})
+        top = Ranking.objects.get(ranked_on="2026-11-20", rank=1)
+        self.assertEqual(top.score, Decimal("70.0"))  # 인기 1등(백분위 1.0) + 평점 없음(0)
+        self.assertEqual(Ranking.objects.get(ranked_on="2026-11-20", rank=5).score, Decimal("0.0"))
+
+    def test_score_formula_with_prior(self):
+        """지수 = 70 × 인기 백분위 + 30 × 보정평점/5 — 평가 1개짜리는 전체 평균 쪽으로 당겨짐"""
+        from .models import Ranking
+
+        members = [Member.objects.create_user(f"r{i}@x.kr", f"평가{i}", "viewfit123!", age_group="20s") for i in range(10)]
+        for mem in members:
+            Rating.objects.create(member=mem, content=self.c["E"], score=Decimal("5.0"))
+        Rating.objects.create(member=members[0], content=self.c["D"], score=Decimal("0.5"))
+        today = timezone.localdate()
+        self.build(today.isoformat())  # 오프라인: TMDB 평가 수 A>B>C>D>E → 백분위 1, .75, .5, .25, 0
+        score = {r.content.title[-1]: float(r.score) for r in Ranking.objects.filter(ranked_on=today)}
+        overall = (10 * 5 + 0.5) / 11  # 기간 안 전체 평균
+        expect = {
+            "A": 70 * 1.0 + 30 * overall / 5,  # 평가 없음 → 전체 평균
+            "D": 70 * 0.25 + 30 * ((1 * 0.5 + 5 * overall) / 6) / 5,  # 0.5점 1개 → 평균 쪽으로
+            "E": 70 * 0.0 + 30 * ((10 * 5 + 5 * overall) / 15) / 5,
+        }
+        for name, value in expect.items():
+            self.assertAlmostEqual(score[name], value, delta=0.051)
+        self.assertGreater(score["D"], 70 * 0.25 + 30 * 0.5 / 5)  # 1개뿐인 낮은 평점이 그대로 반영되지 않음
+
+    def test_monthly_counts_older_ratings_weekly_does_not(self):
+        from .models import Ranking
+
+        mem = Member.objects.create_user("old@x.kr", "옛평가", "viewfit123!", age_group="30s")
+        r = Rating.objects.create(member=mem, content=self.c["E"], score=Decimal("5.0"))
+        Rating.objects.filter(pk=r.pk).update(rated_at=timezone.now() - datetime.timedelta(days=20))
+        today = timezone.localdate().isoformat()
+        self.build(today, period="weekly")
+        self.build(today, period="monthly")
+        weekly = Ranking.objects.get(period="weekly", ranked_on=today, content=self.c["E"]).score
+        monthly = Ranking.objects.get(period="monthly", ranked_on=today, content=self.c["E"]).score
+        self.assertEqual(weekly, Decimal("0.0"))  # 최근 7일 평점 없음
+        self.assertGreater(monthly, weekly)
+
+    def test_two_dates_rank_change_and_new(self):
+        """다른 날짜로 두 번 집계 → 순위 변동(↑↓)과 NEW"""
+        from .ranking import compute_scores, save_rankings
+
+        # 11/20: A 1위 · B 2위 · C 3위 · D 4위 (E 는 그때 TOP 에 없었음)
+        day1 = datetime.date(2026, 11, 20)
+        pop1 = {(c.content_type, c.tmdb_id): p for c, p in
+                [(self.c["A"], 50), (self.c["B"], 40), (self.c["C"], 30), (self.c["D"], 20), (self.c["E"], 10)]}
+        save_rankings("weekly", day1, [t for t in compute_scores("weekly", day1, pop1) if t[0].title != "작품E"])
+        # 11/27 다시 집계
+        self.build("2026-11-27", {"A": 10, "B": 40, "C": 50, "D": 20, "E": 30})
+
+        res = self.client.get(self.URL)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["ranked_on"], datetime.date(2026, 11, 27))
+        items = {i["movie"]["title"][-1]: i for i in res.data["items"]}
+        self.assertEqual(items["C"]["rank"], 1)
+        self.assertEqual((items["C"]["rank_change"], items["C"]["is_new"]), (2, False))  # 3위 → 1위
+        self.assertEqual((items["A"]["rank_change"], items["A"]["is_new"]), (-4, False))  # 1위 → 5위
+        self.assertEqual((items["B"]["rank_change"], items["B"]["is_new"]), (0, False))  # 2위 그대로
+        self.assertTrue(items["E"]["is_new"])
+
+    def test_first_aggregation_has_no_new_marks(self):
+        self.build("2026-11-20", {"A": 1, "B": 2, "C": 3, "D": 4, "E": 5})
+        items = self.client.get(self.URL).data["items"]
+        self.assertTrue(all(i["rank_change"] == 0 and not i["is_new"] for i in items))
+
+    def test_same_day_rebuild_overwrites(self):
+        from .models import Ranking
+
+        self.build("2026-11-20", {"A": 1, "B": 2, "C": 3, "D": 4, "E": 5})
+        self.build("2026-11-20", {"A": 5, "B": 4, "C": 3, "D": 2, "E": 1})
+        self.assertEqual(Ranking.objects.filter(ranked_on="2026-11-20").count(), 5)
+        self.assertEqual(self.ranks("2026-11-20")["A"], 1)
+
+    def test_filters_renumber_from_one(self):
+        self.build("2026-11-20", {"A": 50, "B": 40, "C": 30, "D": 20, "E": 10})
+        res = self.client.get(self.URL, {"type": "movie", "platform": "NETFLIX"})
+        self.assertEqual([(i["rank"], i["overall_rank"], i["movie"]["title"]) for i in res.data["items"]],
+                         [(1, 1, "작품A"), (2, 3, "작품C")])
+        self.assertEqual(res.data["total"], 2)
+        res = self.client.get(self.URL, {"genre": "코미디", "type": "series"})
+        self.assertEqual([(i["rank"], i["movie"]["title"]) for i in res.data["items"]], [(1, "작품D")])
+
+    def test_offset_limit_and_period(self):
+        self.build("2026-11-20", {"A": 50, "B": 40, "C": 30, "D": 20, "E": 10})
+        res = self.client.get(self.URL, {"limit": 2, "offset": 2})
+        self.assertEqual([i["rank"] for i in res.data["items"]], [3, 4])
+        self.assertEqual(res.data["next_offset"], 4)
+        self.assertIsNone(self.client.get(self.URL, {"period": "monthly"}).data["ranked_on"])  # 월간 집계 없음
+        self.assertEqual(self.client.get(self.URL, {"period": "daily"}).status_code, 400)
+        self.assertEqual(self.client.get(self.URL, {"platform": "HULU"}).status_code, 400)
+
+    def test_empty_before_any_aggregation(self):
+        res = self.client.get(self.URL)
+        self.assertEqual((res.status_code, res.data["ranked_on"], res.data["total"], res.data["items"]), (200, None, 0, []))
+
+    def test_tmdb_failure_falls_back_to_vote_count(self):
+        from io import StringIO
+
+        import urllib.error
+
+        err = StringIO()
+        with mock.patch("core.tmdb.time.sleep"), mock.patch(
+            "core.tmdb.urllib.request.urlopen", side_effect=urllib.error.URLError("down")
+        ):
+            call_command("build_rankings", date="2026-11-20", stdout=StringIO(), stderr=err)
+        self.assertIn("TMDB 인기도를 받지 못했어요", err.getvalue())
+        self.assertEqual(self.ranks("2026-11-20")["A"], 1)  # tmdb_vote_count 가장 많음
+
+    def test_needs_contents_first(self):
+        from .models import ContentPlatform
+
+        ContentPlatform.objects.all().delete()
+        with self.assertRaisesMessage(CommandError, "import_tmdb"):
+            call_command("build_rankings", offline=True)
+
+    def test_home_top10_uses_weekly_ranking(self):
+        self.build("2026-11-20", {"A": 1, "B": 2, "C": 3, "D": 5, "E": 4})
+        self.build("2026-11-27", {"A": 1, "B": 2, "C": 5, "D": 4, "E": 3})
+        feed = self.client.get("/api/v1/home/feed/").data["data"]
+        got = [(r["rank"], r["movie"]["title"][-1], r["rank_change"]) for r in feed["rankings"]]
+        self.assertEqual(got[:2], [(1, "C", 2), (2, "D", -1)])

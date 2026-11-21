@@ -116,6 +116,18 @@ python manage.py seed_demo --clear                    # 가상 회원과 그 기
 - 끝나면 http://127.0.0.1:8000/api/v1/contents/ 에서 작품 카드 목록을 볼 수 있습니다.
 - 가상 회원(`@demo.viewfit.local`)은 로그인할 수 없고, 발표·보고서에서 "가상 데이터"라고 밝힙니다 (D12).
 
+## 통합 랭킹 집계 (6-1)
+작품(`import_tmdb`)과 평점(`seed_demo`)이 있는 상태에서 실행합니다.
+```powershell
+python manage.py build_rankings                      # 주간, 오늘 날짜 (TMDB 인기도 받아 옴, 1분 정도)
+python manage.py build_rankings --period monthly     # 월간
+python manage.py build_rankings --date 2026-11-14    # 집계일 바꾸기 (순위 변동 ↑↓ NEW 확인용)
+python manage.py build_rankings --offline            # TMDB 에 접속하지 않고 저장된 TMDB 평가 수로 대신
+```
+- ViewFit 지수 = 70 × TMDB 인기도 순위 백분위 + 30 × (보정 평점 / 5). 주간은 최근 7일, 월간은 최근 30일 평점.
+- 상위 100개가 `ranking` 표에 저장되고, http://localhost:3000/ranking 과 홈의 TOP 10 에 나옵니다.
+- 순위 변동은 **바로 전 집계**와 비교합니다. 처음 한 번만 집계하면 모두 "—" 입니다.
+
 ## 새 API 를 만들 때 (0번 공통 규칙 — 1~8번 담당 공통)
 `docs/prd/0_common_base.md` 0-2 규칙을 코드로 만들어 둔 것입니다. 직접 만들지 말고 가져다 쓰세요.
 
@@ -134,7 +146,7 @@ python manage.py seed_demo --clear                    # 가상 회원과 그 기
 ```powershell
 python manage.py test core
 ```
-회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지, 0번 공통 목록 규칙(offset·limit·필터·오류 모양·작품 카드 모양), 2-1 작품 수집(가짜 TMDB 응답)·시연 데이터, D6·D7 칸, 4-1 검색·상세·바로 보기, 0-4 홈 피드, TMDB 키 형식, 3-1 기억에 남는 작품까지 39가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
+회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지, 0번 공통 목록 규칙(offset·limit·필터·오류 모양·작품 카드 모양), 2-1 작품 수집(가짜 TMDB 응답)·시연 데이터, D6·D7 칸, 4-1 검색·상세·바로 보기, 0-4 홈 피드, TMDB 키 형식, 3-1 기억에 남는 작품, 6-1 통합 랭킹(지수·순위 변동·필터)까지 51가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
 > MariaDB 로 테스트하려면 viewfit 계정에 테스트용 DB 권한이 필요합니다. MariaDB 클라이언트에서 한 번만:
 > `GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'127.0.0.1'; GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'localhost';`
 

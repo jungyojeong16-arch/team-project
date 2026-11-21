@@ -5,7 +5,7 @@
 
 ※ 지금은 "임시 버전"입니다. 아래 영역은 담당 기능이 완성되면 그 결과로 바꿉니다.
   - recommendations · hero : 7-1 맞춤 추천이 생기면 recommendation 테이블의 최신 묶음으로 교체
-  - rankings              : 6-1 통합 랭킹이 생기면 ranking 테이블로 교체 (순위 변동도 그때)
+  - rankings              : ✅ 6-1 주간 랭킹(ranking 테이블)이 있으면 그 1~10위·순위 변동 (없으면 임시 계산)
   - cross_age_picks       : 6-2 세대별 랭킹이 생기면 교체
 """
 from collections import defaultdict
@@ -14,6 +14,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from . import models as m
+from . import ranking
 from .common import contents_for_cards
 from .serializers import ContentCardSerializer
 
@@ -124,11 +125,16 @@ def build_home_feed(member=None, now=None):
     recommended = recommended[:RECOMMEND_SIZE]
     hero = recommended[0]
 
-    # --- 통합 랭킹 TOP 10 (임시) ---
-    rated = [c for c in contents if c.rating_count]
-    total_votes = sum(c.rating_count for c in rated)
-    global_avg = sum(_overall(c) * c.rating_count for c in rated) / total_votes if total_votes else 0  # 전체 평점 평균
-    ranking = sorted(rated or contents, key=lambda c: (-ranking_score(c, global_avg), c.id))[:RANKING_SIZE]
+    # --- 통합 랭킹 TOP 10: 6-1 주간 랭킹(build_rankings)이 있으면 그것, 없으면 임시 계산 ---
+    rankings = _weekly_top(contents)
+    if rankings is None:
+        rated = [c for c in contents if c.rating_count]
+        total_votes = sum(c.rating_count for c in rated)
+        global_avg = sum(_overall(c) * c.rating_count for c in rated) / total_votes if total_votes else 0
+        temp = sorted(rated or contents, key=lambda c: (-ranking_score(c, global_avg), c.id))[:RANKING_SIZE]
+        rankings = [
+            {"rank": i + 1, "rank_change": 0, "is_new": False, "movie": card} for i, card in enumerate(_cards(temp))
+        ]
 
     # --- 세대별 교차 평점 (20·30·40대 모두 평가 3개 이상) ---
     cross = [c for c in contents if _has_all_ages(c)]
@@ -143,12 +149,25 @@ def build_home_feed(member=None, now=None):
         },
         "hero": {"message": _hero_message(hero, member, situation), "movie": _cards([hero])[0]},
         "recommendations": _cards(recommended),
-        "rankings": [
-            {"rank": i + 1, "rank_change": 0, "is_new": False, "movie": card}
-            for i, card in enumerate(_cards(ranking))
-        ],
+        "rankings": rankings,
         "cross_age_picks": _cards(cross),
     }
+
+
+def _weekly_top(contents):
+    """가장 최근 주간 랭킹 1~10위 (순위 변동 포함). 집계가 없으면 None"""
+    ranked_on = ranking.latest_date(m.RankingPeriod.WEEKLY)
+    if ranked_on is None:
+        return None
+    by_id = {c.id: c for c in contents}
+    rows = [r for r in ranking.ranking_rows(m.RankingPeriod.WEEKLY, ranked_on) if r.content_id in by_id][:RANKING_SIZE]
+    prev = ranking.previous_ranks(m.RankingPeriod.WEEKLY, ranked_on)
+    cards = _cards([by_id[r.content_id] for r in rows])
+    items = []
+    for row, card in zip(rows, cards):
+        change, is_new = ranking.change_of(row, prev)
+        items.append({"rank": row.rank, "rank_change": change, "is_new": is_new, "movie": card})
+    return items
 
 
 def _has_all_ages(content):

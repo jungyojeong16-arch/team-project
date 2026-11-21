@@ -2,9 +2,9 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 Step 1(`ranking.score` 칸) ✅ 11/17 · Step 2~ 예정 (11/20) |
+| 상태 | ✅ Step 1~4 완료 (11/21) — 집계 명령 `build_rankings`, `GET /api/v1/rankings/`, 화면 `/ranking`(Figma 144:6421), 홈 TOP 10 연결 · 정준교 PC 확인·화면 검수(정재준) ⬜ |
 | Figma | [통합 랭킹](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-6421) |
-| 코드(예정) | `backend/core/management/commands/build_rankings.py`, `views.py`(rankings), `app/ranking/page.tsx` |
+| 코드 | `backend/core/ranking.py`(지수 계산·저장·변동), `management/commands/build_rankings.py`, `views.py`(rankings), `app/_lib/ranking.ts`, `app/ranking/page.tsx`, `backend/core/home.py`(홈 TOP 10) |
 | 테이블 | `ranking`(content, period, ranked_on, rank (+score, D7)), `content`, `rating` |
 | 담당 | **정준교** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 홍준화(집계 기준), 정재준(화면) |
@@ -34,12 +34,15 @@
 ViewFit 보정 평점 = (평가 수 × 평균 + 5 × 전체 평균) / (평가 수 + 5)   ← 평가가 1~2개뿐인 작품이 1위가 되는 것 방지
 ```
 - 지금은 회원 평점이 적어서 TMDB 인기도 비중을 크게 둔다. 사용자가 늘면 비중을 조정한다.
+- (11/21 구현) TMDB 인기도는 집계할 때 TMDB 한국 OTT 인기 목록에서 받아 온다. 받지 못하면(키 없음·인터넷 끊김·`--offline`) 저장된 `content.tmdb_vote_count` 로 대신한다.
+- (11/21 구현) **주간은 최근 7일, 월간은 최근 30일** 동안의 평점으로 평균·전체 평균을 낸다 (주간/월간이 달라지는 이유).
+- (11/21 구현) 첫 집계(비교할 전 집계가 없음)는 모두 '—'. 그 뒤로는 바로 전 집계와 비교.
 - 결과 상위 100개를 `ranking`에 (period, ranked_on=집계일, rank, score)로 저장한다.
 
 ## 4. 데이터 · API
 `GET /api/v1/rankings/?period=weekly&type=movie&platform=NETFLIX&genre=드라마&offset=0&limit=20`
 
-응답: `{period, ranked_on, total, items:[{rank, rank_change, is_new, score, content:{id,title,content_type,release_year,poster_url,genres,platforms}}]}`
+응답: `{period, ranked_on, total, offset, limit, next_offset, items:[{rank, overall_rank, rank_change, is_new, score, movie:{작품 카드}}]}` — `rank` 는 필터 안에서 1부터, `overall_rank` 는 전체 순위, `movie` 는 0-3 작품 카드 모양(홈 `RankingItem` 과 같음)
 
 - 변동 = (지난 집계일 순위) − (이번 순위). 지난 집계에 없으면 `is_new=true`.
 - 같은 날 다시 집계하면 그날 행을 지우고 새로 저장 (DB 중복 금지 규칙: (period, ranked_on, rank), (period, ranked_on, content)).
@@ -50,12 +53,12 @@ ViewFit 보정 평점 = (평가 수 × 평균 + 5 × 전체 평균) / (평가 �
 - Figma의 "샘플 지수/가상 예시" 문구는 실제 데이터로 바뀌면 "ViewFit 지수 · 집계일 기준"으로 바꾼다.
 
 ## 6. 완료 기준
-- [ ] `build_rankings --period weekly` 실행 → `ranking` 표에 100행
-- [ ] 화면 1위가 표의 rank=1 작품과 같다
-- [ ] 다음 날짜로 한 번 더 집계 → 변동 화살표·NEW가 표시된다
-- [ ] 영화 + 넷플릭스 필터 → 넷플릭스 영화만, 1위부터 다시 번호
-- [ ] [펼치기]로 100위까지 보인다
-- [ ] 화면이 Figma 144:6421 과 같다
+- [x] `build_rankings --period weekly` 실행 → `ranking` 표에 100행 (11/21 AI 확인)
+- [x] 화면 1위가 표의 rank=1 작품과 같다 (11/21 AI 확인)
+- [x] 다음 날짜로 한 번 더 집계 → 변동 화살표·NEW가 표시된다 (11/21 AI 확인)
+- [x] 영화 + 넷플릭스 필터 → 넷플릭스 영화만, 1위부터 다시 번호 (11/21 AI 확인)
+- [x] [펼치기]로 100위까지 보인다 (11/21 AI 확인)
+- [x] 화면이 Figma 144:6421 과 같다 (11/21 AI 비교, 정재준 검수 ⬜)
 
 ## 7. 범위 밖
 - OTT별 공식 순위 가져오기 (공개 API 없음), 실시간(시간 단위) 집계

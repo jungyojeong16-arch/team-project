@@ -9,6 +9,7 @@ urlpatterns = [
     path("options/", views.options, name="options"),
     path("contents/", views.contents, name="contents"),  # 0번 공통
     path("home/feed/", views.home_feed, name="home-feed"),  # 0-4
+    path("rankings/", views.rankings, name="rankings"),  # 6-1
     path("contents/search/", views.content_search, name="content-search"),  # 4-1
     path("contents/<int:content_id>/", views.content_detail, name="content-detail"),  # 4-1
     path("contents/<int:content_id>/watch/", views.content_watch, name="content-watch"),  # 4-1
