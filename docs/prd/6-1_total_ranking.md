@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ✅ Step 1~4 완료 (11/21) — 집계 명령 `build_rankings`, `GET /api/v1/rankings/`, 화면 `/ranking`(Figma 144:6421), 홈 TOP 10 연결 · 정준교 PC 확인·화면 검수(정재준) ⬜ |
+| 상태 | ✅ Step 1~4 완료 (11/21) — 집계 명령 `build_rankings`, `GET /api/v1/rankings/`, 화면 `/ranking`(Figma 144:6421), 홈 TOP 10 연결 · 정준교 PC(실제 TMDB 작품)에서 확인 ✅ 11/21 · 화면 검수(정재준) ⬜ |
 | Figma | [통합 랭킹](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-6421) |
 | 코드 | `backend/core/ranking.py`(지수 계산·저장·변동), `management/commands/build_rankings.py`, `views.py`(rankings), `app/_lib/ranking.ts`, `app/ranking/page.tsx`, `backend/core/home.py`(홈 TOP 10) |
 | 테이블 | `ranking`(content, period, ranked_on, rank (+score, D7)), `content`, `rating` |
@@ -54,7 +54,7 @@ ViewFit 보정 평점 = (평가 수 × 평균 + 5 × 전체 평균) / (평가 �
 
 ## 6. 완료 기준
 - [x] `build_rankings --period weekly` 실행 → `ranking` 표에 100행 (11/21 AI 확인)
-- [x] 화면 1위가 표의 rank=1 작품과 같다 (11/21 AI 확인)
+- [x] 화면 1위가 표의 rank=1 작품과 같다 (11/21 AI 확인 · 정준교 PC에서 통합 랭킹 TOP 10 = 홈 TOP 10 확인)
 - [x] 다음 날짜로 한 번 더 집계 → 변동 화살표·NEW가 표시된다 (11/21 AI 확인)
 - [x] 영화 + 넷플릭스 필터 → 넷플릭스 영화만, 1위부터 다시 번호 (11/21 AI 확인)
 - [x] [펼치기]로 100위까지 보인다 (11/21 AI 확인)

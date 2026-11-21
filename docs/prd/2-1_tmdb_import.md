@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 각자 PC 수집, OTT 검색 주소 열어 보기 ⬜ · Step 4(D6 칸) ✅ 11/17 — 이미 수집한 PC는 `import_tmdb` 를 한 번 더 실행하면 새 칸이 채워짐 |
+| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 정준교 PC 수집 ✅ 11/21(TMDB 짧은 API 키로 동작 확인) · 홍준화·정재준 PC 수집, OTT 검색 주소 열어 보기 ⬜ · Step 4(D6 칸) ✅ 11/17 — 이미 수집한 PC는 `import_tmdb` 를 한 번 더 실행하면 새 칸이 채워짐 |
 | Figma | 화면 없음 (관리자 명령). 모든 화면의 작품 카드가 이 데이터를 씀 |
 | 코드 | `backend/core/tmdb.py`, `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, 테스트 `tests.py`(ImportTmdbTests, SeedDemoTests) |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |

@@ -33,7 +33,7 @@
 | [4-1](4-1_search_detail.md) | 작품 검색·상세·OTT 바로가기 | 상단 검색창, 상세 정보·바로 보기 버튼 | content, content_platform, watch_history | P1 | 11/19 | 정재준 | 🟡 API·상세 팝업 ✅ / 검색창 ⬜ |
 | [5-1](5-1_rating.md) | 평점 (작성·나의 평점·반영 결과) | 나의 평점, 평점 반영 결과 | rating, ranking | P1 | 11/25 | 정준교 | ⬜ |
 | [5-2](5-2_like.md) | 좋아요 | 좋아요 표시한 작품 | content_like | P1 | 11/26 | 정준교 | ⬜ |
-| [6-1](6-1_total_ranking.md) | 통합 랭킹 | 통합 랭킹 | ranking | P1 | 11/20 | 정준교 | ✅ 11/21 (정준교 PC 확인·검수 ⬜) |
+| [6-1](6-1_total_ranking.md) | 통합 랭킹 | 통합 랭킹 | ranking | P1 | 11/20 | 정준교 | ✅ 11/21 (정준교 PC 확인 ✅ · 화면 검수 ⬜) |
 | [6-2](6-2_generation_ranking.md) | 세대별 랭킹 | 세대별 평점 | rating | P1 | 11/21 | 정준교 | ⬜ |
 | [7-1](7-1_tpo_recommend.md) | 맞춤 추천 (TPO·AI) | 맞춤 추천 | recommendation, content_tpo | P1 | 11/23~24 | 홍준화 | ⬜ |
 | [7-2](7-2_revisit_feedback.md) | 재방문 추천 피드백 | 재방문 추천 피드백 | recommendation, rating | P1 | 11/26 | 홍준화 | ⬜ |
