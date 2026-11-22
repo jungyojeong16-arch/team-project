@@ -87,3 +87,14 @@
 | 결과 | 커밋 [`451b5ff`](https://github.com/jungyojeong16-arch/team-project/commit/451b5ff) · `backend/core/models.py`, `migrations/0004_content_card_fields_ranking_score.py`, `tmdb.py`, `serializers.py`, `tests.py`, `app/_lib/viewfit.ts`, `docs/erd/ViewFit_ERD_physical.md` |
 | 확인 | - [x] `python manage.py test core` 25개 통과 (SQLite, MariaDB 둘 다) <br> - [x] MariaDB `show columns` 로 새 칸 7개 확인 (`score decimal(5,1)`) <br> - [x] 프론트 타입 검사 통과 <br> - [ ] 정준교 PC에서 `migrate` → HeidiSQL로 칸 확인 <br> - [ ] `import_tmdb` 다시 실행 → 새 칸이 채워지는지 |
 | 수정 요청 | 없음 |
+
+### 기록 8 — 0-4 홈 PRD 규칙 2개 (설문 안내 · 오류 안내) — 홍준화
+| 칸 | 내용 |
+|---|---|
+| 날짜 | 11/23 |
+| 보낸 프롬프트 | "안돼있는거 뭐있어??" → AI가 PRD 목록표를 보고 남은 일을 정리 → "홈 PRD 규칙 2개부터 ㄱㄱ" |
+| 기준 PRD | 0-4 5번 규칙 · Step 2 일부 ("fetchHomeFeed 에서 404 일 때 가짜 데이터로 대신하는 부분(TODO 11/17)을 지우고, 실패하면 오류 안내와 [다시 시도] 버튼을 보여 줘.") + "설문을 안 한 회원: 오늘의 추천 자리에 '취향을 알려주시면 딱 맞는 작품을 골라 드릴게요 [설문하기]'" |
+| AI가 한 일 | `SurveyPrompt`(오늘의 추천과 같은 배경, [설문하기] → `/onboarding`)를 만들고 홈이 계정의 `survey_completed` 로 오늘의 추천과 설문 안내 중 하나를 보여 주게 함. `fetchHomeFeed` 의 404·연결 실패 대체 처리를 지워 홈의 기존 `ErrorState`(다시 시도)가 나오게 함. 백엔드 주소가 아예 없을 때의 화면 미리보기용 샘플은 남김. PRD 0-4 상태·목록표 0-4 줄(옛날 "랭킹은 임시")을 최신으로 |
+| 결과 | 커밋 [`4b4ba24`](https://github.com/jungyojeong16-arch/team-project/commit/4b4ba24) · `app/_components/home/today-pick.tsx`, `app/page.tsx`, `app/_lib/viewfit.ts` |
+| 확인 | - [x] 타입 검사 통과 <br> - [x] 설문 안 한 계정(브라우저 저장값을 잠깐 바꿔서) → 설문 안내, [설문하기] 주소 `/onboarding` <br> - [x] 홈 피드 요청을 실패시킴 → "서버에 연결할 수 없어요. 잠시 뒤 다시 시도해 주세요." + [다시 시도], 샘플 데이터 안 나옴 → 다시 누르면 정상 <br> - [ ] 정재준 화면 검수 (설문 안내는 Figma 에 없는 상태) |
+| 수정 요청 | 없음. AI가 확인하다 고친 것: 설명 문장이 단어 중간("드 / 려요")에서 줄바꿈 → `break-keep` |

@@ -9,6 +9,12 @@
 
 ---
 
+### 11/23 · 0-4 홈 PRD 규칙 2개 (설문 안내 · 오류 안내) · 요청: 홍준화
+- 한 일: 설문을 안 한 회원은 오늘의 추천 자리에 "취향을 알려주시면 딱 맞는 작품을 골라 드릴게요 [설문하기]"(`SurveyPrompt`, `app/_components/home/today-pick.tsx`). 홈 API 가 실패(404·연결 실패)하면 샘플 데이터 대신 오류 안내 + [다시 시도] (`fetchHomeFeed` 의 TODO(11/17) 대체 처리 삭제)
+- 커밋: `4b4ba24`
+- 확인: 타입 검사 통과. 홍준화 PC 브라우저: 설문 안 함 → 설문 안내·[설문하기] → `/onboarding`, 홈 피드 요청 실패 → "서버에 연결할 수 없어요…" + [다시 시도] → 다시 누르면 정상
+- 남은 일·주의: **백엔드 서버가 꺼져 있으면 이제 홈이 샘플 대신 오류 안내를 보여 줌** (예전처럼 "폭싹 속았수다" 샘플이 보이면 `.env.local` 이 없는 것). `fetchContent`(4-1 작품 상세)에도 같은 TODO(11/17) 대체 처리가 남아 있음 — 4-1 담당(정재준) 확인 필요. 이 상태의 Figma 화면은 없어서 정재준 검수 때 같이 봐 주기
+
 ### 11/22 · 7-2 재방문 추천 피드백 (Step 1~2) · 요청: 홍준화
 - 한 일: 추천받은 작품을 [바로 보기]로 열고 12시간 뒤 홈에 오면 "이번 작품은 어떠셨나요?" 팝업(Figma 145:2341). 별점 0.5 단위 → 평점 저장 + `feedback=rated`, "아직 못 봤어요" → `feedback=not_watched`, [나중에 할게요]는 이번 방문 동안 안 뜸. `backend/core/feedback.py`, API `GET /api/v1/recommendations/pending-feedback/`·`POST /api/v1/recommendations/<id>/feedback/`, 화면 `app/_components/feedback-modal.tsx`(홈 `app/page.tsx` 에서 띄움)
 - **5-1(정준교) 참고**: 평점 저장 `common.save_rating()`(한 작품 1개·다시 하면 수정)과 입력 검사 `serializers.RatingInputSerializer`(0.5 단위·한마디 200자, 한국어 오류)를 만들어 둠 → 5-1 평점 PUT 에서 그대로 쓰면 같은 규칙
