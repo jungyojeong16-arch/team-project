@@ -19,13 +19,17 @@ export type TopPickCardProps = {
   imageUrl?: string | null;
   /** 오른쪽 위 작은 표시 — 기본: 1위 "TOP PICK", 나머지 "TOP 3" */
   label?: string;
+  /** true 면 오른쪽 위 표시를 검은 배지 없이 글씨만 (Figma 맞춤 추천 144:36619 — 상황 라벨) */
+  plainLabel?: boolean;
   /** 오른쪽 아래 지표 — 예: { name: "지수", value: "98.8" } / { name: "평점", value: "4.92" } */
   metric?: { name: string; value: string };
+  /** 오른쪽 아래 분홍 글씨 한 줄 (지표 대신) — 예: 맞춤 추천의 한 줄 이유 */
+  note?: string;
   href?: string;
   onClick?: () => void;
 };
 
-export function TopPickCard({ rank, title, meta, platform, imageUrl, label, metric, href, onClick }: TopPickCardProps) {
+export function TopPickCard({ rank, title, meta, platform, imageUrl, label, plainLabel, metric, note, href, onClick }: TopPickCardProps) {
   const [broken, setBroken] = useState(false);
   const body = (
     <>
@@ -40,7 +44,7 @@ export function TopPickCard({ rank, title, meta, platform, imageUrl, label, metr
         <span className={`text-5xl font-black leading-none ${rank === 1 ? "text-[#f0abfc]" : "text-white"}`}>
           {String(rank).padStart(2, "0")}
         </span>
-        <span className="rounded-md bg-black/70 px-2 py-1 text-[10px] font-bold text-white">
+        <span className={plainLabel ? "truncate pl-3 text-[11px] font-bold text-white" : "rounded-md bg-black/70 px-2 py-1 text-[10px] font-bold text-white"}>
           {label ?? (rank === 1 ? "TOP PICK" : "TOP 3")}
         </span>
       </div>
@@ -48,13 +52,14 @@ export function TopPickCard({ rank, title, meta, platform, imageUrl, label, metr
       <div className="relative flex w-full flex-col gap-[9px]">
         <p className="truncate text-[23px] font-bold tracking-[-0.46px] text-white">{title}</p>
         <p className="truncate text-xs text-white/70">{meta}</p>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           {platform ? <PlatformBadge code={platform} /> : <span />}
           {metric && (
             <p className="text-[11px] text-[#9ca3b5]">
               {metric.name} <span className="text-base font-bold text-[#f0abfc]">{metric.value}</span>
             </p>
           )}
+          {!metric && note && <p className="line-clamp-2 min-w-0 text-right text-xs font-bold text-[#f0abfc]">{note}</p>}
         </div>
       </div>
     </>

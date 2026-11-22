@@ -25,7 +25,7 @@
 | 번호 | 세부 프로그램 | Figma 화면 | 주요 테이블 | 우선 | 주차 | 담당 | 상태 |
 |---|---|---|---|---|---|---|---|
 | [0-1~0-3](0_common_base.md) | 개발 환경·DB / 공통 규칙 / 공통 레이아웃·부품 | Home Feed 상단·하단, 프로필 메뉴 | 전체 | P1 | **11/10** | 3명 공동 | 🟡 0-1·0-3 ✅ / 0-2 회의 확정 ⬜ |
-| [0-4](0-4_home.md) | 홈 화면 (틀 → 영역별 연결) | Home Feed | 조회만 | P1 | 11/10 틀 · 11/21~24 연결 | 3명 공동 | 🟡 틀 ✅ · 진짜 데이터 연결(임시 랭킹·추천) ✅ |
+| [0-4](0-4_home.md) | 홈 화면 (틀 → 영역별 연결) | Home Feed | 조회만 | P1 | 11/10 틀 · 11/21~24 연결 | 3명 공동 | 🟡 틀 ✅ · 오늘의 추천·맞춤 추천작품 = 7-1 ✅ · 랭킹은 임시(6-1 대기) |
 | [1-1](1-1_signup.md) | 회원가입 | 회원가입, 회원가입 완료 안내 | member | P1 | 11/16 | 정준교 | ✅ |
 | [1-2](1-2_login.md) | 웹 시작 화면·로그인·로그아웃 | 웹 시작 화면, 로그인 창 | member, authtoken | P1 (소셜 P2) | 11/16 | 정준교 | ✅ (소셜 로그인 P2 제외) |
 | [2-1](2-1_tmdb_import.md) | 작품 데이터 수집·시연 데이터 | (관리자 명령) | content, content_genre, content_platform, content_tpo | P1 | 11/18 | 홍준화 | 🟡 코드·실제 수집 확인 ✅ / 각자 PC 수집 ⬜ |
@@ -35,7 +35,7 @@
 | [5-2](5-2_like.md) | 좋아요 | 좋아요 표시한 작품 | content_like | P1 | 11/26 | 정준교 | ⬜ |
 | [6-1](6-1_total_ranking.md) | 통합 랭킹 | 통합 랭킹 | ranking | P1 | 11/20 | 정준교 | ✅ 11/21 (정준교 PC 확인 ✅ · 화면 검수 ⬜) |
 | [6-2](6-2_generation_ranking.md) | 세대별 랭킹 | 세대별 평점 | rating | P1 | 11/21 | 정준교 | ⬜ |
-| [7-1](7-1_tpo_recommend.md) | 맞춤 추천 (TPO·AI) | 맞춤 추천 | recommendation, content_tpo | P1 | 11/23~24 | 홍준화 | ⬜ |
+| [7-1](7-1_tpo_recommend.md) | 맞춤 추천 (TPO·AI) | 맞춤 추천 | recommendation, content_tpo | P1 | 11/23~24 | 홍준화 | ✅ (11/19, 한 줄 이유는 문장 틀 — LLM은 D10 이후) |
 | [7-2](7-2_revisit_feedback.md) | 재방문 추천 피드백 | 재방문 추천 피드백 | recommendation, rating | P1 | 11/26 | 홍준화 | ⬜ |
 | [8-1](8-1_profile_taste.md) | 프로필·취향 수정 | 프로필 정보, 취향 수정 | member, genre_preference, rating, content_like | P1 | 11/27 | 정재준 | 🟡 |
 | [8-2](8-2_interest_update.md) | 최근 관심사 반영 | 최근 관심사 반영 확인 | recommendation, watch_history | P2 | 11/30 | 정재준 | ⬜ |
@@ -170,8 +170,8 @@ PRD 범위 안에서만 고치고, 고친 이유와 바뀐 파일을 알려줘.
 | D6 | content 테이블 칸 추가 | ✅ **11/17 반영** (DB 담당 정준교): `backdrop_url`, `age_rating`(ALL·7·12·15·19), `runtime_minutes`, `episode_count`, `tmdb_rating`, `tmdb_vote_count` — `import_tmdb`가 채움 | 2-1, 0-4 |
 | D7 | ranking 테이블 칸 추가 | ✅ **11/17 반영** (DB 담당 정준교): `score` DECIMAL(5,1), 0~100 (집계 당시 값이라 저장) | 6-1 |
 | D8 | 프로필 한 줄 소개("과제 끝나면, 좋은 이야기 한 편.") | ① 회원이 직접 입력(`member.bio` 추가) ② AI 자동 생성 | 8-1 |
-| D9 | 추천마다 다른 한 줄 이유 | ① 작품당 1개 `content.tagline` ② 추천마다 `recommendation.reason` 추가 | 7-1 |
-| D10 | AI 문구에 쓸 LLM API와 키 | 비용·발급 담당 결정 (키 없으면 정해진 문장 틀로 동작) | 7-1 |
+| D9 | 추천마다 다른 한 줄 이유 | ✅ **11/19 결정: ② 추천마다 `recommendation.reason`**(`VARCHAR(100)`, 마이그레이션 0005) — 같은 작품도 상황·취향마다 문장이 달라서. ERD 문서 반영 | 7-1 |
+| D10 | AI 문구에 쓸 LLM API와 키 | ✅ **11/19 결정: 지금은 문장 틀만** ("{상황}에 어울리는 {장르} 한 편", `core/curation.py`). LLM은 키·비용이 정해지면 `make_reason()` 안에 붙임 | 7-1 |
 | D11 | 상단 알림(종) 아이콘 | 범위 밖 (아이콘만 표시) | 0-3 |
 | D12 | 시연용 가상 회원·평점 | 사용하되 화면 하단에 "가상 데이터 포함" 표시 | 2-1, 6-2 |
 

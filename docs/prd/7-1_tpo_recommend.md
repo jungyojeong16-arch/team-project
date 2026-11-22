@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/23~24) |
+| 상태 | ✅ 완료 (11/19) — 추천 점수·TOP 50 저장, 한 줄 이유(문장 틀, D10), 추천 API 2개, 맞춤 추천 화면(Figma 144:36577), 홈 오늘의 추천 연결 · 화면 검수 대기(정재준) · LLM 문구는 D10 다시 결정 시 |
 | Figma | [맞춤 추천 (TPO TOP 50)](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-36577), 홈의 오늘의 추천 영역([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)) |
-| 코드(예정) | `backend/core/recommend.py`, `backend/core/curation.py`(LLM 문구), `views.py`(recommendations), `app/recommend/page.tsx` |
-| 테이블 | `recommendation`(member, content, tpo, rank, feedback, recommended_at), `content_tpo`, `genre_preference`, `watch_history`, `rating`, `content_like` |
-| 필요한 것 | LLM API 키 (D10) — 없으면 정해진 문장 틀로 동작 |
+| 코드 | `backend/core/recommend.py`(점수·묶음), `backend/core/curation.py`(한 줄 이유·상황 라벨), `views.py`(recommendations·recommendations_refresh), `home.py`(hero), `app/recommend/page.tsx`, `app/_lib/viewfit.ts`(fetchRecommendations), 공통 부품 `ChipGroup`·`TopPickCard`(plainLabel·note)·`RangeHeader`(accent·note), 테스트 `RecommendationTests` |
+| 테이블 | `recommendation`(member, content, tpo, rank, **reason**(D9), feedback, recommended_at), `content_tpo`, `genre_preference`, `watch_history`, `rating`, `content_like`, `ranking` |
+| 필요한 것 | LLM API 키 (D10) — 11/19 결정: 지금은 문장 틀만 |
 | 담당 | **홍준화** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 정준교(DB) |
 
@@ -19,16 +19,22 @@
 - 회원으로서, 이미 본 작품이나 싫어하는 장르는 추천받고 싶지 않다.
 
 ## 3. 기능 요구사항
-| ID | 내용 | 구분 |
-|---|---|---|
-| FR1 | 상황 칩: 전체 상황 · 혼자 보는 밤 · 퇴근 후 · 주말에 함께 · 가족과 함께 · 여행이 필요할 때 | 필수 |
-| FR2 | 필터: 전체/영화/시리즈, OTT, 장르 | 필수 |
-| FR3 | "이런 순간, 이런 작품" TOP 3 큰 카드 (상황 라벨 + 한 줄) | 필수 |
-| FR4 | TOP 50: 1~20위 먼저, [펼치기] 21–40, 41–50. 각 작품에 상황 라벨(예: "늦은 밤 · 혼자")과 한 줄 이유 | 필수 |
-| FR5 | 추천 점수 계산 (아래) → 상위 50개를 `recommendation`에 저장 | 필수 |
-| FR6 | 한 줄 이유: LLM이 작품 정보 + 상황 + 회원 취향으로 20자 안팎 문장 생성. 키가 없거나 실패하면 문장 틀("{상황}에 어울리는 {장르} 한 편") | 필수 |
-| FR7 | 추천을 새로 만드는 때: 하루 첫 방문, 설문·취향 수정 저장(8-1), 최근 관심사 반영 동의(8-2) | 필수 |
-| FR8 | 로그인 필요. 설문 안 한 회원 → 설문으로 안내 | 필수 |
+| ID | 내용 | 구분 | 상태 |
+|---|---|---|---|
+| FR1 | 상황 칩: 전체 상황 · 혼자 보는 밤 · 퇴근 후 · 주말에 함께 · 가족과 함께 · 여행이 필요할 때 | 필수 | ✅ |
+| FR2 | 필터: 전체/영화/시리즈, OTT, 장르 | 필수 | ✅ |
+| FR3 | "이런 순간, 이런 작품" TOP 3 큰 카드 (상황 라벨 + 한 줄) — 전체 상황·필터 없음 묶음의 1~3위 (칩을 바꿔도 그대로) | 필수 | ✅ |
+| FR4 | TOP 50: 1~20위 먼저, [펼치기] 21–40, 41–50. 각 작품에 상황 라벨(예: "늦은 밤 · 혼자")과 한 줄 이유 | 필수 | ✅ |
+| FR5 | 추천 점수 계산 (아래) → 상위 50개를 `recommendation`에 저장 | 필수 | ✅ |
+| FR6 | 한 줄 이유: LLM이 작품 정보 + 상황 + 회원 취향으로 20자 안팎 문장 생성. 키가 없거나 실패하면 문장 틀("{상황}에 어울리는 {장르} 한 편") | 필수 | ✅ 문장 틀 (D10: LLM은 나중에) |
+| FR7 | 추천을 새로 만드는 때: 하루 첫 방문, 설문·취향 수정 저장(8-1), 최근 관심사 반영 동의(8-2) | 필수 | ✅ (8-1·8-2는 `POST /recommendations/refresh/` 를 부르면 됨) |
+| FR8 | 로그인 필요. 설문 안 한 회원 → 설문으로 안내 | 필수 | ✅ (로그인 안 함 → 로그인 창, 설문 안 함 → `/onboarding`) |
+
+### 한 줄 이유 · 상황 라벨 (11/19 정함 — `core/curation.py`)
+- (상황, 장르) 짝은 2-1의 **상황(TPO) 규칙**에서 서로 맞는 것만 고릅니다 (스릴러 ↔ 혼자 보는 밤, 코미디 ↔ 퇴근 후 …). "혼자 보는 밤에 어울리는 코미디" 같은 어긋난 문장을 막기 위해서입니다.
+- 회원 선호 장르가 들어간 짝을 먼저 고르고, **전체 상황**에서는 지금까지 덜 쓴 상황을 먼저 골라 여러 상황이 섞이게 합니다. 연결된 상황이 없는 작품은 "지금 보기 좋은 {장르} 한 편".
+- 상황 라벨: 혼자 보는 밤 → "늦은 밤 · 혼자", 퇴근 후 → "평일 저녁 · 퇴근 후", 주말에 함께 → "주말 · 집에서 둘이", 가족과 함께 → "거실 · 온 가족과", 여행이 필요할 때 → "떠나고 싶은 날 · 화면 여행" (문구는 `SITUATION_LABELS` 한곳에서 바꿈).
+- 화면의 순위 숫자는 지금 보이는 목록에서의 순서입니다 (필터를 걸면 1부터 다시). API 의 `rank` 는 저장된 원래 순위.
 
 ### 추천 점수 (처음 버전 — 규칙 기반 + AI 문구)
 | 항목 | 점수 |
@@ -36,12 +42,15 @@
 | 선호 장르와 겹침 | 장르 1개당 +3 |
 | 비선호 장르 포함 | **후보에서 제외** |
 | 고른 상황(TPO)과 연결된 작품(`content_tpo`) | +4 (전체 상황이면 생략) |
-| 기억에 남는 작품·좋아요·평점 4.0 이상 작품과 장르가 겹침 | 겹침 1개당 +1 (최대 +4) |
-| 내 연령대 평균 평점 | +평균 (0~5) |
-| 이미 평가했거나 시청 기록이 있는 작품 | **후보에서 제외** |
+| 기억에 남는 작품·좋아요·평점 4.0 이상 작품과 장르가 겹침 | 겹치는 작품 1개당 +1 (최대 +4) |
+| 내 연령대 평균 평점 | +평균 (0~5) — 내 연령대 평가가 없거나 연령대를 고르지 않았으면 전체 평균 |
+| 이미 평가했거나 시청 기록이 있는 작품 (설문의 기억에 남는 작품 포함) | **후보에서 제외** |
+| OTT 에서 볼 수 없는 작품 | **후보에서 제외** |
 
-- 같은 점수면 통합 랭킹 순위가 높은 작품 먼저.
-- 결과는 `recommendation`에 (rank, tpo, feedback='pending', recommended_at=지금) 저장. 다시 만들면 새 행이 추가되고 화면은 **가장 최근에 만든 묶음**을 보여 준다 (ERD 원칙 ③ — 기록은 남김).
+- 상황 칩을 고르면 그 상황과 연결된 작품(`content_tpo`)만 후보입니다 (완료 기준 2).
+- 같은 점수면 통합 랭킹(주간, 가장 최근) 순위가 높은 작품 → 평가 수 많은 작품 → 작품 번호 순. (6-1 랭킹이 생기기 전에는 평가 수 순)
+- 결과는 `recommendation`에 (rank, tpo, reason, feedback='pending', recommended_at=지금) 저장. 한 묶음 50행은 추천일시가 같고, 전체 상황 묶음은 tpo 가 비어 있음. 다시 만들면 새 행이 추가되고 화면은 **가장 최근에 만든 묶음**을 보여 준다 (ERD 원칙 ③ — 기록은 남김).
+- 새로 만드는 때: 오늘 만든 묶음이 없을 때 / 설문을 다시 저장해서 `survey_completed_at` 이 묶음보다 나중일 때 / `refresh` 를 불렀을 때 (전체 상황 묶음을 새로 만들면 상황별 묶음도 다음 조회 때 새로 만듦).
 
 ## 4. 데이터 · API
 | 방식 | 주소 | 내용 |
@@ -49,8 +58,10 @@
 | GET | `/api/v1/recommendations/?tpo=혼자 보는 밤&type=&platform=&genre=&offset=0&limit=20` 🔒 | 최근 추천 묶음 조회. 오늘 만든 게 없으면 새로 만든 뒤 응답 |
 | POST | `/api/v1/recommendations/refresh/` 🔒 | 지금 바로 새로 만들기 (8-1·8-2에서 호출) |
 
-응답 항목: `{rank, tpo, situation_label, reason, content:{...}}`
-- 한 줄 이유 저장 위치는 D9 결정에 따름 (① `content.tagline` ② `recommendation.reason` 추가).
+응답: `{tpo, recommended_at, count, offset, limit, next_offset, results: [{rank, tpo, situation_label, reason, content:{작품 카드}}]}`
+- `type`·`platform`·`genre` 는 저장된 묶음 안에서 거릅니다 (`count` 는 거른 뒤 개수). 잘못된 값은 400 (0번 공통 규칙).
+- 설문 안 한 회원은 403 `{"detail": "취향 설문을 먼저 해 주세요.", "survey_required": true}`.
+- 한 줄 이유 저장 위치: ✅ D9 결정 ② `recommendation.reason` (11/19).
 
 ## 5. 규칙 · 예외
 - 후보가 50개보다 적으면 있는 만큼만.
@@ -59,13 +70,13 @@
 - Figma의 "샘플 추천/실제 개인화 데이터 아님" 문구는 실제 추천으로 바뀌면 지운다.
 
 ## 6. 완료 기준
-- [ ] 설문에서 공포를 비선호로 고른 회원의 추천 50개에 공포 작품이 하나도 없다
-- [ ] "혼자 보는 밤" 칩 → 위 상황과 연결된 작품만 나온다
-- [ ] 평점을 남긴 작품은 다음 추천에 나오지 않는다
-- [ ] HeidiSQL `recommendation`에 오늘 날짜로 50행
-- [ ] LLM 키를 지워도 화면이 깨지지 않고 문장 틀로 나온다
-- [ ] 홈의 오늘의 추천이 이 목록의 1위와 같다
-- [ ] 화면이 Figma 144:36577 과 같다
+- [x] 설문에서 공포를 비선호로 고른 회원의 추천 50개에 공포 작품이 하나도 없다 (테스트 `test_order_and_exclusions`, 11/19 실제 데이터 200편으로 확인)
+- [x] "혼자 보는 밤" 칩 → 위 상황과 연결된 작품만 나온다 (테스트 `test_situation_filter`·`test_situation_chip`, 브라우저 확인)
+- [x] 평점을 남긴 작품은 다음 추천에 나오지 않는다 (테스트 `test_rated_content_not_in_next_batch`)
+- [x] `recommendation`에 오늘 날짜로 50행 (같은 추천일시, rank 1~50 — 로컬 SQLite 확인. MariaDB는 각자 PC에서 HeidiSQL로)
+- [x] LLM 키가 없어도 화면이 깨지지 않고 문장 틀로 나온다 (D10: 지금은 문장 틀만)
+- [x] 홈의 오늘의 추천이 이 목록의 1위와 같다 (테스트 `test_home_today_pick_is_first_recommendation`, 브라우저 확인)
+- [ ] 화면이 Figma 144:36577 과 같다 — 데스크톱·휴대폰(375px) 확인, 정재준 검수 대기. Figma 의 "샘플 추천 / 가상 작품 / 실제 개인화 데이터 아님" 문구는 실제 추천이라 빼고, 안내 상자는 추천 방법 설명으로 바꿈
 
 ## 7. 범위 밖
 - 딥러닝 추천 모델 학습, 위치(GPS) 기반 상황 자동 판단

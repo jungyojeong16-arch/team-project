@@ -40,7 +40,7 @@
 | rating | PK id, FK member_id, FK content_id, score, comment, age_group_at_rating?, rated_at, updated_at |
 | content_like | PK id, FK member_id, FK content_id, liked_at |
 | watch_history | PK id, FK member_id, FK content_id, source, watched_at |
-| recommendation | PK id, FK member_id, FK content_id, FK tpo_id?, rank, feedback, recommended_at |
+| recommendation | PK id, FK member_id, FK content_id, FK tpo_id?, rank, reason, feedback, recommended_at |
 | genre_preference | PK id, FK member_id, FK genre_id, kind |
 | content_genre | PK id, FK content_id, FK genre_id |
 | content_platform | PK id, FK content_id, FK platform_id, deeplink_url |
@@ -94,7 +94,8 @@
 | content.backdrop_url, age_rating, runtime_minutes, episode_count (11/17, D6) | 홈 오늘의 추천·작품 카드의 배경 이미지, 관람 등급(ALL·7·12·15·19), 영화 상영 시간(분), 시리즈 회차 수. TMDB에서 가져온 원본 값이라 계산으로 만들 수 없음 |
 | content.tmdb_rating, tmdb_vote_count (11/17, D6) | TMDB 평점(0~10)·평가 수. 통합 랭킹 지수 계산(6-1)에 씀. ViewFit 회원 평점과는 따로 (회원 평점 평균은 ⑤처럼 저장하지 않음) |
 | ranking.score (11/17, D7) | 통합 랭킹 화면의 "ViewFit 지수"(0~100, `DECIMAL(5,1)`). **집계 당시 값이라 저장** — 다음 날 평점·인기도가 바뀌면 다시 계산해도 그날 값이 나오지 않으므로 ⑤의 예외 |
-| recommendation.tpo_id, feedback | 어떤 상황에서 추천했는지, 재방문 추천 피드백 화면 |
+| recommendation.tpo_id, feedback | 어떤 상황에서 추천했는지(전체 상황 추천이면 비어 있음), 재방문 추천 피드백 화면 |
+| recommendation.reason (11/19, D9) | 맞춤 추천 카드의 한 줄 이유(`VARCHAR(100)`). 같은 작품이라도 상황·회원 취향마다 문장이 달라서 작품(`content.tagline`)이 아니라 추천 행에 저장. 한 번 만든 묶음(같은 `recommended_at` 50행)의 문장은 바뀌지 않음 |
 | watch_history.source | 설문에서 입력한 작품인지, 직접 기록한 작품인지 |
 | ott_platform.code | 화면의 OTT 뱃지(NETFLIX, TVING …)와 연결 |
 

@@ -21,17 +21,43 @@ export function useExpand(total: number, step = 20) {
   };
 }
 
-/** "01 — 20" 묶음 머리 */
-export function RangeHeader({ from, to, shown, total }: { from: number; to: number; shown?: number; total?: number }) {
+/** "01 — 20" 묶음 머리.
+ * accent: 분홍 글씨 배지 "1 — 20" (Figma 맞춤 추천 144:36727) / note: 오른쪽 설명 (shown·total 대신) */
+export function RangeHeader({
+  from,
+  to,
+  shown,
+  total,
+  accent = false,
+  note,
+}: {
+  from: number;
+  to: number;
+  shown?: number;
+  total?: number;
+  accent?: boolean;
+  note?: ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="rounded-md border border-white/[0.12] bg-white/[0.02] px-2.5 py-1 text-[11px] font-bold tracking-[0.44px] text-white/60">
-        {pad(from)} — {pad(to)}
-      </span>
-      {shown !== undefined && total !== undefined && (
-        <span className="text-[11px] text-white/50">
-          {shown} / {total} 표시 중
+    <div className="flex items-center justify-between gap-3">
+      {accent ? (
+        <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-bold text-[#f0abfc]">
+          {from} — {to}
         </span>
+      ) : (
+        <span className="rounded-md border border-white/[0.12] bg-white/[0.02] px-2.5 py-1 text-[11px] font-bold tracking-[0.44px] text-white/60">
+          {pad(from)} — {pad(to)}
+        </span>
+      )}
+      {note ? (
+        <span className="text-[11px] text-white/50">{note}</span>
+      ) : (
+        shown !== undefined &&
+        total !== undefined && (
+          <span className="text-[11px] text-white/50">
+            {shown} / {total} 표시 중
+          </span>
+        )
       )}
     </div>
   );

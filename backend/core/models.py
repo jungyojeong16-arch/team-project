@@ -335,6 +335,8 @@ class Recommendation(models.Model):
         Tpo, on_delete=models.SET_NULL, null=True, blank=True, related_name="recommendations", verbose_name="추천 상황"
     )
     rank = models.PositiveSmallIntegerField("추천 순위", validators=[MinValueValidator(1)])
+    # D9 (11/19) — 추천마다 다른 한 줄 이유 (상황·회원 취향에 따라 달라서 작품(content.tagline)이 아니라 추천 행에 저장)
+    reason = models.CharField("추천 이유", max_length=100, blank=True)
     feedback = models.CharField(
         "피드백 상태", max_length=12, choices=RecommendationFeedback.choices, default=RecommendationFeedback.PENDING
     )

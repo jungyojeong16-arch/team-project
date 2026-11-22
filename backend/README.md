@@ -9,7 +9,9 @@ backend/
 ├─ config/              프로젝트 설정 (settings.py, urls.py)
 └─ core/                ViewFit 기능
    ├─ models.py         테이블 14개 정의 (물리 ERD)
-   ├─ home.py           0-4 홈 피드 계산 (랭킹·추천은 6-1·7-1 전 임시 버전)
+   ├─ home.py           0-4 홈 피드 계산 (추천은 7-1 결과, 랭킹은 6-1 전 임시 버전)
+   ├─ recommend.py      7-1 맞춤 추천 점수 계산 · 추천 묶음 저장/불러오기
+   ├─ curation.py       7-1 한 줄 이유 문장 틀 · 상황 라벨 (LLM 은 D10 결정 후)
    ├─ tmdb.py           2-1 TMDB 연결 · 장르/OTT/상황 연결 규칙
    ├─ management/commands/  import_tmdb(작품 수집), seed_demo(시연용 가상 평점)
    ├─ common.py         0번 공통 도구: offset·limit 목록, 필터, 작품 카드용 목록
@@ -87,7 +89,9 @@ python manage.py runserver
 | GET | `/health/` | 서버·DB 연결 상태 |
 | GET | `/options/` | 설문 선택지 (연령대·직업·장르·OTT·상황) |
 | GET | `/contents/?type=movie&platform=NETFLIX&genre=드라마&tpo=혼자 보는 밤&offset=0&limit=20` | 작품 카드 목록 (0번 공통, 평가 수 많은 순) |
-| GET | `/home/feed/` | 홈 화면 데이터 (0-4). 로그인하면 내 취향 반영 — 랭킹·추천은 6-1·7-1 완성 전 임시 계산 |
+| GET | `/home/feed/` | 홈 화면 데이터 (0-4). 설문을 마친 회원은 오늘의 추천·맞춤 추천작품 = 7-1 추천 1~10위 — 랭킹은 6-1 완성 전 임시 계산 |
+| GET | `/recommendations/?tpo=혼자 보는 밤&type=&platform=&genre=&offset=0&limit=20` 🔒 | 맞춤 추천 TOP 50 (7-1). 오늘 만든 묶음이 없으면 새로 만듦. `tpo` 비우면 전체 상황. 설문 안 했으면 403 |
+| POST | `/recommendations/refresh/` 🔒 | 추천 묶음 지금 새로 만들기 `{"tpo": ""}` (8-1·8-2에서 호출) |
 | GET | `/contents/search/?q=어벤` | 제목 검색 (4-1, 2글자 이상, 최대 20개) |
 | GET | `/contents/33/` | 작품 상세 + 내 평점·좋아요 `my` (4-1) |
 | POST | `/contents/33/watch/` 🔒 | [바로 보기] 시청 기록 `{"platform": "NETFLIX"}` (4-1) |
@@ -146,7 +150,7 @@ python manage.py build_rankings --offline            # TMDB 에 접속하지 않
 ```powershell
 python manage.py test core
 ```
-회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지, 0번 공통 목록 규칙(offset·limit·필터·오류 모양·작품 카드 모양), 2-1 작품 수집(가짜 TMDB 응답)·시연 데이터, D6·D7 칸, 4-1 검색·상세·바로 보기, 0-4 홈 피드, TMDB 키 형식, 3-1 기억에 남는 작품, 6-1 통합 랭킹(지수·순위 변동·필터)까지 51가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
+회원가입 → 로그인 → 설문 저장 → 로그아웃 흐름과, 잘못된 입력(중복 이메일·약한 비밀번호·별점 4.3 등)을 막는지, 0번 공통 목록 규칙(offset·limit·필터·오류 모양·작품 카드 모양), 2-1 작품 수집(가짜 TMDB 응답)·시연 데이터, D6·D7 칸, 4-1 검색·상세·바로 보기, 0-4 홈 피드, TMDB 키 형식, 3-1 기억에 남는 작품, 6-1 통합 랭킹(지수·순위 변동·필터), 7-1 맞춤 추천(점수 항목·비선호/본 작품 제외·상황 필터·한 줄 이유·묶음 저장과 다시 만들기·추천 API·홈 오늘의 추천 = 1위)까지 65가지를 확인합니다. 마지막에 `OK` 가 나오면 성공입니다.
 > MariaDB 로 테스트하려면 viewfit 계정에 테스트용 DB 권한이 필요합니다. MariaDB 클라이언트에서 한 번만:
 > `GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'127.0.0.1'; GRANT ALL PRIVILEGES ON test_viewfit.* TO 'viewfit'@'localhost';`
 

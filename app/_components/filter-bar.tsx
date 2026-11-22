@@ -63,6 +63,41 @@ export function SegmentedToggle<T extends string>({
   );
 }
 
+/** 상황·작품 유형처럼 칩 여러 개 중 하나 고르기 (Figma 맞춤 추천 "Situation selector" 144:36674 · "Content filters" 144:36687) */
+export function ChipGroup<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: Option<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  label: string;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(o.value)}
+            className={`flex h-[34px] shrink-0 items-center rounded-md border px-3.5 text-xs transition ${
+              active ? "border-white/[0.15] bg-white/10 font-bold text-[#f0abfc]" : "border-white/[0.12] bg-white/[0.02] text-white/60 hover:text-white"
+            }`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /** 전체/영화/시리즈, 연령대, 상황처럼 밑줄로 표시되는 탭 */
 export function UnderlineTabs<T extends string>({
   options,

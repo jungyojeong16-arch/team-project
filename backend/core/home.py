@@ -3,10 +3,11 @@
 
 프론트엔드 app/_lib/viewfit.ts 의 HomeFeed 타입과 같은 모양을 만듭니다.
 
-※ 지금은 "임시 버전"입니다. 아래 영역은 담당 기능이 완성되면 그 결과로 바꿉니다.
-  - recommendations · hero : 7-1 맞춤 추천이 생기면 recommendation 테이블의 최신 묶음으로 교체
+영역별 데이터
+  - recommendations · hero : ✅ 7-1 — 설문을 마친 회원은 맞춤 추천(전체 상황) 오늘 묶음의 상위 10개, hero = 1위 + 한 줄 이유
+                             (설문 안 한 회원·손님은 아래 임시 규칙: 시간대 상황 + 선호 장르)
   - rankings              : ✅ 6-1 주간 랭킹(ranking 테이블)이 있으면 그 1~10위·순위 변동 (없으면 임시 계산)
-  - cross_age_picks       : 6-2 세대별 랭킹이 생기면 교체
+  - cross_age_picks       : 임시 — 6-2 세대별 랭킹이 생기면 교체
 """
 from collections import defaultdict
 from decimal import Decimal
@@ -14,7 +15,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from . import models as m
-from . import ranking
+from . import ranking, recommend
 from .common import contents_for_cards
 from .serializers import ContentCardSerializer
 
@@ -111,18 +112,17 @@ def build_home_feed(member=None, now=None):
     if not contents:
         return _empty_feed(member, now, situation)
 
-    # --- 맞춤 추천 (비선호 장르·이미 평가/시청한 작품 제외) ---
-    liked, disliked, seen = set(), set(), set()
-    if member is not None:
-        for pref in m.GenrePreference.objects.filter(member=member):
-            (liked if pref.kind == m.PreferenceKind.LIKE else disliked).add(pref.genre_id)
-        seen |= set(m.Rating.objects.filter(member=member).values_list("content_id", flat=True))
-        seen |= set(m.WatchHistory.objects.filter(member=member).values_list("content_id", flat=True))
-    candidates = [
-        c for c in contents if c.id not in seen and not ({g.id for g in c.genres.all()} & disliked)
-    ] or contents
-    recommended = sorted(candidates, key=lambda c: (-taste_score(c, liked, situation_ids), -(c.rating_count or 0), c.id))
-    recommended = recommended[:RECOMMEND_SIZE]
+    # --- 맞춤 추천: 설문을 마친 회원은 7-1 오늘 묶음 (맞춤 추천 화면 1위 = 오늘의 추천) ---
+    by_id = {c.id: c for c in contents}
+    batch = []
+    if member is not None and member.survey_completed_at:
+        batch = [r for r in recommend.current_recommendations(member, None, now=now) if r.content_id in by_id]
+    if batch:
+        recommended = [by_id[r.content_id] for r in batch[:RECOMMEND_SIZE]]
+        headline = batch[0].reason
+    else:
+        recommended = _temporary_recommendations(member, contents, situation_ids)
+        headline = None
     hero = recommended[0]
 
     # --- 통합 랭킹 TOP 10: 6-1 주간 랭킹(build_rankings)이 있으면 그것, 없으면 임시 계산 ---
@@ -147,7 +147,7 @@ def build_home_feed(member=None, now=None):
             "situation": situation,
             "mood_tags": [f"#{situation.replace(' ', '')}"] + [f"#{g.name}" for g in hero.genres.all()][:2],
         },
-        "hero": {"message": _hero_message(hero, member, situation), "movie": _cards([hero])[0]},
+        "hero": {"message": _hero_message(hero, member, situation, headline), "movie": _cards([hero])[0]},
         "recommendations": _cards(recommended),
         "rankings": rankings,
         "cross_age_picks": _cards(cross),
@@ -170,6 +170,21 @@ def _weekly_top(contents):
     return items
 
 
+def _temporary_recommendations(member, contents, situation_ids):
+    """설문 안 한 회원·손님용 임시 규칙 (비선호 장르·이미 평가/시청한 작품 제외, 시간대 상황 +4)"""
+    liked, disliked, seen = set(), set(), set()
+    if member is not None:
+        for pref in m.GenrePreference.objects.filter(member=member):
+            (liked if pref.kind == m.PreferenceKind.LIKE else disliked).add(pref.genre_id)
+        seen |= set(m.Rating.objects.filter(member=member).values_list("content_id", flat=True))
+        seen |= set(m.WatchHistory.objects.filter(member=member).values_list("content_id", flat=True))
+    candidates = [
+        c for c in contents if c.id not in seen and not ({g.id for g in c.genres.all()} & disliked)
+    ] or contents
+    ordered = sorted(candidates, key=lambda c: (-taste_score(c, liked, situation_ids), -(c.rating_count or 0), c.id))
+    return ordered[:RECOMMEND_SIZE]
+
+
 def _has_all_ages(content):
     counts = defaultdict(int)
     for r in content.ratings.all():
@@ -177,10 +192,10 @@ def _has_all_ages(content):
     return all(counts[age] >= CROSS_AGE_MIN_COUNT for age in CROSS_AGES)
 
 
-def _hero_message(hero, member, situation):
-    """오늘의 추천 문구 — 실제 숫자만 씀 (7-1 한 줄 큐레이션이 생기면 교체)"""
+def _hero_message(hero, member, situation, headline=None):
+    """오늘의 추천 문구 — headline 은 7-1 한 줄 이유 (없으면 시간대 상황 문장 틀), reason 은 실제 숫자만 씀"""
     genres = [g.name for g in hero.genres.all()]
-    headline = f"{situation}에 어울리는 {genres[0] if genres else '작품'} 한 편"
+    headline = headline or f"{situation}에 어울리는 {genres[0] if genres else '작품'} 한 편"
     age = member.age_group if member is not None else None
     if age:
         fans = sum(1 for r in hero.ratings.all() if r.age_group_at_rating == age and r.score >= Decimal("4.0"))

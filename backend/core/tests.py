@@ -796,3 +796,225 @@ class TotalRankingTests(APITestCase):
         feed = self.client.get("/api/v1/home/feed/").data["data"]
         got = [(r["rank"], r["movie"]["title"][-1], r["rank_change"]) for r in feed["rankings"]]
         self.assertEqual(got[:2], [(1, "C", 2), (2, "D", -1)])
+
+
+# =============================================================================
+# 7-1 맞춤 추천 — 추천 점수·묶음 저장 (recommend.py), 추천 API, 홈 오늘의 추천
+# =============================================================================
+
+
+class RecommendationTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from django.utils import timezone
+
+        from .models import ContentGenre, ContentPlatform, ContentTpo, Genre, Platform, Ranking, Tpo, WatchHistory
+
+        g = {n: Genre.objects.get(name=n) for n in ["드라마", "스릴러", "공포", "코미디"]}
+        netflix = Platform.objects.get(code="NETFLIX")
+        cls.night, after_work = Tpo.objects.get(name="혼자 보는 밤"), Tpo.objects.get(name="퇴근 후")
+
+        def make(title, genres, tpo=None, content_type="movie", ott=True):
+            c = Content.objects.create(title=title, content_type=content_type, release_year=2024)
+            for name in genres:
+                ContentGenre.objects.create(content=c, genre=g[name])
+            if ott:
+                ContentPlatform.objects.create(content=c, platform=netflix)
+            if tpo:
+                ContentTpo.objects.create(content=c, tpo=tpo)
+            return c
+
+        cls.thriller = make("밤의 추적자", ["스릴러"], cls.night)
+        cls.thriller2 = make("새벽의 그림자", ["스릴러"], cls.night)
+        cls.horror = make("공포의 밤", ["공포", "스릴러"], cls.night)
+        cls.comedy = make("퇴근길 웃음", ["코미디"], after_work, content_type="series")
+        cls.drama = make("가족 드라마", ["드라마"])
+        cls.memorable = make("기억의 영화", ["스릴러"], cls.night)
+        cls.no_ott = make("OTT 없는 작품", ["스릴러"], cls.night, ott=False)
+
+        cls.member = Member.objects.create_user(
+            "rec@x.kr", "추천", "viewfit123!", age_group="20s", survey_completed_at=timezone.now()
+        )
+        cls.member.genre_preferences.create(genre=g["스릴러"], kind="like")
+        cls.member.genre_preferences.create(genre=g["공포"], kind="dislike")
+        WatchHistory.objects.create(member=cls.member, content=cls.memorable, source="survey")  # 기억에 남는 작품
+
+        # 가족 드라마: 20대 평균 4.5 (30대 1.0 은 내 연령대가 아니라 빠짐)
+        for i, (age, score) in enumerate([("20s", "4.5"), ("20s", "4.5"), ("30s", "1.0")]):
+            rater = Member.objects.create_user(f"rr{i}@x.kr", f"평가자{i}", "viewfit123!", age_group=age)
+            Rating.objects.create(member=rater, content=cls.drama, score=Decimal(score))
+        # 같은 점수(스릴러 둘)면 통합 랭킹 순위가 높은 작품 먼저
+        Ranking.objects.create(content=cls.thriller2, period="weekly", ranked_on=timezone.localdate(), rank=1)
+
+    def titles(self, rows):
+        return [r.content.title for r in rows]
+
+    # --- Step 1: 추천 점수 ---
+    def test_score_items(self):
+        from . import recommend
+
+        taste = recommend.load_taste(self.member)
+        cards = {c.id: c for c in recommend.candidates(taste)}
+        self.assertEqual(recommend.liked_genre_points(cards[self.thriller.id], taste), 3)  # 선호 장르 +3
+        self.assertEqual(recommend.loved_work_points(cards[self.thriller.id], taste), 1)  # 기억에 남는 작품과 장르 겹침 +1
+        self.assertEqual(recommend.loved_work_points(cards[self.drama.id], taste), 0)
+        self.assertEqual(recommend.age_average_points(cards[self.drama.id], taste), 4.5)  # 내 연령대(20대) 평균만
+        self.assertEqual(recommend.age_average_points(cards[self.comedy.id], taste), 0.0)  # 평가 없음
+
+    def test_order_and_exclusions(self):
+        from .recommend import build_recommendations
+
+        rows = build_recommendations(self.member)
+        # 드라마 4.5 > 스릴러 둘 4.0 (같은 점수 → 랭킹 1위인 새벽의 그림자 먼저) > 코미디 0
+        self.assertEqual(self.titles(rows), ["가족 드라마", "새벽의 그림자", "밤의 추적자", "퇴근길 웃음"])
+        self.assertEqual([r.rank for r in rows], [1, 2, 3, 4])
+        # 비선호(공포)·이미 본 작품(기억에 남는 작품)·OTT 없는 작품은 빠짐 — PRD 완료 기준 1
+        for title in ["공포의 밤", "기억의 영화", "OTT 없는 작품"]:
+            self.assertNotIn(title, self.titles(rows))
+
+    def test_rated_content_not_in_next_batch(self):
+        from .recommend import build_recommendations
+
+        self.assertIn("가족 드라마", self.titles(build_recommendations(self.member)))
+        Rating.objects.create(member=self.member, content=self.drama, score=Decimal("3.0"))
+        self.assertNotIn("가족 드라마", self.titles(build_recommendations(self.member)))  # 완료 기준 3
+
+    def test_situation_filter(self):
+        from .recommend import build_recommendations, load_taste, rank_contents
+
+        rows = build_recommendations(self.member, tpo=self.night)
+        self.assertEqual(self.titles(rows), ["새벽의 그림자", "밤의 추적자"])  # 혼자 보는 밤과 연결된 작품만 — 완료 기준 2
+        self.assertTrue(all(r.tpo == self.night for r in rows))
+        scores = {c.title: s for c, s in rank_contents(load_taste(self.member), self.night)}
+        self.assertEqual(scores["밤의 추적자"], 8.0)  # 선호 장르 3 + 상황 4 + 기억에 남는 작품 1
+
+    def test_reason_template(self):
+        from .curation import make_reason, situation_label
+        from .recommend import build_recommendations
+
+        reasons = {r.content.title: r.reason for r in build_recommendations(self.member)}
+        self.assertEqual(reasons["밤의 추적자"], "혼자 보는 밤에 어울리는 스릴러 한 편")  # 전체 상황 → 작품에 연결된 상황
+        self.assertEqual(reasons["퇴근길 웃음"], "퇴근 후에 어울리는 코미디 한 편")
+        self.assertEqual(reasons["가족 드라마"], "지금 보기 좋은 드라마 한 편")  # 연결된 상황 없음
+        self.assertEqual(make_reason("주말에 함께", "SF"), "주말에 함께 보기 좋은 SF 한 편")
+        self.assertEqual(situation_label("혼자 보는 밤"), "늦은 밤 · 혼자")
+
+    def test_situation_genre_pairs(self):
+        from collections import Counter
+
+        from .curation import pick_situation_genre
+
+        genres, situations = ["코미디", "스릴러", "애니메이션"], ["혼자 보는 밤", "퇴근 후"]
+        # 상황 규칙에 맞는 짝만: 코미디는 혼자 보는 밤과 짝이 되지 않음
+        self.assertEqual(pick_situation_genre(genres, situations, {"코미디"}), ("퇴근 후", "코미디"))
+        self.assertEqual(pick_situation_genre(genres, situations, {"스릴러"}), ("혼자 보는 밤", "스릴러"))
+        # 선호 장르가 여러 상황과 맞으면 덜 쓴 상황 먼저 (전체 상황에 여러 상황이 섞이게)
+        used = Counter({"혼자 보는 밤": 3})
+        self.assertEqual(pick_situation_genre(genres, situations, {"코미디", "스릴러"}, used), ("퇴근 후", "코미디"))
+        self.assertEqual(pick_situation_genre(["드라마"], [], {"스릴러"}), (None, "드라마"))
+
+    def test_batch_is_saved_and_history_kept(self):
+        from .models import Recommendation
+        from .recommend import build_recommendations, latest_batch
+
+        build_recommendations(self.member)
+        build_recommendations(self.member)
+        self.assertEqual(Recommendation.objects.filter(member=self.member).count(), 8)  # 다시 만들면 새 행 추가
+        batch = latest_batch(self.member)
+        self.assertEqual([r.rank for r in batch], [1, 2, 3, 4])
+        self.assertEqual(len({r.recommended_at for r in batch}), 1)  # 한 묶음 = 같은 추천일시
+        self.assertTrue(all(r.feedback == "pending" and r.tpo is None for r in batch))
+
+    def test_top_50_only(self):
+        from .models import ContentPlatform, Platform
+        from .recommend import build_recommendations
+
+        netflix = Platform.objects.get(code="NETFLIX")
+        for i in range(50):
+            ContentPlatform.objects.create(content=Content.objects.create(title=f"작품{i}", content_type="movie"), platform=netflix)
+        rows = build_recommendations(self.member)
+        self.assertEqual(len(rows), 50)
+        self.assertEqual(rows[-1].rank, 50)
+
+    # --- Step 3: 추천 API ---
+    def get(self, **params):
+        return self.client.get("/api/v1/recommendations/", params)
+
+    def test_login_and_survey_required(self):
+        self.assertEqual(self.get().status_code, 401)
+        self.client.force_authenticate(Member.objects.create_user("new@x.kr", "새회원", "viewfit123!"))
+        res = self.get()
+        self.assertEqual(res.status_code, 403)  # 설문 안 함 → 화면이 설문으로 보냄 (FR8)
+        self.assertTrue(res.data["survey_required"])
+        self.assertEqual(self.client.post("/api/v1/recommendations/refresh/").status_code, 403)
+
+    def test_get_shape_and_reuses_todays_batch(self):
+        from .models import Recommendation
+
+        self.client.force_authenticate(self.member)
+        res = self.get()
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual((res.data["tpo"], res.data["count"], res.data["next_offset"]), ("전체 상황", 4, None))
+        first = res.data["results"][0]
+        self.assertEqual(set(first), {"rank", "tpo", "situation_label", "reason", "content"})
+        self.assertEqual((first["rank"], first["content"]["title"]), (1, "가족 드라마"))
+        self.assertEqual(res.data["results"][2]["situation_label"], "늦은 밤 · 혼자")
+        self.assertIn("platforms", first["content"])  # 작품 카드 모양
+
+        self.get()
+        self.assertEqual(Recommendation.objects.filter(member=self.member).count(), 4)  # 오늘 만든 묶음을 다시 씀
+
+    def test_filters_and_paging(self):
+        self.client.force_authenticate(self.member)
+        self.assertEqual([r["content"]["title"] for r in self.get(type="series").data["results"]], ["퇴근길 웃음"])
+        self.assertEqual(self.get(genre="스릴러").data["count"], 2)
+        res = self.get(limit=3)
+        self.assertEqual((len(res.data["results"]), res.data["next_offset"]), (3, 3))
+        self.assertEqual(self.get(offset=3).data["results"][0]["rank"], 4)
+        for bad in [{"tpo": "없는상황"}, {"type": "drama"}, {"platform": "HULU"}, {"genre": "없는장르"}]:
+            res = self.get(**bad)
+            self.assertEqual(res.status_code, 400, bad)
+            self.assertIn(next(iter(bad)), res.data)
+
+    def test_situation_chip(self):
+        self.client.force_authenticate(self.member)
+        res = self.get(tpo="혼자 보는 밤")
+        self.assertEqual(res.data["tpo"], "혼자 보는 밤")
+        self.assertEqual([r["content"]["title"] for r in res.data["results"]], ["새벽의 그림자", "밤의 추적자"])
+        self.assertEqual({r["situation_label"] for r in res.data["results"]}, {"늦은 밤 · 혼자"})
+        self.assertEqual(self.get(tpo="all").data["tpo"], "전체 상황")
+
+    def test_new_batch_when_needed(self):
+        from datetime import timedelta
+
+        from .models import Recommendation
+
+        self.client.force_authenticate(self.member)
+        rows = Recommendation.objects.filter(member=self.member)
+        self.get(tpo="혼자 보는 밤")
+        self.get()
+        self.assertEqual(rows.count(), 6)
+
+        rows.update(recommended_at=rows.first().recommended_at - timedelta(days=1))  # 어제 만든 묶음 → 하루 첫 방문
+        self.get()
+        self.assertEqual(rows.count(), 10)
+
+        self.client.post("/api/v1/recommendations/refresh/")  # 8-1·8-2 에서 부름
+        self.assertEqual(rows.count(), 14)
+        self.get(tpo="혼자 보는 밤")  # 전체 상황을 새로 만들었으니 상황별도 새로
+        self.assertEqual(rows.count(), 16)
+
+        # 설문 다시 저장 (비선호·기억에 남는 작품을 비움 → 공포의 밤·기억의 영화도 후보가 되어 6개)
+        self.client.put("/api/v1/me/survey/", {"liked_genres": ["코미디"]}, format="json")
+        res = self.get()
+        self.assertEqual(rows.count(), 22)
+        # 새 취향 반영: 코미디(선호 +3)가 2위로, 스릴러(이제 선호 아님)는 그 아래로 (1위 드라마는 20대 평균 4.5)
+        self.assertEqual([r["content"]["title"] for r in res.data["results"][:2]], ["가족 드라마", "퇴근길 웃음"])
+
+    def test_home_today_pick_is_first_recommendation(self):
+        self.client.force_authenticate(self.member)
+        first = self.get().data["results"]
+        feed = self.client.get("/api/v1/home/feed/").data["data"]
+        self.assertEqual(feed["hero"]["movie"]["id"], first[0]["content"]["id"])  # 완료 기준 6
+        self.assertEqual(feed["hero"]["message"]["headline"], first[0]["reason"])
+        self.assertEqual([m["id"] for m in feed["recommendations"]], [r["content"]["id"] for r in first])

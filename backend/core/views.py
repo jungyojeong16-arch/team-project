@@ -14,6 +14,15 @@ API 목록 (주소 앞에 /api/v1 이 붙음)
   GET  /contents/<id>/         작품 상세 + my{score, liked}
   POST /contents/<id>/watch/   [바로 보기] 시청 기록 {platform}   * 로그인 필요
 
+  [6-1 통합 랭킹]
+  GET  /rankings/?period=weekly|monthly&type=&platform=&genre=&offset=&limit=
+                               가장 최근 집계일의 TOP 100 (필터 걸면 1위부터 다시 번호)
+
+  [7-1 맞춤 추천]                                            * 로그인 + 취향 설문 필요 (안 했으면 403)
+  GET  /recommendations/?tpo=&type=&platform=&genre=&offset=&limit=
+                               오늘의 추천 묶음 (없으면 새로 만듦). tpo 비우면 전체 상황
+  POST /recommendations/refresh/  {tpo}  지금 바로 새로 만들기 (8-1·8-2)
+
   [회원]
   GET  /auth/check-nickname/?nickname=  닉네임 사용 가능 여부
   POST /auth/signup/           회원가입 → 로그인 토큰
@@ -35,8 +44,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from . import models as m
-from . import ranking
+from . import ranking, recommend
 from .common import contents_for_cards, filter_contents, page_bounds, paginate
+from .curation import ALL_SITUATIONS, situation_label
 from .home import build_home_feed
 from .serializers import (
     ContentCardSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname, content_brief,
@@ -303,6 +313,69 @@ def rankings(request):
             "items": items,
         }
     )
+
+
+# -----------------------------------------------------------------------------
+# 7-1 맞춤 추천 — 계산은 core/recommend.py, 한 줄 문구는 core/curation.py
+# -----------------------------------------------------------------------------
+
+SURVEY_REQUIRED = {"detail": "취향 설문을 먼저 해 주세요.", "survey_required": True}
+
+
+def recommendation_page(request, rows, tpo):
+    """추천 묶음 → 목록 응답. type·platform·genre 로 묶음 안에서 거르고 offset·limit 으로 나눔.
+
+    {tpo, recommended_at, count, offset, limit, next_offset,
+     results: [{rank, tpo, situation_label, reason, content: 작품 카드}]}
+    """
+    recommended_at = timezone.localtime(rows[0].recommended_at).isoformat(timespec="seconds") if rows else None
+    filters = {name: request.query_params.get(name) for name in ("type", "platform", "genre")}
+    allowed = set(
+        filter_contents(m.Content.objects.filter(pk__in=[r.content_id for r in rows]), filters).values_list("pk", flat=True)
+    )
+    # 상황 라벨은 묶음 전체 순서로 정해지므로 거르기 전에 계산
+    items = [item for item in recommend.batch_items(request.user, rows, tpo) if item[0].content_id in allowed]
+    offset, limit = page_bounds(request.query_params)
+    results = [
+        {
+            "rank": row.rank,
+            "tpo": situation,
+            "situation_label": situation_label(situation),
+            "reason": row.reason,
+            "content": ContentCardSerializer(content).data,
+        }
+        for row, content, situation in items[offset : offset + limit]
+    ]
+    return Response(
+        {
+            "tpo": tpo.name if tpo else ALL_SITUATIONS,
+            "recommended_at": recommended_at,
+            "count": len(items),
+            "offset": offset,
+            "limit": limit,
+            "next_offset": offset + limit if offset + limit < len(items) else None,
+            "results": results,
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def recommendations(request):
+    if request.user.survey_completed_at is None:
+        return Response(SURVEY_REQUIRED, status=status.HTTP_403_FORBIDDEN)
+    tpo = recommend.tpo_from_param(request.query_params.get("tpo"))
+    return recommendation_page(request, recommend.current_recommendations(request.user, tpo), tpo)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def recommendations_refresh(request):
+    """지금 바로 새 묶음 만들기 (8-1 취향 수정·8-2 최근 관심사 반영에서 호출). body: {tpo} — 비우면 전체 상황"""
+    if request.user.survey_completed_at is None:
+        return Response(SURVEY_REQUIRED, status=status.HTTP_403_FORBIDDEN)
+    tpo = recommend.tpo_from_param((request.data or {}).get("tpo"))
+    return recommendation_page(request, recommend.build_recommendations(request.user, tpo), tpo)
 
 
 # -----------------------------------------------------------------------------

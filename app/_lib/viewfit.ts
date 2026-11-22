@@ -640,6 +640,104 @@ export async function searchContents(query: string, signal?: AbortSignal): Promi
     }));
 }
 
+/* ============================================================================
+ * 7-1 맞춤 추천 — GET /api/v1/recommendations/ (로그인 + 취향 설문 필요)
+ * ========================================================================== */
+
+/** "전체 상황" 이면 tpo 를 보내지 않음 */
+export const ALL_SITUATIONS = "전체 상황";
+
+export interface RecommendationItem {
+  rank: number;
+  /** 이 추천의 상황 이름 (전체 상황이면 작품에 연결된 첫 상황, 없으면 null) */
+  tpo: string | null;
+  /** 카드 위 분홍 글씨 — 예: "늦은 밤 · 혼자" */
+  situation_label: string;
+  /** 한 줄 이유 — 예: "혼자 보는 밤에 어울리는 스릴러 한 편" */
+  reason: string;
+  content: Movie;
+}
+
+export interface RecommendationList {
+  tpo: string;
+  recommended_at: string | null;
+  count: number;
+  offset: number;
+  limit: number;
+  next_offset: number | null;
+  results: RecommendationItem[];
+}
+
+export interface RecommendationQuery {
+  tpo?: string | null;
+  type?: ContentType | "all";
+  platform?: PlatformCode | null;
+  genre?: string | null;
+  offset?: number;
+  limit?: number;
+}
+
+/** 서버 오류 + HTTP 상태 (401 → 로그인 창, 403 → 설문으로) */
+export class RequestError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+  }
+}
+
+export async function fetchRecommendations(query: RecommendationQuery = {}, signal?: AbortSignal): Promise<RecommendationList> {
+  const { tpo, type = "all", platform, genre, offset = 0, limit = 50 } = query;
+  if (!API_BASE_URL) return mockRecommendations(query);
+
+  const params = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+  if (tpo && tpo !== ALL_SITUATIONS) params.set("tpo", tpo);
+  if (type !== "all") params.set("type", type);
+  if (platform) params.set("platform", platform);
+  if (genre) params.set("genre", genre);
+
+  if (!authHeader().Authorization) throw new RequestError("로그인이 필요해요.", 401);
+  // 토큰이 DB에 없으면(401) getWithLogin 이 로그인 정보를 지움 → 화면은 로그인 안내로 바뀜 (홈과 같은 처리, 1-2)
+  const res = await getWithLogin(`${API_BASE_URL}/api/v1/recommendations/?${params}`, signal).catch((e: unknown) => {
+    if (e instanceof DOMException && e.name === "AbortError") throw e;
+    throw new RequestError("서버에 연결할 수 없어요. 백엔드 서버가 켜져 있는지 확인해 주세요.", 0);
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const first = Object.values(data as Record<string, unknown>)[0];
+    const message = (data as { detail?: string }).detail ?? (Array.isArray(first) ? String(first[0]) : `추천을 불러오지 못했어요. (HTTP ${res.status})`);
+    throw new RequestError(message, res.status);
+  }
+  return data as RecommendationList;
+}
+
+/** 백엔드 없이 화면만 볼 때 — 샘플 작품을 문장 틀과 함께 */
+function mockRecommendations({ tpo, type = "all", platform, genre, offset = 0, limit = 50 }: RecommendationQuery): RecommendationList {
+  const rows = MOCK_MOVIES.filter(
+    (m) =>
+      (type === "all" || m.content_type === type) &&
+      (!platform || m.platforms.some((p) => p.code === platform)) &&
+      (!genre || m.genres.some((g) => g.name === genre)),
+  );
+  const situation = tpo && tpo !== ALL_SITUATIONS ? tpo : null;
+  return {
+    tpo: situation ?? ALL_SITUATIONS,
+    recommended_at: null,
+    count: rows.length,
+    offset,
+    limit,
+    next_offset: offset + limit < rows.length ? offset + limit : null,
+    results: rows.slice(offset, offset + limit).map((m, i) => ({
+      rank: offset + i + 1,
+      tpo: situation,
+      situation_label: situation ?? "언제든 · 가볍게",
+      reason: `${situation ? `${situation}에 어울리는` : "지금 보기 좋은"} ${m.genres[0]?.name ?? "작품"} 한 편`,
+      content: m,
+    })),
+  };
+}
+
 export async function fetchContent(id: number, signal?: AbortSignal): Promise<Movie> {
   if (API_BASE_URL) {
     const res = await getWithLogin(`${API_BASE_URL}/api/v1/contents/${id}/`, signal).catch(() => null);
