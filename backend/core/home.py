@@ -4,7 +4,8 @@
 프론트엔드 app/_lib/viewfit.ts 의 HomeFeed 타입과 같은 모양을 만듭니다.
 
 영역별 데이터
-  - recommendations · hero : ✅ 7-1 — 설문을 마친 회원은 맞춤 추천(전체 상황) 오늘 묶음의 상위 10개, hero = 1위 + 한 줄 이유
+  - recommendations · hero : ✅ 7-1 — 설문을 마친 회원은 맞춤 추천(전체 상황) 오늘 묶음의 상위 10개, hero = 1위
+                             칩·한 줄·태그는 설문 답(직업·선호 장르·기억에 남는 작품)으로 (아래 '설문 답으로 만드는 홈 문구')
                              (설문 안 한 회원·손님은 아래 임시 규칙: 시간대 상황 + 선호 장르)
   - rankings              : ✅ 6-1 주간 랭킹(ranking 테이블)이 있으면 그 1~10위·순위 변동 (없으면 임시 계산)
   - cross_age_picks       : 임시 — 6-2 세대별 랭킹이 생기면 교체
@@ -54,6 +55,96 @@ def situation_for(now):
     if slot == "afternoon":
         return "가족과 함께" if weekend else "여행이 필요할 때"
     return "여행이 필요할 때"
+
+
+# =============================================================================
+# 설문 답으로 만드는 홈 문구 — 설문을 마친 회원만 (Figma "저녁 · 과제 끝난 금요일 밤", PRD 0-4 FR2)
+#   칩      : 직업 + 요일 (+ 때)          예) 저녁 · 과제 끝난 금요일 밤
+#   한 줄   : 기억에 남는 작품 → 선호 장르 → 취향 점수 1위 순서로 설문 답과 겹치는 것
+# =============================================================================
+
+WEEKDAYS = "월화수목금토일"
+SLOT_WORDS = {"morning": "아침", "afternoon": "오후", "evening": "저녁", "late_night": "늦은 밤"}  # 화면 칩 앞부분과 같음
+# 직업 → (평일 낮, 평일 저녁·밤, 주말) 에 붙는 말. 기타·응답 안 함은 직업 말 없이 요일만
+JOB_MOMENTS = {
+    m.Job.STUDENT: ("공강인", "과제 끝난", "과제 없는"),
+    m.Job.OFFICE: ("잠깐 쉬어 가는", "퇴근한", "출근 없는"),
+    m.Job.FREELANCE: ("잠깐 쉬어 가는", "일 마친", "한숨 돌리는"),
+    m.Job.HOME: ("한숨 돌리는", "집안일 마친", "한숨 돌리는"),
+    m.Job.SEEKING: ("여유로운", "하루를 마친", "여유로운"),
+}
+TITLE_MAX = 15  # 한 줄에 넣는 기억에 남는 작품 제목 길이
+
+
+def day_part(now):
+    """요일 뒤에 붙는 때"""
+    hour = now.hour
+    if 5 <= hour < 11:
+        return "아침"
+    if 11 <= hour < 17:
+        return "오후"
+    if 17 <= hour < 20:
+        return "저녁"
+    return "밤" if hour >= 20 else "새벽"
+
+
+def member_moment(member, now):
+    """예) 금 21시 학생 → '과제 끝난 금요일 밤', 일 18시 학생 → '과제 없는 일요일' (칩 앞의 '저녁'과 겹치는 말은 뺌)"""
+    slot = time_slot(now)
+    phrases = JOB_MOMENTS.get(member.job)
+    phrase = ""
+    if phrases:
+        if now.weekday() >= 5:
+            phrase = phrases[2]
+        else:
+            phrase = phrases[0] if slot in ("morning", "afternoon") else phrases[1]
+    part = day_part(now)
+    words = [phrase, f"{WEEKDAYS[now.weekday()]}요일", "" if part in SLOT_WORDS[slot] else part]
+    return " ".join(w for w in words if w)
+
+
+def _short_title(title):
+    title = title.split(":")[0].strip()  # "헝거게임: 판엠의 불꽃" → "헝거게임"
+    return title if len(title) <= TITLE_MAX else title[: TITLE_MAX - 1] + "…"
+
+
+def taste_headline(hero, member, now):
+    """오늘의 추천 한 줄 — 작품 정보와 설문 답에 실제로 있는 것만 씀 (앞에 '20대 학생 ○○님,' 은 화면이 붙임)"""
+    genres = [g.name for g in hero.genres.all()]
+    kind = "신작" if hero.release_year and hero.release_year >= now.year - 1 else "한 편"
+    liked = set(member.genre_preferences.filter(kind=m.PreferenceKind.LIKE).values_list("genre__name", flat=True))
+
+    # ① 기억에 남는 작품(설문)과 장르가 겹치면 그 작품 이름으로
+    memorable = (
+        m.WatchHistory.objects.filter(member=member, source=m.WatchSource.SURVEY)
+        .exclude(content=hero)
+        .select_related("content")
+        .prefetch_related("content__genres")
+        .order_by("watched_at", "id")
+    )
+    best, shared = None, []
+    for row in memorable:
+        overlap = [g for g in genres if g in {x.name for x in row.content.genres.all()}]
+        if len(overlap) > len(shared):
+            best, shared = row.content, overlap
+    if best:
+        genre = next((g for g in shared if g in liked), shared[0])
+        return f"'{_short_title(best.title)}' 좋아하셨다면 딱 맞을 {genre} {kind}"
+
+    # ② 선호 장르가 겹치면 그 장르로
+    matched = [g for g in genres if g in liked][:2]
+    if matched:
+        return f"{'·'.join(matched)} 좋아하는 취향에 딱 맞는 {kind}"
+
+    # ③ 겹치는 답이 없으면 취향 점수 1위라는 사실만
+    return f"오늘 취향 점수 1위 {genres[0] if genres else '작품'} {kind}"
+
+
+def taste_tags(hero, member):
+    """작품 장르를 선호 장르부터 최대 3개 (시간대 상황 태그는 추천 작품과 어긋날 수 있어 쓰지 않음)"""
+    liked = set(member.genre_preferences.filter(kind=m.PreferenceKind.LIKE).values_list("genre__name", flat=True))
+    genres = sorted((g.name for g in hero.genres.all()), key=lambda g: g not in liked)
+    return [f"#{g.replace(' ', '')}" for g in genres[:3]]
 
 
 # =============================================================================
@@ -119,11 +210,16 @@ def build_home_feed(member=None, now=None):
         batch = [r for r in recommend.current_recommendations(member, None, now=now) if r.content_id in by_id]
     if batch:
         recommended = [by_id[r.content_id] for r in batch[:RECOMMEND_SIZE]]
-        headline = batch[0].reason
+        hero = recommended[0]
+        # 칩·한 줄·태그 모두 설문 답(직업·선호 장르·기억에 남는 작품)으로 — 시간대 상황 이름은 쓰지 않음
+        moment = member_moment(member, now)
+        headline = taste_headline(hero, member, now)
+        mood_tags = taste_tags(hero, member)
     else:
         recommended = _temporary_recommendations(member, contents, situation_ids)
-        headline = None
-    hero = recommended[0]
+        hero = recommended[0]
+        moment, headline = situation, None
+        mood_tags = [f"#{situation.replace(' ', '')}"] + [f"#{g.name}" for g in hero.genres.all()][:2]
 
     # --- 통합 랭킹 TOP 10: 6-1 주간 랭킹(build_rankings)이 있으면 그것, 없으면 임시 계산 ---
     rankings = _weekly_top(contents)
@@ -144,8 +240,8 @@ def build_home_feed(member=None, now=None):
         "user": _member_payload(member),
         "tpo": {
             "time_slot": time_slot(now),
-            "situation": situation,
-            "mood_tags": [f"#{situation.replace(' ', '')}"] + [f"#{g.name}" for g in hero.genres.all()][:2],
+            "situation": moment,  # 화면 칩 "저녁 · {situation}"
+            "mood_tags": mood_tags,
         },
         "hero": {"message": _hero_message(hero, member, situation, headline), "movie": _cards([hero])[0]},
         "recommendations": _cards(recommended),
@@ -193,7 +289,7 @@ def _has_all_ages(content):
 
 
 def _hero_message(hero, member, situation, headline=None):
-    """오늘의 추천 문구 — headline 은 7-1 한 줄 이유 (없으면 시간대 상황 문장 틀), reason 은 실제 숫자만 씀"""
+    """오늘의 추천 문구 — headline 은 설문 답 한 줄(taste_headline, 없으면 시간대 상황 문장 틀), reason 은 실제 숫자만 씀"""
     genres = [g.name for g in hero.genres.all()]
     headline = headline or f"{situation}에 어울리는 {genres[0] if genres else '작품'} 한 편"
     age = member.age_group if member is not None else None

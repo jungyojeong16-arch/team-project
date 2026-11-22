@@ -75,7 +75,7 @@
 - [x] 평점을 남긴 작품은 다음 추천에 나오지 않는다 (테스트 `test_rated_content_not_in_next_batch`)
 - [x] `recommendation`에 오늘 날짜로 50행 (같은 추천일시, rank 1~50 — 로컬 SQLite 확인. MariaDB는 각자 PC에서 HeidiSQL로)
 - [x] LLM 키가 없어도 화면이 깨지지 않고 문장 틀로 나온다 (D10: 지금은 문장 틀만)
-- [x] 홈의 오늘의 추천이 이 목록의 1위와 같다 (테스트 `test_home_today_pick_is_first_recommendation`, 브라우저 확인)
+- [x] 홈의 오늘의 추천이 이 목록의 1위와 같다 (테스트 `test_home_today_pick_is_first_recommendation`, 브라우저 확인). 홈의 한 줄 문구는 11/22부터 이 화면의 한 줄 이유 대신 설문 답으로 만듦 (0-4 참고 — 홈 칩의 시간대와 어긋나지 않게)
 - [ ] 화면이 Figma 144:36577 과 같다 — 데스크톱·휴대폰(375px) 확인, 정재준 검수 대기. Figma 의 "샘플 추천 / 가상 작품 / 실제 개인화 데이터 아님" 문구는 실제 추천이라 빼고, 안내 상자는 추천 방법 설명으로 바꿈
 
 ## 7. 범위 밖

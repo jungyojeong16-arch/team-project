@@ -1016,5 +1016,44 @@ class RecommendationTests(APITestCase):
         first = self.get().data["results"]
         feed = self.client.get("/api/v1/home/feed/").data["data"]
         self.assertEqual(feed["hero"]["movie"]["id"], first[0]["content"]["id"])  # 완료 기준 6
-        self.assertEqual(feed["hero"]["message"]["headline"], first[0]["reason"])
         self.assertEqual([m["id"] for m in feed["recommendations"]], [r["content"]["id"] for r in first])
+        # 1위 가족 드라마는 선호 장르(스릴러)·기억에 남는 작품과 겹치지 않음 → 취향 점수 1위 문장, 시간대 상황 태그 없음
+        self.assertEqual(feed["hero"]["message"]["headline"], "오늘 취향 점수 1위 드라마 한 편")
+        self.assertEqual(feed["tpo"]["mood_tags"], ["#드라마"])
+        self.assertIn("요일", feed["tpo"]["situation"])
+
+    # --- 홈 문구: 설문 답(직업·선호 장르·기억에 남는 작품) ---
+    def test_home_moment_from_job(self):
+        from datetime import datetime
+        from types import SimpleNamespace
+        from zoneinfo import ZoneInfo
+
+        from .home import member_moment
+
+        def at(day, hour, job):
+            return member_moment(SimpleNamespace(job=job), datetime(2026, 11, day, hour, tzinfo=ZoneInfo("Asia/Seoul")))
+
+        self.assertEqual(at(20, 21, "student"), "과제 끝난 금요일 밤")  # Figma 예시 그대로 (칩: 저녁 · 과제 끝난 금요일 밤)
+        self.assertEqual(at(22, 18, "student"), "과제 없는 일요일")  # 칩 앞 '저녁'과 겹치는 말은 뺌
+        self.assertEqual(at(17, 19, "office"), "퇴근한 화요일")
+        self.assertEqual(at(17, 14, "office"), "잠깐 쉬어 가는 화요일")
+        self.assertEqual(at(21, 2, "home"), "한숨 돌리는 토요일 새벽")
+        self.assertEqual(at(17, 23, None), "화요일")  # 직업 응답 안 함 → 요일만 (칩: 늦은 밤 · 화요일)
+
+    def test_home_headline_from_survey(self):
+        from datetime import datetime
+
+        from .home import taste_headline, taste_tags
+        from .models import WatchHistory
+
+        now = datetime(2026, 11, 22, 18)
+        # ① 기억에 남는 작품(기억의 영화 · 스릴러)과 장르가 겹침
+        self.assertEqual(taste_headline(self.thriller, self.member, now), "'기억의 영화' 좋아하셨다면 딱 맞을 스릴러 한 편")
+        # ② 기억에 남는 작품이 없으면 선호 장르
+        WatchHistory.objects.filter(member=self.member, source="survey").delete()
+        self.assertEqual(taste_headline(self.thriller, self.member, now), "스릴러 좋아하는 취향에 딱 맞는 한 편")
+        # 1년 안에 나온 작품은 '신작'
+        self.assertEqual(taste_headline(self.thriller, self.member, datetime(2025, 1, 1)), "스릴러 좋아하는 취향에 딱 맞는 신작")
+        # ③ 겹치는 답이 없음
+        self.assertEqual(taste_headline(self.comedy, self.member, now), "오늘 취향 점수 1위 코미디 한 편")
+        self.assertEqual(taste_tags(self.horror, self.member), ["#스릴러", "#공포"])  # 선호 장르 먼저
