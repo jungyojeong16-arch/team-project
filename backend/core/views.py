@@ -23,6 +23,10 @@ API 목록 (주소 앞에 /api/v1 이 붙음)
                                오늘의 추천 묶음 (없으면 새로 만듦). tpo 비우면 전체 상황
   POST /recommendations/refresh/  {tpo}  지금 바로 새로 만들기 (8-1·8-2)
 
+  [7-2 재방문 추천 피드백]                                    * 로그인 필요
+  GET  /recommendations/pending-feedback/   물어볼 추천 1개 {recommendation: {...} | null}
+  POST /recommendations/<id>/feedback/      {watched: true, score: 3.5, comment} 또는 {watched: false}
+
   [회원]
   GET  /auth/check-nickname/?nickname=  닉네임 사용 가능 여부
   POST /auth/signup/           회원가입 → 로그인 토큰
@@ -44,12 +48,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from . import models as m
-from . import ranking, recommend
+from . import feedback, ranking, recommend
 from .common import contents_for_cards, filter_contents, page_bounds, paginate
 from .curation import ALL_SITUATIONS, situation_label
 from .home import build_home_feed
 from .serializers import (
-    ContentCardSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname, content_brief,
+    ContentCardSerializer, FeedbackSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname,
+    content_brief,
 )
 
 
@@ -376,6 +381,57 @@ def recommendations_refresh(request):
         return Response(SURVEY_REQUIRED, status=status.HTTP_403_FORBIDDEN)
     tpo = recommend.tpo_from_param((request.data or {}).get("tpo"))
     return recommendation_page(request, recommend.build_recommendations(request.user, tpo), tpo)
+
+
+# -----------------------------------------------------------------------------
+# 7-2 재방문 추천 피드백 — 조건·저장은 core/feedback.py, 평점 저장은 common.save_rating (5-1 과 같은 규칙)
+# -----------------------------------------------------------------------------
+
+
+def _local_iso(value):
+    return timezone.localtime(value).isoformat(timespec="seconds") if value else None
+
+
+def _rating_payload(rating):
+    return {"score": float(rating.score), "comment": rating.comment} if rating else None
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def pending_feedback(request):
+    """홈에 들어왔을 때 물어볼 추천 1개 (없으면 recommendation: null). 이미 평점이 있으면 my_rating 으로 미리 채움"""
+    rec = feedback.pending_feedback(request.user)
+    if rec is None:
+        return Response({"recommendation": None})
+    content = contents_for_cards(m.Content.objects.filter(pk=rec.content_id)).first()
+    mine = m.Rating.objects.filter(member=request.user, content_id=rec.content_id).first()
+    return Response(
+        {
+            "recommendation": {
+                "id": rec.id,
+                "tpo": rec.tpo.name if rec.tpo else ALL_SITUATIONS,
+                "recommended_at": _local_iso(rec.recommended_at),
+                "clicked_at": _local_iso(rec.clicked_at),
+                "content": ContentCardSerializer(content).data,
+                "my_rating": _rating_payload(mine),
+            }
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def submit_feedback(request, rec_id):
+    """[의견 보내기] — 별점이면 평점 저장 + feedback=rated, 못 봤어요면 feedback=not_watched"""
+    rec = m.Recommendation.objects.filter(pk=rec_id, member=request.user).select_related("content").first()
+    if rec is None:
+        raise NotFound("추천을 찾을 수 없어요.")
+    if rec.feedback != m.RecommendationFeedback.PENDING:
+        return Response({"detail": "이미 의견을 보낸 추천이에요."}, status=status.HTTP_400_BAD_REQUEST)
+    serializer = FeedbackSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    rating = feedback.submit_feedback(request.user, rec, **serializer.validated_data)
+    return Response({"id": rec.id, "feedback": rec.feedback, "rating": _rating_payload(rating)})
 
 
 # -----------------------------------------------------------------------------

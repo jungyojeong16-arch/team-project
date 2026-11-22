@@ -1057,3 +1057,146 @@ class RecommendationTests(APITestCase):
         # ③ 겹치는 답이 없음
         self.assertEqual(taste_headline(self.comedy, self.member, now), "오늘 취향 점수 1위 코미디 한 편")
         self.assertEqual(taste_tags(self.horror, self.member), ["#스릴러", "#공포"])  # 선호 장르 먼저
+
+
+# =============================================================================
+# 7-2 재방문 추천 피드백 — 팝업 조건 · 별점/못 봤어요 저장 · 다음 추천 반영 (feedback.py)
+# =============================================================================
+
+
+class RevisitFeedbackTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentGenre, ContentPlatform, Genre, Platform
+
+        drama = Genre.objects.get(name="드라마")
+        netflix = Platform.objects.get(code="NETFLIX")
+
+        def make(title):
+            c = Content.objects.create(title=title, content_type="movie", release_year=2024)
+            ContentGenre.objects.create(content=c, genre=drama)
+            ContentPlatform.objects.create(content=c, platform=netflix)
+            return c
+
+        cls.a, cls.b, cls.c = make("작품 A"), make("작품 B"), make("작품 C")
+        cls.member = Member.objects.create_user("fb@x.kr", "피드백", "viewfit123!", age_group="30s")
+        cls.other = Member.objects.create_user("fb2@x.kr", "다른사람", "viewfit123!")
+
+    def setUp(self):
+        self.client.force_authenticate(self.member)
+
+    def ago(self, hours):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        return timezone.now() - timedelta(hours=hours)
+
+    def recommend(self, content, hours_ago, member=None):
+        from .models import Recommendation
+
+        rec = Recommendation.objects.create(member=member or self.member, content=content, rank=1)
+        Recommendation.objects.filter(pk=rec.pk).update(recommended_at=self.ago(hours_ago))  # auto_now_add 대신 과거 시각
+        return rec
+
+    def click(self, content, hours_ago, member=None):
+        from .models import WatchHistory
+
+        return WatchHistory.objects.create(
+            member=member or self.member, content=content, source="direct", watched_at=self.ago(hours_ago)
+        )
+
+    def pending(self):
+        res = self.client.get("/api/v1/recommendations/pending-feedback/")
+        self.assertEqual(res.status_code, 200)
+        return res.data["recommendation"]
+
+    def send(self, rec, body):
+        return self.client.post(f"/api/v1/recommendations/{rec.id}/feedback/", body, format="json")
+
+    # --- 팝업을 띄우는 조건 ---
+    def test_asks_latest_clicked_after_12_hours(self):
+        rec_a, rec_b = self.recommend(self.a, 48), self.recommend(self.b, 48)
+        self.recommend(self.c, 48)  # 안 누른 추천은 묻지 않음
+        self.click(self.a, 30)
+        self.click(self.b, 20)  # 가장 최근에 누른 것
+        got = self.pending()
+        self.assertEqual((got["id"], got["content"]["title"]), (rec_b.id, "작품 B"))
+        self.assertEqual(set(got), {"id", "tpo", "recommended_at", "clicked_at", "content", "my_rating"})
+        self.assertIsNone(got["my_rating"])
+        self.send(rec_b, {"watched": False})
+        self.assertEqual(self.pending()["id"], rec_a.id)  # 답하면 다음 것
+
+    def test_not_asked_too_early_or_clicked_before_recommendation(self):
+        from django.test import override_settings
+
+        self.recommend(self.a, 48)
+        self.click(self.a, 1)  # 누른 지 1시간
+        self.recommend(self.b, 10)
+        self.click(self.b, 20)  # 추천받기 전에 누름
+        self.assertIsNone(self.pending())
+        with override_settings(FEEDBACK_DELAY_HOURS=0.5):  # 손으로 확인할 때처럼 시간 조건을 줄이면
+            self.assertEqual(self.pending()["content"]["title"], "작품 A")
+
+    def test_others_and_login(self):
+        self.recommend(self.a, 48, member=self.other)
+        self.click(self.a, 20, member=self.other)
+        self.assertIsNone(self.pending())  # 다른 회원 것은 안 보임
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get("/api/v1/recommendations/pending-feedback/").status_code, 401)
+
+    # --- [의견 보내기] ---
+    def test_rated_saves_rating_and_all_rows_of_that_content(self):
+        from .models import Recommendation
+
+        old, rec = self.recommend(self.a, 72), self.recommend(self.a, 48)  # 같은 작품이 두 번 추천됨
+        self.click(self.a, 20)
+        res = self.send(rec, {"watched": True, "score": 3.5, "comment": "생각보다 좋았어요"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data, {"id": rec.id, "feedback": "rated", "rating": {"score": 3.5, "comment": "생각보다 좋았어요"}})
+        rating = Rating.objects.get(member=self.member, content=self.a)  # 완료 기준 2
+        self.assertEqual((rating.score, rating.age_group_at_rating), (Decimal("3.5"), "30s"))
+        self.assertEqual(set(Recommendation.objects.filter(pk__in=[old.pk, rec.pk]).values_list("feedback", flat=True)), {"rated"})
+        self.assertIsNone(self.pending())
+        self.assertEqual(self.send(rec, {"watched": False}).status_code, 400)  # 이미 답함
+
+    def test_existing_rating_is_prefilled_and_updated(self):
+        Rating.objects.create(member=self.member, content=self.a, score=Decimal("2.0"), comment="별로")
+        rec = self.recommend(self.a, 48)
+        self.click(self.a, 20)
+        self.assertEqual(self.pending()["my_rating"], {"score": 2.0, "comment": "별로"})
+        self.send(rec, {"watched": True, "score": 4.5})
+        self.assertEqual(list(Rating.objects.filter(member=self.member).values_list("score", "comment")), [(Decimal("4.5"), "")])
+
+    def test_not_watched_no_rating_and_recommended_again(self):
+        from django.utils import timezone
+
+        from .models import Recommendation
+        from .recommend import build_recommendations
+
+        self.member.survey_completed_at = timezone.now()
+        self.member.save()
+        rec = self.recommend(self.a, 48)
+        self.click(self.a, 20)
+        self.click(self.b, 20)  # B 는 [바로 보기]만 누르고 답하지 않음
+        self.assertNotIn("작품 A", [r.content.title for r in build_recommendations(self.member)])  # 답 전에는 제외
+        res = self.send(rec, {"watched": False, "score": 4.0, "comment": "무시됨"})
+        self.assertEqual((res.status_code, res.data["feedback"], res.data["rating"]), (200, "not_watched", None))
+        self.assertFalse(Rating.objects.filter(member=self.member).exists())  # 완료 기준 3
+        self.assertEqual(Recommendation.objects.get(pk=rec.pk).feedback, "not_watched")
+        titles = [r.content.title for r in build_recommendations(self.member)]
+        self.assertIn("작품 A", titles)  # 못 봤어요 → 다시 추천 (11/22 결정)
+        self.assertNotIn("작품 B", titles)
+
+    def test_validation(self):
+        rec = self.recommend(self.a, 48)
+        self.click(self.a, 20)
+        self.assertEqual(self.send(rec, {}).data, {"score": ["별점을 선택해 주세요."]})  # 아무것도 안 고름
+        self.assertEqual(self.send(rec, {"watched": True}).data, {"score": ["별점을 선택해 주세요."]})
+        self.assertEqual(self.send(rec, {"watched": True, "score": 4.3}).status_code, 400)  # 0.5 단위 아님
+        self.assertEqual(self.send(rec, {"watched": True, "score": 5.5}).status_code, 400)
+        self.assertEqual(self.send(rec, {"watched": True, "score": 3, "comment": "가" * 201}).data["comment"],
+                         ["한마디는 200자까지 쓸 수 있어요."])
+        self.assertFalse(Rating.objects.exists())
+        other_rec = self.recommend(self.b, 48, member=self.other)
+        self.assertEqual(self.send(other_rec, {"watched": False}).status_code, 404)

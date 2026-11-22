@@ -19,6 +19,7 @@ export function Modal({
   closeOnBackdrop = true,
   panelClassName = "bg-[#141416]",
   backdropClassName = "bg-black/70 backdrop-blur-sm",
+  frameClassName = "rounded-2xl border-white/[0.12] p-6 md:p-10",
   labelledBy,
 }: {
   open: boolean;
@@ -34,6 +35,8 @@ export function Modal({
   panelClassName?: string;
   /** 뒤 배경 바꾸기 (예: 작품 상세는 뒤 화면이 비쳐 보이게 블러 없이 — Figma 375:1667) */
   backdropClassName?: string;
+  /** 상자 모서리·테두리 색·안쪽 여백 바꾸기 (예: 재방문 피드백 7-2 는 Figma 대로 20px 모서리 · 32px 여백) */
+  frameClassName?: string;
   /** title 없이 children 안에 제목을 그릴 때, 그 제목의 id */
   labelledBy?: string;
 }) {
@@ -64,7 +67,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : labelledBy}
         tabIndex={-1}
-        className={`relative max-h-[90vh] w-full ${width} overflow-y-auto rounded-2xl border border-white/[0.12] ${panelClassName} p-6 text-white md:p-10 shadow-[0_24px_80px_rgba(0,0,0,0.6)] outline-none`}
+        className={`relative max-h-[90vh] w-full ${width} overflow-y-auto border ${frameClassName} ${panelClassName} text-white shadow-[0_24px_80px_rgba(0,0,0,0.6)] outline-none`}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">{eyebrow}</div>

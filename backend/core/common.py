@@ -6,6 +6,7 @@ docs/prd/0_common_base.md 의 0-2 공통 규칙을 코드로 옮긴 것입니다
   - paginate()         목록은 offset·limit (기본 20, 최대 100)
   - filter_contents()  필터 바(0-3 FR9)와 같은 값: type=all|movie|series, platform=NETFLIX…, genre=드라마…
   - contents_for_cards()  작품 카드(0-3 FR5)에 필요한 장르·OTT·평점을 한 번에 불러온 작품 목록
+  - save_rating()      평점 저장 (한 작품 1개, 다시 하면 수정) — 5-1 평점 · 7-2 재방문 피드백
 
 잘못된 값은 400 + {"칸이름": ["한국어 안내"]} 모양으로 돌려줍니다 (회원가입 API 와 같은 모양).
 
@@ -121,3 +122,19 @@ def contents_for_cards(qs=None):
         Prefetch("contentplatform_set", queryset=m.ContentPlatform.objects.select_related("platform").order_by("platform_id")),
         Prefetch("ratings", queryset=m.Rating.objects.only("id", "content_id", "score", "age_group_at_rating")),
     )
+
+
+# -----------------------------------------------------------------------------
+# 평점 저장 (5-1 평점 · 7-2 재방문 피드백 공통) — 입력 검사는 serializers.RatingInputSerializer
+# -----------------------------------------------------------------------------
+
+
+def save_rating(member, content, score, comment=""):
+    """한 회원·한 작품에 평점 1개 — 없으면 만들고 있으면 수정 (ERD ② UNIQUE(member, content)).
+
+    평가 당시 연령대(age_group_at_rating)는 처음 만들 때 Rating.save() 가 회원 연령대로 채우고, 수정할 때는 그대로 둡니다.
+    """
+    rating, _ = m.Rating.objects.update_or_create(
+        member=member, content=content, defaults={"score": score, "comment": comment or ""}
+    )
+    return rating

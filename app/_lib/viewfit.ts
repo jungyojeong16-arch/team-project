@@ -526,7 +526,7 @@ export const MOCK_HOME_FEED_RESPONSE: ApiResponse<HomeFeed> = {
  * ========================================================================== */
 
 /** 로그인했으면 Authorization 헤더 (토큰 키는 account.ts 의 TOKEN_KEY 와 같음) — 홈 피드가 내 취향을 반영하게 */
-function authHeader(): Record<string, string> {
+export function authHeader(): Record<string, string> {
   try {
     const raw = localStorage.getItem("viewfit.token");
     const token = raw ? (JSON.parse(raw) as string) : null;
@@ -541,7 +541,7 @@ function authHeader(): Record<string, string> {
  * 저장된 로그인 정보를 지우고(→ 화면이 웹 시작 화면으로 바뀜, PRD 1-2 5번) 토큰 없이 한 번 더 요청합니다.
  * (account.ts 가 이 파일을 불러오므로 여기서는 같은 저장소 키·신호 이름을 직접 씁니다)
  */
-async function getWithLogin(url: string, signal?: AbortSignal): Promise<Response> {
+export async function getWithLogin(url: string, signal?: AbortSignal): Promise<Response> {
   const auth = authHeader();
   const res = await fetch(url, { signal, headers: { Accept: "application/json", ...auth } });
   if (res.status !== 401 || !auth.Authorization) return res;

@@ -7,13 +7,14 @@ API 입력 검사 · 응답 모양
   - 비밀번호: 영문·숫자·특수문자 포함 8자 이상
 """
 import re
+from decimal import Decimal
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import AgeGroup, Content, Genre, Job, Member, PreferenceKind, WatchSource
+from .models import SCORE_CHOICES, AgeGroup, Content, Genre, Job, Member, PreferenceKind, WatchSource
 
 NICKNAME_RE = re.compile(r"^[가-힣A-Za-z0-9_]{2,12}$")
 
@@ -252,3 +253,53 @@ class ContentCardSerializer(serializers.ModelSerializer):
                 for age, s in sorted(by_age.items())
             ],
         }
+
+
+# =============================================================================
+# 평점 입력 (5-1 평점 · 7-2 재방문 피드백 공통) — 별점 0.5 단위, 한마디 200자
+# 저장은 core/common.py 의 save_rating() (한 작품 1개 · 다시 하면 수정 · 평가 당시 연령대는 Rating.save() 가 채움)
+# =============================================================================
+
+_SCORE_MESSAGE = "별점은 0.5점부터 5점까지 0.5점 단위로 골라 주세요."
+
+
+class RatingInputSerializer(serializers.Serializer):
+    """{score: 3.5, comment: "..."} — 5-1 평점 PUT 도 이것으로 검사하면 같은 규칙이 됩니다."""
+
+    score = serializers.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        error_messages={key: _SCORE_MESSAGE for key in (
+            "invalid", "max_digits", "max_decimal_places", "max_whole_digits", "max_string_length", "null"
+        )} | {"required": "별점을 선택해 주세요."},
+    )
+    comment = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, default="",
+        error_messages={"max_length": "한마디는 200자까지 쓸 수 있어요."},
+    )
+
+    def validate_score(self, value):
+        if value is None:
+            return value
+        if value not in SCORE_CHOICES:  # 4.3 처럼 0.5 단위가 아니면 (DB CHECK 도 거부)
+            raise serializers.ValidationError(_SCORE_MESSAGE)
+        return value.quantize(Decimal("0.1"))
+
+
+class FeedbackSerializer(RatingInputSerializer):
+    """7-2 {watched: true, score: 3.5, comment: ""} 또는 {watched: false}"""
+
+    watched = serializers.BooleanField(required=False, allow_null=True, default=None)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["score"].required = False  # "아직 못 봤어요" 면 별점 없음
+        self.fields["score"].allow_null = True
+
+    def validate(self, attrs):
+        watched = attrs.get("watched")
+        if watched is False:
+            return {"watched": False}
+        if attrs.get("score") is None:  # 별점도 "못 봤어요" 도 안 고름 (PRD 7-2 5번)
+            raise serializers.ValidationError({"score": ["별점을 선택해 주세요."]})
+        return {"watched": True, "score": attrs["score"], "comment": attrs.get("comment", "")}

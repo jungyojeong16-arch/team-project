@@ -8,10 +8,12 @@ import { SiteShell } from "./_components/site-shell";
 import { ErrorState, LoadingCards } from "./_components/status-view";
 import { TodayPick } from "./_components/home/today-pick";
 import { CrossAgePicks, PeerPicks, RankingTop10, RecommendRow } from "./_components/home/home-rows";
+import { FeedbackModal } from "./_components/feedback-modal";
 
 /* ============================================================================
  * 0-4 홈 화면 (Figma Home Feed 9:5) — 로그인 안 했으면 1-2 웹 시작 화면(Figma 179:1801)
  * 화면 순서: ① 오늘의 추천 → ② 맞춤 추천작품 → ③ 통합 랭킹 TOP 10 → ④ 세대별 교차 평점 → ⑤ 또래 추천
+ * 홈 위 팝업: 7-2 재방문 추천 피드백 (app/_components/feedback-modal.tsx — 물어볼 추천이 있을 때만)
  * 영역별 부품: app/_components/home/ , 데이터: GET /api/v1/home/feed/ (지금은 가짜 데이터)
  * ========================================================================== */
 
@@ -81,6 +83,8 @@ function HomeFeedView() {
             <CrossAgePicks movies={feed.cross_age_picks} myAge={feed.user.age_group} />
             {feed.user.age_group && <PeerPicks nickname={feed.user.nickname} myAge={feed.user.age_group} movies={peerCandidates} />}
           </div>
+          {/* 7-2 재방문 추천 피드백 — 홈을 다 불러온 뒤 확인 */}
+          <FeedbackModal />
         </>
       )}
     </SiteShell>

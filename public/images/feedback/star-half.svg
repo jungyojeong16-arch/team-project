@@ -1,0 +1,13 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Star 4 &#194;&#183; half filled">
+<path id="Star outline" d="M22 2L27.6427 14.2334L41.0211 15.8197L31.1301 24.9666L33.7557 38.1803L22 31.6L10.2443 38.1803L12.8699 24.9666L2.97887 15.8197L16.3573 14.2334L22 2Z" fill="#444450"/>
+<g id="Half-star fill" clip-path="url(#clip0_0_86)">
+<path id="Star outline_2" d="M22 2L27.6427 14.2334L41.0211 15.8197L31.1301 24.9666L33.7557 38.1803L22 31.6L10.2443 38.1803L12.8699 24.9666L2.97887 15.8197L16.3573 14.2334L22 2Z" fill="#F0ABFC"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_86">
+<rect width="20" height="40" fill="white" transform="translate(2 2)"/>
+</clipPath>
+</defs>
+</svg>

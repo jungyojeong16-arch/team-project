@@ -10,6 +10,7 @@
     내 연령대 평균 평점                                 +평균 (0~5)          age_average_points
         - 내 연령대 평가가 없거나 연령대를 고르지 않았으면 전체 평균
     이미 평가했거나 시청 기록(설문의 기억에 남는 작품 포함)이 있는 작품   후보에서 제외
+        - 단, [바로 보기]만 누르고 7-2 재방문 피드백에서 "아직 못 봤어요"라고 답한 작품은 다시 후보 (11/22)
     같은 점수면 통합 랭킹(주간) 순위가 높은 작품 → 평가 수 많은 작품 → 작품 번호 순
 
 추천 묶음 (recommendation 테이블)
@@ -70,7 +71,17 @@ def load_taste(member):
 
     ratings = m.Rating.objects.filter(member=member)
     watched = m.WatchHistory.objects.filter(member=member)
-    taste.seen = set(ratings.values_list("content_id", flat=True)) | set(watched.values_list("content_id", flat=True))
+    # 7-2 에서 "아직 못 봤어요"라고 답한 작품은 [바로 보기] 기록이 있어도 다시 추천 (평가·설문의 기억에 남는 작품은 그대로 제외)
+    not_watched = set(
+        m.Recommendation.objects.filter(member=member, feedback=m.RecommendationFeedback.NOT_WATCHED).values_list(
+            "content_id", flat=True
+        )
+    )
+    taste.seen = (
+        set(ratings.values_list("content_id", flat=True))
+        | set(watched.filter(source=m.WatchSource.SURVEY).values_list("content_id", flat=True))
+        | (set(watched.exclude(source=m.WatchSource.SURVEY).values_list("content_id", flat=True)) - not_watched)
+    )
 
     loved = set(watched.filter(source=m.WatchSource.SURVEY).values_list("content_id", flat=True))
     loved |= set(m.ContentLike.objects.filter(member=member).values_list("content_id", flat=True))
