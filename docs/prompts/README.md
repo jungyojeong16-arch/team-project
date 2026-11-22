@@ -27,7 +27,7 @@ PRD(`docs/prd/`)를 바탕으로 **AI(Claude Code)에게 어떤 요청을 보냈
 | 1 회원관리 | [1_member.md](1_member.md) | ✅ (화면 검수 남음) |
 | 2 작품 데이터 수집 | [2_tmdb_import.md](2_tmdb_import.md) | 🟡 2-1 ✅ (OTT 검색 주소 열어 보기 남음) — 원문은 세션 주소로 |
 | 3 취향 설문 | [3_survey.md](3_survey.md) | ✅ 3-1 (화면 검수 남음) — 원문은 세션 주소로 |
-| 4 작품 탐색 | (진행 예정) | ⬜ |
+| 4 작품 탐색 | [4-1_정재준.md](4-1_정재준.md) | 🟡 상단 검색창(FR1·FR6) ✅ / 상세·바로 보기·FR3 검수 진행 중 |
 | 5 평가·좋아요 | (진행 예정) | ⬜ |
 | 6 랭킹 | [6_ranking.md](6_ranking.md) | 🟡 6-1 ✅ / 6-2 ⬜ |
 | 7 AI 추천 | [7_recommend.md](7_recommend.md) | ✅ 7-1·7-2 (화면 검수 남음) |

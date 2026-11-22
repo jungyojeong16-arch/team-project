@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 백엔드 API 3개 ✅ (11/17 — 검색·상세(`my` 포함)·바로 보기 기록) · **작품 상세 공통 오버레이 ✅** (11/17, Figma 375:1666 — `app/_components/content-detail-modal.tsx`, 홈 카드·[상세 정보]·[바로 보기] 연결, OTT 버튼 최대 3개 → 새 탭 + 시청 기록) · 남은 것: 상단 검색창 동작(FR1·FR6), 팝업 안 좋아요·별점(FR3 — 5-1·5-2 후) ⬜ |
+| 상태 | 🟡 백엔드 API 3개 ✅ (11/17 — 검색·상세(`my` 포함)·바로 보기 기록) · **작품 상세 공통 오버레이 ✅** (11/17, Figma 375:1666) · **상단 검색창 동작(FR1·FR6) ✅** (11/23 — 300ms 디바운스·최대 20개·없음 문구·홈 돋보기·상세 팝업 연결) · 남은 것: 팝업 안 좋아요·별점(FR3 — 5-1·5-2 후) ⬜ |
 | Figma | 상단 검색창 "어떤 이야기를 찾으세요?"(모든 화면), [상세 정보]·[바로 보기] 버튼([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)), **[작품 상세 · 공통 오버레이](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=375-1666)** · [홈피드 · 작품 상세 팝업 열림](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=375-1802) (11/17 추가) |
 | 코드(예정) | `backend/core/views.py`(content_search, content_detail, content_watch), `app/_components/content-modal.tsx` |
 | 테이블 | `content`, `content_genre`, `content_platform`, `rating`, `content_like`, `watch_history`(source=direct) |
@@ -42,8 +42,8 @@
 - 시청 기록은 같은 작품을 여러 번 눌러도 매번 남긴다 (ERD 원칙 ③ — 중복 허용).
 
 ## 6. 완료 기준
-- [ ] 검색창에 "오징어" → 결과에 오징어 게임
-- [ ] 결과를 누르면 상세 팝업, 제공 OTT 뱃지가 관리자 페이지의 작품 제공 OTT와 같다
+- [x] 검색창에 "오징어" → 결과에 오징어 게임
+- [x] 결과를 누르면 상세 팝업, 제공 OTT 뱃지가 관리자 페이지의 작품 제공 OTT와 같다
 - [ ] [바로 보기] → OTT 검색 화면이 새 탭으로, HeidiSQL `watch_history`에 direct 행 추가
 - [ ] 로그아웃 상태에서도 검색·상세는 되고 좋아요·별점은 로그인 창이 뜬다
 

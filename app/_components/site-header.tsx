@@ -8,6 +8,9 @@ import { NAV_LINKS } from "../_lib/catalog";
 import { useAccount } from "../_lib/use-account";
 import { openLoginModal } from "./login-modal";
 import { ProfileMenu } from "./profile-menu";
+import { fetchContent, searchContents, type ContentBrief } from "../_lib/viewfit";
+import { openContentDetail } from "./content-detail-modal";
+import { SearchResults } from "./search-results";
 
 /* ============================================================================
  * 0-3 FR1·FR3 공통 상단 바
@@ -25,7 +28,11 @@ export function SiteHeader({ variant = "default", onSearch }: { variant?: "home"
   const [scrolled, setScrolled] = useState(false);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [resultOpen, setResultOpen] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<ContentBrief[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
+  const searchAreaRef = useRef<HTMLDivElement>(null);
   const isHome = variant === "home";
 
   useEffect(() => {
@@ -39,32 +46,91 @@ export function SiteHeader({ variant = "default", onSearch }: { variant?: "home"
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
 
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResultOpen(false);
+      setSearchLoading(false);
+      setSearchResults([]);
+      return;
+    }
+
+    setResultOpen(true);
+    setSearchLoading(true);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void searchContents(q, controller.signal)
+        .then((items) => {
+          setSearchResults(items.slice(0, 20));
+          setSearchLoading(false);
+        })
+        .catch((error: unknown) => {
+          if (controller.signal.aborted) return;
+          setSearchResults([]);
+          setSearchLoading(false);
+          console.error(error);
+        });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query]);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (searchAreaRef.current && !searchAreaRef.current.contains(event.target as Node)) setResultOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setResultOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  const selectResult = async (item: ContentBrief) => {
+    try {
+      const movie = await fetchContent(item.id);
+      openContentDetail(movie, "검색 결과");
+      setResultOpen(false);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const q = query.trim();
     if (q.length < 2) return;
-    // TODO(4-1 작품 탐색): 검색 결과 보여 주기 — 지금은 넘겨받은 onSearch 만 부릅니다
     onSearch?.(q);
   };
 
   const searchBox = (
-    <form
-      role="search"
-      onSubmit={submit}
-      className="flex h-9 w-[234px] items-center gap-2.5 rounded-md border border-white/[0.12] bg-white/[0.02] px-3 focus-within:border-fuchsia-300/60"
-    >
-      <Search className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
-      <input
-        ref={searchRef}
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onBlur={() => isHome && !query && setSearchOpen(false)}
-        placeholder="어떤 이야기를 찾으세요?"
-        aria-label="작품 검색"
-        className="min-w-0 flex-1 bg-transparent text-xs text-white placeholder:text-white/60 focus:outline-none"
-      />
-    </form>
+    <div ref={searchAreaRef} className="relative">
+      <form
+        role="search"
+        onSubmit={submit}
+        className="flex h-9 w-[234px] items-center gap-2.5 rounded-md border border-white/[0.12] bg-white/[0.02] px-3 focus-within:border-fuchsia-300/60"
+      >
+        <Search className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
+        <input
+          ref={searchRef}
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onBlur={() => isHome && !query && setSearchOpen(false)}
+          placeholder="어떤 이야기를 찾으세요?"
+          aria-label="작품 검색"
+          className="min-w-0 flex-1 bg-transparent text-xs text-white placeholder:text-white/60 focus:outline-none"
+        />
+      </form>
+      <SearchResults open={resultOpen} loading={searchLoading} results={searchResults} onSelect={(item) => void selectResult(item)} />
+    </div>
   );
 
   const borderClass = isHome ? (scrolled ? "border-white/5" : "border-transparent") : "border-white/[0.12]";
@@ -104,7 +170,7 @@ export function SiteHeader({ variant = "default", onSearch }: { variant?: "home"
           <div className={`flex min-w-0 items-center justify-end ${isHome ? "gap-5" : "flex-1 gap-3 md:gap-6"}`}>
             {isHome ? (
               searchOpen ? (
-                <div className="hidden sm:block">{searchBox}</div>
+                <div className="block">{searchBox}</div>
               ) : (
                 <button type="button" aria-label="작품 검색" onClick={() => setSearchOpen(true)} className="text-white transition hover:text-white/70">
                   <Search className="h-5 w-5" />
