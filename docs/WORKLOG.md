@@ -9,6 +9,14 @@
 
 ---
 
+### 11/22 · 7-1 맞춤 추천 (Step 1~4) · 요청: 홍준화
+- 한 일: 취향 점수로 회원×상황 TOP 50을 `recommendation`에 저장(`backend/core/recommend.py`), 상황 라벨·한 줄 이유 문장 틀(`backend/core/curation.py`, D10 — LLM 없음), `GET /api/v1/recommendations/`·`POST /api/v1/recommendations/refresh/`, 화면 `/recommend`(Figma 144:36577), 홈 오늘의 추천 = 맞춤 추천 1위
+- DB: `recommendation.reason` 칸 추가(D9, migration `0005`, 정준교 확인) → **받은 뒤 `python manage.py migrate` 필요**
+- 공용 부품: `TopPickCard`(plainLabel·note), `RangeHeader`(accent·note), `filter-bar.tsx`의 `ChipGroup`, `viewfit.ts`의 `fetchRecommendations` — 선택 옵션만 추가해서 기존 화면은 그대로 (통합 랭킹 화면 확인)
+- 커밋: `398859e` (11/19 작업을 6-1 위에 합침 — `home.py`·`views.py`·`tests.py` 두 작업 모두 살림), 기록 `docs/prompts/7_recommend.md`
+- 확인: 테스트 65개 통과(SQLite), 타입 검사 통과. 홍준화 PC에서 실제 작품 200편으로 홈 오늘의 추천 = 맞춤 추천 1위, 홈 TOP 10 = 통합 랭킹 1~10위
+- 남은 일·주의: 화면 검수(정재준). 8-1 취향 수정·8-2에서 추천을 새로 만들 때는 `POST /api/v1/recommendations/refresh/` 를 부르면 됨. 다음은 7-2 재방문 피드백(11/26)
+
 ### 11/21 · 팀 작업 안내 `CLAUDE.md` + 작업 일지 · 요청: 정준교
 - 한 일: 팀원 Claude가 작업 전에 읽을 안내(`CLAUDE.md`)와 이 작업 일지(`docs/WORKLOG.md`)를 만듦
 - 확인: 문서만 바뀜
@@ -25,17 +33,17 @@
 - 확인: 테스트 51개 통과(SQLite·MariaDB), 정준교 PC에서 실제 TMDB 작품으로 통합 랭킹 TOP 10 = 홈 TOP 10
 - 남은 일·주의: 화면 검수(정재준). 주간 = 최근 7일 평점, 월간 = 최근 30일. 다음은 6-2 세대별 랭킹
 
-### 11/17 · 3-1 취향 설문 (Figma 39:3071) · 요청: 기록 없음 (다른 Claude 세션)
+### 11/17 · 3-1 취향 설문 (Figma 39:3071) · 요청: 홍준화
 - 한 일: 한 화면 5문항, 기억에 남는 작품 검색·등록·삭제 → `watch_history`(source=survey), 수면·생활 패턴·스트레스 질문 삭제
 - 커밋: `27c031a`
 - 남은 일·주의: 화면 검수(정재준)
 
-### 11/17 · 4-1 작품 상세 팝업 + 0-4 홈 피드 API · 요청: 기록 없음 (다른 Claude 세션)
+### 11/17 · 4-1 작품 상세 팝업 + 0-4 홈 피드 API · 요청: 홍준화
 - 한 일: 작품 검색·상세·바로 보기 API(`views.py` 4-1 구역), 홈 피드 API(`backend/core/home.py`), 작품 상세 공통 팝업(`app/_components/content-detail-modal.tsx`, Figma 375:1666)
 - 커밋: `8b0a6c3`, `0298c41`
 - 남은 일·주의: **상단 검색창 화면(4-1 FR1·FR6)은 아직 없음.** 정재준의 브랜치 `jaejun/4-1-search`(커밋 `d8de531`)에도 같은 검색·상세 API가 따로 있음 → 합치지 말고 공용 브랜치 위에서 검색창 화면만 이어서 하기
 
-### 11/17 · 2-1 작품 데이터 수집 + 0번 백엔드 공통 규칙 · 요청: 기록 없음 (다른 Claude 세션)
+### 11/17 · 2-1 작품 데이터 수집 + 0번 백엔드 공통 규칙 · 요청: 홍준화
 - 한 일: `backend/core/tmdb.py`, 명령 `import_tmdb`·`seed_demo`, 공통 목록 규칙 `backend/core/common.py`, `GET /api/v1/contents/`
 - 커밋: `4afba5f`, `9cda9f9`, `6eab85c`
 - 남은 일·주의: 각자 PC에서 `import_tmdb` 실행 필요 (정준교 ✅ 11/21)

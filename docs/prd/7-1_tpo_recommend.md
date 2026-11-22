@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ✅ 완료 (11/19) — 추천 점수·TOP 50 저장, 한 줄 이유(문장 틀, D10), 추천 API 2개, 맞춤 추천 화면(Figma 144:36577), 홈 오늘의 추천 연결 · 화면 검수 대기(정재준) · LLM 문구는 D10 다시 결정 시 |
+| 상태 | ✅ 완료 (11/19, 11/22 6-1 통합 랭킹과 합친 뒤 다시 확인) — 추천 점수·TOP 50 저장, 한 줄 이유(문장 틀, D10), 추천 API 2개, 맞춤 추천 화면(Figma 144:36577), 홈 오늘의 추천 연결 · 화면 검수 대기(정재준) · LLM 문구는 D10 다시 결정 시 |
 | Figma | [맞춤 추천 (TPO TOP 50)](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-36577), 홈의 오늘의 추천 영역([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)) |
 | 코드 | `backend/core/recommend.py`(점수·묶음), `backend/core/curation.py`(한 줄 이유·상황 라벨), `views.py`(recommendations·recommendations_refresh), `home.py`(hero), `app/recommend/page.tsx`, `app/_lib/viewfit.ts`(fetchRecommendations), 공통 부품 `ChipGroup`·`TopPickCard`(plainLabel·note)·`RangeHeader`(accent·note), 테스트 `RecommendationTests` |
 | 테이블 | `recommendation`(member, content, tpo, rank, **reason**(D9), feedback, recommended_at), `content_tpo`, `genre_preference`, `watch_history`, `rating`, `content_like`, `ranking` |
