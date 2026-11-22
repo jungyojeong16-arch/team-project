@@ -9,6 +9,15 @@
 
 ---
 
+### 11/22 · 7-2 재방문 추천 피드백 (Step 1~2) · 요청: 홍준화
+- 한 일: 추천받은 작품을 [바로 보기]로 열고 12시간 뒤 홈에 오면 "이번 작품은 어떠셨나요?" 팝업(Figma 145:2341). 별점 0.5 단위 → 평점 저장 + `feedback=rated`, "아직 못 봤어요" → `feedback=not_watched`, [나중에 할게요]는 이번 방문 동안 안 뜸. `backend/core/feedback.py`, API `GET /api/v1/recommendations/pending-feedback/`·`POST /api/v1/recommendations/<id>/feedback/`, 화면 `app/_components/feedback-modal.tsx`(홈 `app/page.tsx` 에서 띄움)
+- **5-1(정준교) 참고**: 평점 저장 `common.save_rating()`(한 작품 1개·다시 하면 수정)과 입력 검사 `serializers.RatingInputSerializer`(0.5 단위·한마디 200자, 한국어 오류)를 만들어 둠 → 5-1 평점 PUT 에서 그대로 쓰면 같은 규칙
+- 공용 파일: `Modal` 에 `frameClassName` 옵션(기본값 그대로), `viewfit.ts` 의 `authHeader`·`getWithLogin` 을 export, `settings.FEEDBACK_DELAY_HOURS`(`.env.example` 에 설명)
+- 7-1 규칙 추가(홍준화 결정): "아직 못 봤어요" 작품은 [바로 보기] 기록이 있어도 다시 추천 후보
+- 커밋: `e442e93`
+- 확인: 테스트 74개 통과, 타입 검사 통과. 홍준화 PC 브라우저: 3.5점 + 한마디 → `rating` 3.5·`rated`, 못 봤어요 → 평점 없음·`not_watched`, 나중에 할게요 → 새로고침해도 안 뜨고 브라우저 다시 열면 뜸, 375px 화면 넘침 없음
+- 남은 일·주의: 화면 검수(정재준). 손으로 확인하려면 `backend/.env` 에 `FEEDBACK_DELAY_HOURS=0.02`(약 1분) 넣고 서버 다시 켜기
+
 ### 11/22 · 0-4 홈 오늘의 추천 문구를 설문 답으로 · 요청: 홍준화
 - 한 일: 설문을 마친 회원의 오늘의 추천 칩을 시간대 상황 이름("주말에 함께") 대신 **직업 + 요일**로("저녁 · 과제 끝난 금요일 밤", Figma 예시와 같은 모양), 한 줄은 **기억에 남는 작품 → 선호 장르 → 취향 점수 1위** 순서로 설문 답과 겹치는 것, 태그는 작품 장르(선호 장르 먼저). `backend/core/home.py` 의 `member_moment`·`taste_headline`·`taste_tags` (직업별 말은 `JOB_MOMENTS` 표 한 곳에서 고침)
 - 이유: 홈 칩은 "저녁 · 주말에 함께"인데 한 줄은 "혼자 보는 밤에 어울리는 …"으로 서로 어긋났음
