@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 정준교 PC 수집 ✅ 11/21(TMDB 짧은 API 키로 동작 확인) · 홍준화 PC 수집 ✅(영화 100·시리즈 100, 11/23 DB 확인) · 정재준 PC 수집, OTT 검색 주소 열어 보기 ⬜ · Step 4(D6 칸) ✅ 11/17 — 이미 수집한 PC는 `import_tmdb` 를 한 번 더 실행하면 새 칸이 채워짐 |
+| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 정준교 PC 수집 ✅ 11/21(TMDB 짧은 API 키로 동작 확인) · 홍준화 PC 수집 ✅(영화 100·시리즈 100, 11/23 DB 확인) · OTT 검색 주소 열어 보기 11/23 🟡 — **디즈니+ 바로가기 고장 ❌**(아래 6번) · 정재준 PC 수집 ⬜ · Step 4(D6 칸) ✅ 11/17 — 이미 수집한 PC는 `import_tmdb` 를 한 번 더 실행하면 새 칸이 채워짐 |
 | Figma | 화면 없음 (관리자 명령). 모든 화면의 작품 카드가 이 데이터를 씀 |
 | 코드 | `backend/core/tmdb.py`, `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, 테스트 `tests.py`(ImportTmdbTests, SeedDemoTests) |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |
@@ -74,7 +74,11 @@
 - [x] `python manage.py import_tmdb` 실행 → 끝에 "영화 N개, 시리즈 N개 저장" 출력 (11/17 실제 TMDB 20+20, 11/21 정준교 PC, 홍준화 PC 100+100)
 - [x] 한 번 더 실행해도 작품 수가 두 배가 되지 않는다 (11/17 실제 확인 · 테스트 `test_running_twice_updates_instead_of_duplicating` · 11/23 홍준화 PC 중복 0개)
 - [x] 관리자 페이지 **작품**에서 포스터 주소·장르·제공 OTT·상황이 채워져 있다 (11/23 홍준화 PC DB: 200개 모두 채워짐)
-- [ ] 아무 작품의 `deeplink_url` 을 열면 해당 OTT 검색 화면이 나온다 — 6개 OTT 직접 열어 보기 남음
+- [ ] 아무 작품의 `deeplink_url` 을 열면 해당 OTT 검색 화면이 나온다 — 11/23 홍준화 PC Chrome(OTT 로그인 안 한 상태)에서 OTT마다 저장된 주소 1개씩 열어 봄
+  - ✅ 티빙·웨이브·왓챠: 로그인 없이 검색 결과가 열리고 그 작품이 나옴
+  - 🟡 넷플릭스: 로그인 화면으로 가지만 주소에 검색어가 남아 있음(`login?nextpage=…search?q=…`) → 로그인하면 검색 화면으로 이어지는 구조
+  - 🟡 쿠팡플레이: 첫 화면으로 가지만 주소에 `returnpath=/search?keyword=…` 가 남아 있음 → 로그인 뒤 결과는 확인 못 함
+  - ❌ **디즈니+: `https://www.disneyplus.com/search?q=…` 가 "The page you were looking for cannot be found"(없는 페이지)**. `/ko-kr/search`·`/browse/search` 도 같음 (`/home` 은 로그인 화면으로 넘어가므로 로그인 문제가 아니라 주소가 틀린 것). 홍준화 PC 작품 200개 중 57개가 디즈니+ 제공 → [바로 보기]에서 디즈니+를 고르면 오류 페이지. **11/23 결정: 지금은 그대로 두고 기록만** (고치려면 `backend/core/tmdb.py` 의 OTT 검색 주소 표 `DISNEY_PLUS` 를 바꾸고 `import_tmdb` 를 다시 실행 — 첫 화면 `https://www.disneyplus.com/` 으로 바꾸거나, 디즈니+에 로그인해서 진짜 검색 주소를 확인)
 - [x] `seed_demo` → 회원 60명·평점 생성, `seed_demo --clear` → 전부 삭제 (진짜 회원은 그대로) (홍준화 PC 60명·평점 1,850개, `--clear` 는 테스트 `test_seed_and_clear`)
 - [x] `python manage.py test core` 통과 (TMDB 응답은 가짜 데이터로 테스트) — 11/23 기준 전체 74개
 
