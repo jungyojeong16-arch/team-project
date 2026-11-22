@@ -28,7 +28,7 @@
 | [0-4](0-4_home.md) | 홈 화면 (틀 → 영역별 연결) | Home Feed | 조회만 | P1 | 11/10 틀 · 11/21~24 연결 | 3명 공동 | 🟡 틀 ✅ · 오늘의 추천·맞춤 추천작품 = 7-1 ✅ · TOP 10 = 6-1 ✅ · 설문 안내·오류 안내 ✅ · 세대별 교차 평점(6-2 대기) ⬜ · 화면 검수 ⬜ |
 | [1-1](1-1_signup.md) | 회원가입 | 회원가입, 회원가입 완료 안내 | member | P1 | 11/16 | 정준교 | ✅ |
 | [1-2](1-2_login.md) | 웹 시작 화면·로그인·로그아웃 | 웹 시작 화면, 로그인 창 | member, authtoken | P1 (소셜 P2) | 11/16 | 정준교 | ✅ (소셜 로그인 P2 제외) |
-| [2-1](2-1_tmdb_import.md) | 작품 데이터 수집·시연 데이터 | (관리자 명령) | content, content_genre, content_platform, content_tpo | P1 | 11/18 | 홍준화 | 🟡 코드·실제 수집 확인 ✅ / 각자 PC 수집 ⬜ |
+| [2-1](2-1_tmdb_import.md) | 작품 데이터 수집·시연 데이터 | (관리자 명령) | content, content_genre, content_platform, content_tpo | P1 | 11/18 | 홍준화 | 🟡 코드·실제 수집 ✅ · 정준교·홍준화 PC 수집 ✅ / 정재준 PC 수집·OTT 검색 주소 열어 보기 ⬜ |
 | [3-1](3-1_survey.md) | 맞춤 추천 설문 | 맞춤 추천 설문 | member, genre_preference, watch_history | P1 | 11/17 | 홍준화 | ✅ |
 | [4-1](4-1_search_detail.md) | 작품 검색·상세·OTT 바로가기 | 상단 검색창, 상세 정보·바로 보기 버튼 | content, content_platform, watch_history | P1 | 11/19 | 정재준 | 🟡 API·상세 팝업 ✅ / 검색창 ⬜ |
 | [5-1](5-1_rating.md) | 평점 (작성·나의 평점·반영 결과) | 나의 평점, 평점 반영 결과 | rating, ranking | P1 | 11/25 | 정준교 | ⬜ |

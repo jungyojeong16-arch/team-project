@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 정준교 PC 수집 ✅ 11/21(TMDB 짧은 API 키로 동작 확인) · 홍준화·정재준 PC 수집, OTT 검색 주소 열어 보기 ⬜ · Step 4(D6 칸) ✅ 11/17 — 이미 수집한 PC는 `import_tmdb` 를 한 번 더 실행하면 새 칸이 채워짐 |
+| 상태 | 🟡 코드 완료 (11/17, Step 1~3) · 실제 TMDB로 영화 20 + 시리즈 20 수집 확인 (OTT 6개 이름 연결·장르 번호 일치, 다시 실행 시 수정만) · 정준교 PC 수집 ✅ 11/21(TMDB 짧은 API 키로 동작 확인) · 홍준화 PC 수집 ✅(영화 100·시리즈 100, 11/23 DB 확인) · 정재준 PC 수집, OTT 검색 주소 열어 보기 ⬜ · Step 4(D6 칸) ✅ 11/17 — 이미 수집한 PC는 `import_tmdb` 를 한 번 더 실행하면 새 칸이 채워짐 |
 | Figma | 화면 없음 (관리자 명령). 모든 화면의 작품 카드가 이 데이터를 씀 |
 | 코드 | `backend/core/tmdb.py`, `backend/core/management/commands/import_tmdb.py`, `seed_demo.py`, 테스트 `tests.py`(ImportTmdbTests, SeedDemoTests) |
 | 테이블 | `content`, `genre`, `content_genre`, `ott_platform`, `content_platform`, `tpo`, `content_tpo` (+ 시연용 `member`, `rating`) |
@@ -71,12 +71,12 @@
 - 시연 데이터는 실제 회원과 섞이지 않게 이메일 도메인으로 구분하고, 발표·보고서에서 "가상 데이터"라고 밝힌다 (D12).
 
 ## 6. 완료 기준
-- [ ] `python manage.py import_tmdb` 실행 → 끝에 "영화 N개, 시리즈 N개 저장" 출력
-- [ ] 한 번 더 실행해도 작품 수가 두 배가 되지 않는다
-- [ ] 관리자 페이지 **작품**에서 포스터 주소·장르·제공 OTT·상황이 채워져 있다
-- [ ] 아무 작품의 `deeplink_url` 을 열면 해당 OTT 검색 화면이 나온다
-- [ ] `seed_demo` → 회원 60명·평점 생성, `seed_demo --clear` → 전부 삭제 (진짜 회원은 그대로)
-- [ ] `python manage.py test core` 통과 (TMDB 응답은 가짜 데이터로 테스트)
+- [x] `python manage.py import_tmdb` 실행 → 끝에 "영화 N개, 시리즈 N개 저장" 출력 (11/17 실제 TMDB 20+20, 11/21 정준교 PC, 홍준화 PC 100+100)
+- [x] 한 번 더 실행해도 작품 수가 두 배가 되지 않는다 (11/17 실제 확인 · 테스트 `test_running_twice_updates_instead_of_duplicating` · 11/23 홍준화 PC 중복 0개)
+- [x] 관리자 페이지 **작품**에서 포스터 주소·장르·제공 OTT·상황이 채워져 있다 (11/23 홍준화 PC DB: 200개 모두 채워짐)
+- [ ] 아무 작품의 `deeplink_url` 을 열면 해당 OTT 검색 화면이 나온다 — 6개 OTT 직접 열어 보기 남음
+- [x] `seed_demo` → 회원 60명·평점 생성, `seed_demo --clear` → 전부 삭제 (진짜 회원은 그대로) (홍준화 PC 60명·평점 1,850개, `--clear` 는 테스트 `test_seed_and_clear`)
+- [x] `python manage.py test core` 통과 (TMDB 응답은 가짜 데이터로 테스트) — 11/23 기준 전체 74개
 
 ## 7. 범위 밖
 - 매일 자동으로 새 작품 가져오기 (배포 후 필요하면 추가)
