@@ -555,18 +555,20 @@ export async function getWithLogin(url: string, signal?: AbortSignal): Promise<R
   return fetch(url, { signal, headers: { Accept: "application/json" } });
 }
 
+/**
+ * 0-4 홈 피드. 실패하면 오류를 던져 화면이 "오류 안내 + [다시 시도]"를 보여 줌 — 샘플 데이터로 대신하지 않음 (PRD 0-4 5번)
+ * 샘플 데이터는 백엔드 주소(.env.local 의 NEXT_PUBLIC_API_BASE_URL)가 아예 없을 때의 화면 미리보기용으로만 씀
+ */
 export async function fetchHomeFeed(signal?: AbortSignal): Promise<HomeFeed> {
   if (API_BASE_URL) {
-    const res = await getWithLogin(`${API_BASE_URL}/api/v1/home/feed/`, signal).catch(() => null);
-    // TODO(11/17 주): 홈 피드 API 를 만들면 이 404 대체 처리를 지우기
-    if (res?.status === 404 || res === null) {
-      console.warn("홈 피드 API 가 아직 없어 샘플 데이터를 보여 줍니다.");
-    } else {
-      if (!res.ok) throw new Error(`홈 피드를 불러오지 못했습니다. (HTTP ${res.status})`);
-      const json: ApiResponse<HomeFeed> = await res.json();
-      if (!json.success) throw new Error("홈 피드 응답이 올바르지 않습니다.");
-      return json.data;
-    }
+    const res = await getWithLogin(`${API_BASE_URL}/api/v1/home/feed/`, signal).catch((e: unknown) => {
+      if (e instanceof DOMException && e.name === "AbortError") throw e;
+      throw new Error("서버에 연결할 수 없어요. 잠시 뒤 다시 시도해 주세요.");
+    });
+    if (!res.ok) throw new Error(`홈 화면을 불러오지 못했어요. (HTTP ${res.status})`);
+    const json = (await res.json().catch(() => null)) as ApiResponse<HomeFeed> | null;
+    if (!json?.success) throw new Error("홈 화면 응답이 올바르지 않아요. 잠시 뒤 다시 시도해 주세요.");
+    return json.data;
   }
   await new Promise((resolve) => setTimeout(resolve, 450));
   return MOCK_HOME_FEED_RESPONSE.data;

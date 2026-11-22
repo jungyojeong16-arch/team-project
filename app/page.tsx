@@ -6,7 +6,7 @@ import { useAccount } from "./_lib/use-account";
 import { StartScreen } from "./_components/start-screen";
 import { SiteShell } from "./_components/site-shell";
 import { ErrorState, LoadingCards } from "./_components/status-view";
-import { TodayPick } from "./_components/home/today-pick";
+import { SurveyPrompt, TodayPick } from "./_components/home/today-pick";
 import { CrossAgePicks, PeerPicks, RankingTop10, RecommendRow } from "./_components/home/home-rows";
 import { FeedbackModal } from "./_components/feedback-modal";
 
@@ -14,7 +14,8 @@ import { FeedbackModal } from "./_components/feedback-modal";
  * 0-4 홈 화면 (Figma Home Feed 9:5) — 로그인 안 했으면 1-2 웹 시작 화면(Figma 179:1801)
  * 화면 순서: ① 오늘의 추천 → ② 맞춤 추천작품 → ③ 통합 랭킹 TOP 10 → ④ 세대별 교차 평점 → ⑤ 또래 추천
  * 홈 위 팝업: 7-2 재방문 추천 피드백 (app/_components/feedback-modal.tsx — 물어볼 추천이 있을 때만)
- * 영역별 부품: app/_components/home/ , 데이터: GET /api/v1/home/feed/ (지금은 가짜 데이터)
+ * 영역별 부품: app/_components/home/ , 데이터: GET /api/v1/home/feed/ (실패하면 오류 안내 + [다시 시도])
+ * 설문을 안 한 회원: 오늘의 추천 자리에 설문 안내 SurveyPrompt (PRD 0-4 5번)
  * ========================================================================== */
 
 function useHomeFeed() {
@@ -49,10 +50,11 @@ export default function HomePage() {
   const { account, ready } = useAccount();
   if (!ready) return <div className="min-h-screen bg-[#0a0a0a]" />;
   if (!account) return <StartScreen />;
-  return <HomeFeedView />;
+  return <HomeFeedView surveyDone={account.survey_completed} />;
 }
 
-function HomeFeedView() {
+/** surveyDone: 취향 설문을 마쳤는지 — 안 했으면 오늘의 추천 자리에 설문 안내 (PRD 0-4 5번) */
+function HomeFeedView({ surveyDone }: { surveyDone: boolean }) {
   const { feed, error, retry } = useHomeFeed();
 
   // 또래 추천 후보: 랭킹 + 교차 평점 작품 (6-2 API 가 생기면 그 결과로 바꿈)
@@ -73,7 +75,11 @@ function HomeFeedView() {
         <HomeSkeleton />
       ) : (
         <>
-          {feed.hero && <TodayPick hero={feed.hero} user={feed.user} tpo={feed.tpo} />}
+          {!surveyDone ? (
+            <SurveyPrompt user={feed.user} tpo={feed.tpo} />
+          ) : (
+            feed.hero && <TodayPick hero={feed.hero} user={feed.user} tpo={feed.tpo} />
+          )}
           {/* Figma "Content Rows": 위 8 · 아래 72 · 줄 사이 48 (맞춤 추천작품과 랭킹 TOP 10 은 한 묶음, 사이 20) */}
           <div className="flex flex-col gap-12 pb-[72px] pt-2">
             <div className="flex flex-col gap-5">

@@ -1,4 +1,5 @@
-import { Info, Play, Sparkles, Star } from "lucide-react";
+import { ClipboardList, Info, Play, Sparkles, Star } from "lucide-react";
+import Link from "next/link";
 import {
   AGE_GROUP_META,
   TIME_SLOT_LABEL,
@@ -96,6 +97,46 @@ export function TodayPick({ hero, user, tpo }: { hero: HeroCuration; user: UserP
         </div>
 
         <p className="text-xs text-white/50">{message.reason}</p>
+      </div>
+    </section>
+  );
+}
+
+
+/* ----------------------------------------------------------------------------
+ * 설문을 안 한 회원 — 오늘의 추천 자리에 설문 안내 (PRD 0-4 5번: "취향을 알려주시면 딱 맞는 작품을 골라 드릴게요 [설문하기]")
+ * Figma 에는 이 상태 화면이 없어서 오늘의 추천과 같은 배경·글자 크기 체계를 씀
+ * -------------------------------------------------------------------------- */
+export function SurveyPrompt({ user, tpo }: { user: UserPersona; tpo: TPOContext }) {
+  return (
+    <section className="relative h-[600px] w-full overflow-hidden bg-[#0a0a0a]" aria-label="오늘의 추천 — 취향 설문 안내">
+      <Glow className="-right-[200px] -top-[160px] h-[760px] w-[1000px] opacity-100" color="#1e3a8a" />
+      <Glow className="-right-[160px] top-[180px] h-[520px] w-[620px] opacity-90" color="#0c4a6e" />
+      <Glow className="-right-[60px] -top-[120px] h-[360px] w-[420px] opacity-60" color="#38bdf8" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[rgba(10,10,10,0.7)] via-45% to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-[rgba(10,10,10,0.1)] via-55% to-[#0a0a0a]" />
+
+      <div className="absolute left-4 right-4 top-[150px] flex max-w-[580px] flex-col items-start gap-4 md:left-12 md:top-[207px]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-[6px]">
+          <Sparkles className="h-3.5 w-3.5 fill-[#f0abfc] text-[#f0abfc]" />
+          {TIME_SLOT_LABEL[tpo.time_slot]} · 오늘의 추천
+        </div>
+
+        <p className="text-xl font-bold leading-[1.4] text-[#f0abfc] md:text-2xl">{user.nickname}님,</p>
+        <h1 className="break-keep text-[32px] font-black leading-[1.3] tracking-[-0.8px] text-white md:text-[44px]">
+          취향을 알려주시면
+          <br />딱 맞는 작품을 골라 드릴게요
+        </h1>
+        <p className="break-keep text-base leading-[1.6] text-white/75">
+          연령대·직업·좋아하는 장르처럼 다섯 가지 질문에 답하면, 오늘 볼 작품 한 편을 골라 드려요.
+        </p>
+
+        <div className="pt-3">
+          <Link href="/onboarding" className="inline-flex items-center gap-2 rounded-md bg-white px-8 py-3 text-base font-bold text-black transition hover:bg-white/80">
+            <ClipboardList className="h-5 w-5" />
+            설문하기
+          </Link>
+        </div>
       </div>
     </section>
   );
