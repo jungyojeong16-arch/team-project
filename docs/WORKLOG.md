@@ -9,6 +9,13 @@
 
 ---
 
+### 11/22 · 0-4 홈 오늘의 추천 문구를 설문 답으로 · 요청: 홍준화
+- 한 일: 설문을 마친 회원의 오늘의 추천 칩을 시간대 상황 이름("주말에 함께") 대신 **직업 + 요일**로("저녁 · 과제 끝난 금요일 밤", Figma 예시와 같은 모양), 한 줄은 **기억에 남는 작품 → 선호 장르 → 취향 점수 1위** 순서로 설문 답과 겹치는 것, 태그는 작품 장르(선호 장르 먼저). `backend/core/home.py` 의 `member_moment`·`taste_headline`·`taste_tags` (직업별 말은 `JOB_MOMENTS` 표 한 곳에서 고침)
+- 이유: 홈 칩은 "저녁 · 주말에 함께"인데 한 줄은 "혼자 보는 밤에 어울리는 …"으로 서로 어긋났음
+- 커밋: `db87a8e`
+- 확인: 테스트 67개 통과. 홍준화 PC 실제 데이터: "저녁 · 과제 없는 일요일" / "20대 학생 ○○님, 스릴러·SF 좋아하는 취향에 딱 맞는 한 편"
+- 남은 일·주의: 오늘의 추천 **작품**은 그대로 7-1 맞춤 추천 1위. 설문 안 한 회원·손님은 예전 그대로. 화면 코드는 안 바뀜(`tpo.situation`·`headline`·`mood_tags` 값만 바뀜)
+
 ### 11/22 · 7-1 맞춤 추천 (Step 1~4) · 요청: 홍준화
 - 한 일: 취향 점수로 회원×상황 TOP 50을 `recommendation`에 저장(`backend/core/recommend.py`), 상황 라벨·한 줄 이유 문장 틀(`backend/core/curation.py`, D10 — LLM 없음), `GET /api/v1/recommendations/`·`POST /api/v1/recommendations/refresh/`, 화면 `/recommend`(Figma 144:36577), 홈 오늘의 추천 = 맞춤 추천 1위
 - DB: `recommendation.reason` 칸 추가(D9, migration `0005`, 정준교 확인) → **받은 뒤 `python manage.py migrate` 필요**

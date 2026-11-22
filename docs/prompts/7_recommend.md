@@ -15,3 +15,14 @@
 | 결과 | 커밋 [`398859e`](https://github.com/jungyojeong16-arch/team-project/commit/398859e) · `backend/core/recommend.py`, `curation.py`, `migrations/0005_recommendation_reason.py`, `models.py`, `views.py`, `urls.py`, `home.py`, `tests.py`, `app/recommend/page.tsx`, `app/_lib/viewfit.ts`, `app/_components/top-pick-card.tsx`·`expand-list.tsx`·`filter-bar.tsx` |
 | 확인 | 자동 테스트 14개 + 브라우저(홍준화 PC, 실제 TMDB 작품 200편·가상 평점) <br> - [x] 공포를 비선호로 고른 회원의 추천 50개에 공포 작품 없음 <br> - [x] "혼자 보는 밤" 칩 → 그 상황과 연결된 작품만 <br> - [x] 평점을 남긴 작품은 다음 추천에 안 나옴 <br> - [x] `recommendation`에 오늘 날짜로 50행 (같은 추천일시, rank 1~50) <br> - [x] LLM 키 없이 문장 틀로 나옴 <br> - [x] 홈 오늘의 추천 = 맞춤 추천 1위 (11/22 합친 뒤 다시 확인, 홈 TOP 10 = 통합 랭킹 1~10위도 확인) <br> - [x] `python manage.py test core` 65개 통과 (6-1과 합친 뒤, SQLite) <br> - [ ] 정재준 화면 검수 (Figma의 "샘플 추천·가상 작품" 문구는 실제 추천이라 뺌) |
 | 수정 요청 | 홍준화의 수정 요청은 없음. AI가 실제 데이터·브라우저로 확인하다 고친 것: ① 10개 모두 "늦은 밤 · 혼자"이고 상황과 안 맞는 장르 문장("혼자 보는 밤에 어울리는 코미디") → 상황·장르 짝 규칙으로 여러 상황이 섞이게 ② 1000px 화면에서 카드가 한 줄 3장 → 줄바꿈 배치(1440px 5장, 375px 2장) ③ TOP 3 한 줄 이유가 잘림 → 2줄까지. 11/22 6-1과 합칠 때: `home.py`·`views.py`·`tests.py` 충돌을 두 작업 모두 살려 정리, 추천 화면도 6-1의 로그인 오류 처리(`getWithLogin`) 사용 |
+
+### 기록 2 — 홈 오늘의 추천 문구를 설문 답으로 (7-1 홈 연결 · 0-4 FR2)
+| 칸 | 내용 |
+|---|---|
+| 날짜 | 11/22 |
+| 보낸 프롬프트 | "홈 멘트는 회원가입할때 물어보는거 반영해서 할순없어?" (AI가 합친 뒤 확인하다 "홈 칩 '저녁 · 주말에 함께'와 한 줄 '혼자 보는 밤에 어울리는 …'이 서로 어긋난다"고 알린 데 대한 답) |
+| 기준 PRD | 0-4 FR2 (지금 시간대 문구 예: "저녁 · 과제 끝난 금요일 밤", "20대 대학생 OO님, ~ 보기 좋은 신작" 한 줄) |
+| AI가 한 일 | 설문을 마친 회원만: 칩 = 직업 + 요일(`member_moment`, 직업별 말은 `JOB_MOMENTS` 표), 한 줄 = ① 기억에 남는 작품과 장르 겹침 "'인셉션' 좋아하셨다면 딱 맞을 SF 한 편" ② 선호 장르 겹침 "스릴러·SF 좋아하는 취향에 딱 맞는 한 편" ③ "오늘 취향 점수 1위 액션 한 편"(`taste_headline`, 1년 안 작품은 '신작'), 태그 = 작품 장르를 선호 장르부터(`taste_tags`). 오늘의 추천 작품은 그대로 추천 1위 |
+| 결과 | 커밋 [`db87a8e`](https://github.com/jungyojeong16-arch/team-project/commit/db87a8e) · `backend/core/home.py`, `tests.py`, `docs/prd/0-4_home.md`, `7-1_tpo_recommend.md` |
+| 확인 | - [x] 테스트 2개 추가, `python manage.py test core` 67개 통과 <br> - [x] 금 21시 학생 → "과제 끝난 금요일 밤"(Figma 예시와 같음), 일 18시 학생 → "과제 없는 일요일", 직업 응답 안 함 → 요일만 <br> - [x] 홍준화 PC 실제 데이터: 칩 "저녁 · 과제 없는 일요일", 한 줄 "스릴러·SF 좋아하는 취향에 딱 맞는 한 편", 태그 #스릴러 #SF #액션 |
+| 수정 요청 | 없음 |
