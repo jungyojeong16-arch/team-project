@@ -9,6 +9,12 @@
 
 ---
 
+### 11/23 · 6-2 세대별 랭킹 (Step 1~2) · 요청: 정준교
+- 한 일: 평가 당시 연령대별 평균 평점 TOP 30 — `backend/core/ranking.py`(`generation_rows`), `GET /api/v1/rankings/generation/`(age 없으면 내 연령대 → 20대, 평가 3개 미만 제외, 유형·OTT·장르 필터, `has_demo`), 화면 `/generation`(Figma 144:33778). 랭킹 위쪽 탭을 공용 부품 `app/_components/ranking-tabs.tsx` 로 (6-1 화면도 사용)
+- 커밋: `1d9e632`
+- 확인: 테스트 7개 추가·전체 81개 통과(MariaDB), 20대 1~3위가 PRD SQL 직접 계산과 같음, 브라우저에서 연령대 탭·펼치기·상세 팝업·가상 평점 안내
+- 남은 일·주의: 홈의 "세대별 교차 평점" 영역은 아직 임시 계산(`home.py` `cross_age_picks`) — 0-4 PRD대로 세대 간 차이(Δ)가 큰 순으로 바꾸는 것은 다음에. 공용 부품 `ranking-tabs.tsx` 새로 추가. 정준교 PC 확인·정재준 화면 검수 남음
+
 ### 11/23 · 4-1 상단 검색창 화면(FR1·FR6) · 요청: 정재준
 - 한 일: 공통 상단 바의 4-1 TODO를 완성하고 검색 결과를 분리 컴포넌트로 만들었음. `app/_components/site-header.tsx`는 300ms 디바운스·2글자 제한·Esc/바깥 클릭 닫기·홈 돋보기 열기·기존 `onSearch` 유지·선택 시 상세 팝업을 처리하고, `app/_components/search-results.tsx`는 포스터·제목·연도·유형·최대 20개 스크롤·없음 문구·검색 중 문구를 표시함
 - 커밋: 없음 (요청에 따라 커밋·push 안 함)
