@@ -1,11 +1,11 @@
 /* ============================================================================
- * 6-1 통합 랭킹 — API 부르는 함수 (담당: 정준교)
+ * 6-1 통합 랭킹 · 6-2 세대별 랭킹 — API 부르는 함수 (담당: 정준교)
  * GET /api/v1/rankings/?period=weekly|monthly&type=&platform=&genre=&offset=&limit=
  * 백엔드: backend/core/views.py rankings, 계산은 backend/core/ranking.py
  * ========================================================================== */
 
 import type { ContentTypeFilter } from "./catalog";
-import { API_BASE_URL, MOCK_MOVIES, type Movie, type PlatformCode } from "./viewfit";
+import { AGE_GROUP_META, API_BASE_URL, MOCK_MOVIES, getAgeAverage, getWithLogin, type AgeGroup, type Movie, type PlatformCode } from "./viewfit";
 
 export type RankingPeriod = "weekly" | "monthly";
 
@@ -77,3 +77,66 @@ export const formatRankedOn = (day: string) => {
   const [, m, d] = day.split("-").map(Number);
   return `${m}월 ${d}일`;
 };
+
+/* ============================================================================
+ * 6-2 세대별 랭킹 — GET /api/v1/rankings/generation/?age=20s&type=&platform=&genre=&limit=30
+ * 평가할 당시 연령대로 묶은 평균 평점 TOP 30 (평가 3개 이상). 저장하지 않고 조회할 때 계산.
+ * ========================================================================== */
+
+export const GENERATION_AGES: AgeGroup[] = ["10s", "20s", "30s", "40s", "50s", "60s+"];
+
+export interface GenerationRankingItem {
+  rank: number;
+  /** 그 연령대 평균 평점 (소수 둘째 자리) */
+  average: number;
+  /** 그 연령대 평가 수 */
+  count: number;
+  movie: Movie;
+}
+
+export interface GenerationRanking {
+  age: AgeGroup;
+  age_label: string;
+  total: number;
+  min_count: number;
+  /** 시연용 가상 회원 평점이 섞여 있는지 (D12) */
+  has_demo: boolean;
+  items: GenerationRankingItem[];
+  sample?: boolean;
+}
+
+export interface GenerationQuery {
+  /** null 이면 서버가 정함: 로그인한 회원의 연령대 → 없으면 20대 */
+  age: AgeGroup | null;
+  type: ContentTypeFilter;
+  platform: PlatformCode | null;
+  genre: string | null;
+}
+
+export async function fetchGenerationRanking(q: GenerationQuery, signal?: AbortSignal): Promise<GenerationRanking> {
+  if (!API_BASE_URL) return sampleGeneration(q);
+  const params = new URLSearchParams({ type: q.type, limit: "30" });
+  if (q.age) params.set("age", q.age);
+  if (q.platform) params.set("platform", q.platform);
+  if (q.genre) params.set("genre", q.genre);
+  const res = await getWithLogin(`${API_BASE_URL}/api/v1/rankings/generation/?${params}`, signal);
+  if (!res.ok) throw new Error(`세대별 랭킹을 불러오지 못했어요. (HTTP ${res.status})`);
+  return res.json();
+}
+
+/** 백엔드 주소가 없을 때 — 샘플 작품의 연령대 평균으로 모양만 */
+function sampleGeneration(q: GenerationQuery): GenerationRanking {
+  const age = q.age ?? "20s";
+  const items = MOCK_MOVIES.filter(
+    (m) =>
+      (q.type === "all" || m.content_type === q.type) &&
+      (!q.platform || m.platforms.some((p) => p.code === q.platform)) &&
+      (!q.genre || m.genres.some((g) => g.name === q.genre)),
+  )
+    .map((movie) => ({ movie, average: getAgeAverage(movie, age), count: 3 }))
+    .filter((r) => r.average > 0)
+    .sort((a, b) => b.average - a.average)
+    .slice(0, 30)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+  return { age, age_label: AGE_GROUP_META[age].label, total: items.length, min_count: 3, has_demo: false, items, sample: true };
+}

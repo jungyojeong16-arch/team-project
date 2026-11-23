@@ -1200,3 +1200,99 @@ class RevisitFeedbackTests(APITestCase):
         self.assertFalse(Rating.objects.exists())
         other_rec = self.recommend(self.b, 48, member=self.other)
         self.assertEqual(self.send(other_rec, {"watched": False}).status_code, 404)
+
+
+# =============================================================================
+# 6-2 세대별 랭킹 — 평가 당시 연령대로 묶기 · 평가 3개 미만 제외 · 필터 · 기본 연령대
+# =============================================================================
+
+
+class GenerationRankingTests(APITestCase):
+    URL = "/api/v1/rankings/generation/"
+
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentGenre, ContentPlatform, Genre, Platform
+
+        drama, comedy = Genre.objects.get(name="드라마"), Genre.objects.get(name="코미디")
+        netflix, tving = Platform.objects.get(code="NETFLIX"), Platform.objects.get(code="TVING")
+        cls.c = {}
+        for name in "ABCD":
+            c = Content.objects.create(title=f"작품{name}", content_type="movie" if name in "AB" else "series")
+            ContentGenre.objects.create(content=c, genre=comedy if name in "AC" else drama)
+            ContentPlatform.objects.create(content=c, platform=netflix if name in "AB" else tving, deeplink_url="https://x")
+            cls.c[name] = c
+        cls.n = 0
+
+    def rate(self, name, age, *scores, email=None):
+        """age 연령대 회원들이 작품 name 에 scores 를 하나씩"""
+        for s in scores:
+            GenerationRankingTests.n += 1
+            mem = Member.objects.create_user(email or f"g{self.n}@x.kr", f"세대{self.n}", "viewfit123!", age_group=age)
+            Rating.objects.create(member=mem, content=self.c[name], score=Decimal(str(s)))
+
+    def test_average_order_and_two_ratings_excluded(self):
+        self.rate("A", "20s", 5, 4, 4)        # 4.33 (3개)
+        self.rate("B", "20s", 5, 5, 4, 4)     # 4.50 (4개)
+        self.rate("C", "20s", 4.5, 4.5, 4.5)  # 4.50 (3개) → B 와 같으면 평가 수 많은 B 가 위
+        self.rate("D", "20s", 5, 5)           # 평가 2개 → 제외
+        res = self.client.get(self.URL, {"age": "20s"})
+        self.assertEqual(res.status_code, 200)
+        got = [(i["rank"], i["movie"]["title"][-1], i["average"], i["count"]) for i in res.data["items"]]
+        self.assertEqual(got, [(1, "B", 4.5, 4), (2, "C", 4.5, 3), (3, "A", 4.33, 3)])
+        self.assertEqual((res.data["total"], res.data["age_label"], res.data["min_count"]), (3, "20대", 3))
+
+    def test_tabs_differ_by_age(self):
+        self.rate("A", "20s", 5, 5, 5)
+        self.rate("B", "20s", 2, 2, 2)
+        self.rate("A", "40s", 1, 1, 1)
+        self.rate("B", "40s", 5, 5, 5)
+        first = lambda age: self.client.get(self.URL, {"age": age}).data["items"][0]["movie"]["title"]
+        self.assertEqual((first("20s"), first("40s")), ("작품A", "작품B"))
+        self.assertEqual(self.client.get(self.URL, {"age": "60s+"}).data["items"], [])
+
+    def test_member_age_change_keeps_old_ratings_in_old_generation(self):
+        self.rate("A", "20s", 5, 5)
+        mover = Member.objects.create_user("mover@x.kr", "이사", "viewfit123!", age_group="20s")
+        Rating.objects.create(member=mover, content=self.c["A"], score=Decimal("4.0"))
+        mover.age_group = "30s"  # 해가 바뀌어 30대가 됨
+        mover.save()
+        items = self.client.get(self.URL, {"age": "20s"}).data["items"]
+        self.assertEqual((items[0]["movie"]["title"], items[0]["count"]), ("작품A", 3))  # 20대에 그대로
+        self.assertEqual(self.client.get(self.URL, {"age": "30s"}).data["items"], [])
+
+    def test_filters_and_paging(self):
+        for name in "ABCD":
+            self.rate(name, "30s", 4, 4, 4)
+        res = self.client.get(self.URL, {"age": "30s", "type": "series", "platform": "TVING", "genre": "드라마"})
+        self.assertEqual([(i["rank"], i["movie"]["title"]) for i in res.data["items"]], [(1, "작품D")])
+        res = self.client.get(self.URL, {"age": "30s", "limit": 2, "offset": 2})
+        self.assertEqual(([i["rank"] for i in res.data["items"]], res.data["next_offset"]), ([3, 4], None))
+        self.assertEqual(self.client.get(self.URL, {"age": "70s"}).status_code, 400)
+        self.assertEqual(self.client.get(self.URL, {"genre": "없는장르"}).status_code, 400)
+
+    def test_default_age_is_my_age_group_then_20s(self):
+        self.assertEqual(self.client.get(self.URL).data["age"], "20s")  # 로그인 안 함
+        me = Member.objects.create_user("me@x.kr", "사십대", "viewfit123!", age_group="40s")
+        self.client.force_authenticate(me)
+        self.assertEqual(self.client.get(self.URL).data["age"], "40s")
+
+    def test_demo_flag(self):
+        self.rate("A", "50s", 4, 4, 4)
+        self.assertFalse(self.client.get(self.URL, {"age": "50s"}).data["has_demo"])
+        self.rate("B", "50s", 3, email="demo99@demo.viewfit.local")
+        self.rate("B", "50s", 3, 3)
+        self.assertTrue(self.client.get(self.URL, {"age": "50s"}).data["has_demo"])
+
+    def test_top_30_only(self):
+        from .models import ContentPlatform, Platform
+
+        netflix = Platform.objects.get(code="NETFLIX")
+        raters = [Member.objects.create_user(f"t{i}@x.kr", f"삼십{i}", "viewfit123!", age_group="20s") for i in range(3)]
+        for i in range(32):
+            c = Content.objects.create(title=f"많은작품{i}", content_type="movie")
+            ContentPlatform.objects.create(content=c, platform=netflix, deeplink_url="https://x")
+            for r in raters:
+                Rating.objects.create(member=r, content=c, score=Decimal("3.0"))
+        res = self.client.get(self.URL, {"age": "20s", "limit": 100})
+        self.assertEqual((res.data["total"], len(res.data["items"])), (30, 30))

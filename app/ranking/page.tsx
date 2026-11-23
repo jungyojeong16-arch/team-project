@@ -1,12 +1,12 @@
 "use client";
 
 import { ChartNoAxesColumnIncreasing, Info } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { openContentDetail } from "../_components/content-detail-modal";
 import { ExpandButton, ListEnd, RangeHeader, useExpand } from "../_components/expand-list";
 import { GenreSelect, PlatformFilter, ResultInfo, SectionTitle, SegmentedToggle, UnderlineTabs } from "../_components/filter-bar";
 import { PosterCard, RankChange } from "../_components/poster-card";
+import { RankingTabs } from "../_components/ranking-tabs";
 import { PageContainer, SiteShell } from "../_components/site-shell";
 import { EmptyState, ErrorState, LoadingCards } from "../_components/status-view";
 import { TopPickSection } from "../_components/top-pick-card";
@@ -24,12 +24,6 @@ const PAGE_STEP = 20;
 const PERIOD_OPTIONS: { value: RankingPeriod; label: string }[] = [
   { value: "weekly", label: "주간" },
   { value: "monthly", label: "월간" },
-];
-/** Figma 144:6508 위쪽 랭킹 탭 */
-const RANKING_TABS = [
-  { href: "/ranking", label: "통합 랭킹" },
-  { href: "/recommend", label: "맞춤 추천" },
-  { href: "/generation", label: "세대별 평점" },
 ];
 
 const typeLabel = (t: string) => (t === "movie" ? "영화" : "시리즈");
@@ -117,17 +111,7 @@ export default function RankingPage() {
 
       {/* ---------- 전체 랭킹 (Figma Complete ranking 144:6508) ---------- */}
       <PageContainer className="flex flex-col gap-6 pb-16">
-        <nav aria-label="랭킹 종류" className="flex gap-7 border-b border-white/[0.12]">
-          {RANKING_TABS.map((tab) => {
-            const active = tab.href === "/ranking";
-            return (
-              <Link key={tab.href} href={tab.href} aria-current={active ? "page" : undefined} className="flex flex-col gap-3 text-sm">
-                <span className={active ? "font-bold text-white" : "text-white/60 hover:text-white"}>{tab.label}</span>
-                <span className={`h-0.5 w-full ${active ? "bg-white" : "bg-transparent"}`} />
-              </Link>
-            );
-          })}
-        </nav>
+        <RankingTabs active="/ranking" />
 
         <div className="flex flex-col gap-5">
           <SectionTitle

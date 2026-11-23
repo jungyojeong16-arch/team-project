@@ -435,6 +435,61 @@ def submit_feedback(request, rec_id):
 
 
 # -----------------------------------------------------------------------------
+# 6-2 세대별 랭킹 (정준교) — 저장하지 않고 조회할 때 계산 (core/ranking.py generation_rows)
+# -----------------------------------------------------------------------------
+
+
+@api_view(["GET"])
+def generation_rankings(request):
+    """연령대별 평균 평점 TOP 30.
+
+    ?age=20s (없으면 로그인한 회원의 연령대, 그것도 없으면 20s) &type= &platform= &genre= &offset=0 &limit=20
+    - 평가할 당시 연령대로 묶고, 평가 3개 미만 제외, 평균 높은 순 → 같으면 평가 수 많은 순
+    """
+    params = request.query_params
+    age = params.get("age")
+    if not age:
+        member_age = getattr(request.user, "age_group", None) if request.user.is_authenticated else None
+        age = member_age or m.AgeGroup.TWENTIES
+    if age not in m.AgeGroup.values:
+        return Response({"age": [f"{', '.join(m.AgeGroup.values)} 중 하나로 입력해 주세요."]}, status=status.HTTP_400_BAD_REQUEST)
+    offset, limit = page_bounds(params)
+
+    content_ids = None
+    if any((params.get(k) or "all") != "all" for k in RANKING_FILTERS):
+        content_ids = filter_contents(m.Content.objects.all(), params).values("pk")
+    else:
+        filter_contents(m.Content.objects.none(), params)  # 잘못된 필터 값은 400
+    rows = ranking.generation_rows(age, content_ids)
+
+    page = rows[offset : offset + limit]
+    page_contents = list(contents_for_cards(m.Content.objects.filter(pk__in=[r["content_id"] for r in page])))
+    cards = dict(zip((c.id for c in page_contents), ContentCardSerializer(page_contents, many=True).data))
+    items = [
+        {
+            "rank": i,
+            "average": round(float(row["average"]), 2),
+            "count": row["count"],
+            "movie": cards[row["content_id"]],
+        }
+        for i, row in enumerate(page, start=offset + 1)
+    ]
+    return Response(
+        {
+            "age": age,
+            "age_label": dict(m.AgeGroup.choices)[age],
+            "total": len(rows),
+            "offset": offset,
+            "limit": limit,
+            "next_offset": offset + limit if offset + limit < len(rows) else None,
+            "min_count": ranking.GENERATION_MIN_COUNT,
+            "has_demo": ranking.has_demo_ratings(age, [r["content_id"] for r in rows]) if rows else False,
+            "items": items,
+        }
+    )
+
+
+# -----------------------------------------------------------------------------
 # 0-4 홈 피드 (3명 공동) — 계산은 core/home.py
 # -----------------------------------------------------------------------------
 
