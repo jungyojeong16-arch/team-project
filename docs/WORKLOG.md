@@ -9,7 +9,7 @@
 
 ---
 ### 11/23 · 물리 ERD 그림을 지금 DB와 맞춤 · 요청: 정준교
-- 한 일: `docs/erd/ViewFit_ERD_physical_preview.png`·`.drawio` 에 11/17 이후 추가된 칸 8개 반영 — content 6칸(D6), ranking.score(D7), recommendation.reason(7-1). recommendation → tpo 점선이 ranking 표 뒤로 지나가 "랭킹–상황 관계"처럼 보이던 것 고침. ERD 문서 ⑦ 표에 reason 추가
+- 한 일: `docs/erd/ViewFit_ERD_physical_preview.png`·`.drawio` 에 11/17 이후 추가된 칸 8개 반영 — content 6칸(D6), ranking.score(D7), recommendation.reason(7-1). recommendation → tpo 점선이 ranking 표 뒤로 지나가 "랭킹–상황 관계"처럼 보이던 것 고침 (ERD 문서 표는 이미 최신이라 그대로)
 - 확인: models.py 14개 테이블·칸과 그림 대조
 - 남은 일·주의: 노션 발표 자료의 ERD 이미지는 이 새 그림으로 바꿔야 함
 
