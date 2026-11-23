@@ -170,3 +170,36 @@ def ranking_rows(period, ranked_on, content_ids=None):
     if content_ids is not None:
         qs = qs.filter(content_id__in=content_ids)
     return list(qs.order_by("rank"))
+
+
+# =============================================================================
+# 6-2 세대별 랭킹 — 저장하지 않고 조회할 때 계산 (docs/prd/6-2_generation_ranking.md 4번 SQL)
+# =============================================================================
+
+GENERATION_TOP_N = 30
+GENERATION_MIN_COUNT = 3  # 평가 3개 미만은 제외
+DEMO_EMAIL_SUFFIX = "@demo.viewfit.local"  # seed_demo 가상 회원 (D12)
+
+
+def generation_rows(age_group, content_ids=None):
+    """평가할 당시 연령대(age_group_at_rating)로 묶은 작품별 평균·평가 수, 높은 순 최대 30개.
+
+    [{"content_id", "average"(Decimal), "count"}, …]
+    content_ids 가 있으면 그 작품만 (필터). 회원의 지금 연령대가 아니라 평가 당시 연령대 기준 (ERD 원칙 ④).
+    """
+    qs = m.Rating.objects.filter(age_group_at_rating=age_group)
+    if content_ids is not None:
+        qs = qs.filter(content_id__in=content_ids)
+    return list(
+        qs.values("content_id")
+        .annotate(average=Avg("score"), count=Count("id"))
+        .filter(count__gte=GENERATION_MIN_COUNT)
+        .order_by("-average", "-count", "content_id")[:GENERATION_TOP_N]
+    )
+
+
+def has_demo_ratings(age_group, content_ids):
+    """이 순위에 시연용 가상 회원의 평점이 섞여 있는지"""
+    return m.Rating.objects.filter(
+        age_group_at_rating=age_group, content_id__in=content_ids, member__email__endswith=DEMO_EMAIL_SUFFIX
+    ).exists()

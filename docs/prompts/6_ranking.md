@@ -20,3 +20,16 @@
 | 수정 요청 | Figma는 한 줄에 카드 5장 → 6장으로 나와서 5장으로 맞춤 · 정준교 PC에서 홈이 "HTTP 401"로 멈춤(DB를 새로 만들어 예전 로그인 토큰이 없어짐) → 401이면 로그인 정보를 지우고 시작 화면으로 가도록 수정 [`be7cc12`](https://github.com/jungyojeong16-arch/team-project/commit/be7cc12) |
 
 ![통합 랭킹](images/6-1_ranking.png)
+
+### 기록 3 — 6-2 Step 1~2 (세대별 랭킹 API · 화면)
+| 칸 | 내용 |
+|---|---|
+| 날짜 | 11/23 |
+| 보낸 프롬프트 | "6-2 시작하자" → AI가 PRD 6-2의 Step 프롬프트대로 진행 |
+| 기준 PRD | **6-2 Step 1** ("docs/prd/6-2_generation_ranking.md 4번의 API 를 만들어 줘. rating 의 age_group_at_rating 으로 묶어 평균을 계산하고, 평가 3개 미만은 빼고, 평균 높은 순·같으면 평가 수 많은 순. type/platform/genre 필터와 offset/limit 을 지원해 줘. 결과는 저장하지 마. tests.py 에 '평가 2개 작품 제외', '회원 연령대를 바꿔도 예전 평가는 예전 세대에 남음' 테스트를 추가해 줘.") · **6-2 Step 2** ("Figma 노드 144:33778 "세대별 평점" 을 app/generation/page.tsx 로 만들어 줘. 연령대 탭(처음엔 로그인한 회원의 연령대), 필터, TOP 3 카드, 1–20위, [펼치기] 21–30. 평균은 소수 둘째 자리까지, '샘플 평점' 문구는 '평균 평점 · 평가 3개 이상' 으로 바꾸고, 시연 데이터가 있으면 하단에 '시연용 가상 평점이 포함되어 있어요' 를 보여 줘. 상단 메뉴 '세대별 랭킹' 과 연결해 줘.") |
+| AI가 한 일 | 연령대별 평균 계산(`backend/core/ranking.py` `generation_rows`), `GET /api/v1/rankings/generation/`, 화면 `/generation`, 랭킹 위쪽 탭을 공용 부품(`app/_components/ranking-tabs.tsx`)으로 빼서 6-1 화면도 같이 사용. 작품 상세 팝업에서 다른 세대 평균 비교(FR6)는 4-1 팝업에 이미 있어 그대로 연결 |
+| 결과 | 커밋 [`1d9e632`](https://github.com/jungyojeong16-arch/team-project/commit/1d9e632) · `backend/core/ranking.py`, `views.py`, `urls.py`, `tests.py`, `app/_lib/ranking.ts`, `app/generation/page.tsx`, `app/_components/ranking-tabs.tsx`, `app/ranking/page.tsx` |
+| 확인 | - [x] 테스트 7개 추가, 전체 81개 통과 (MariaDB) <br> - [x] `seed_demo` 데이터로 6개 연령대 1위가 모두 다름 <br> - [x] 20대 1~3위 평균·평가 수 = PRD 4번 SQL 직접 실행 결과 <br> - [x] 40대 탭 → "40대가 높게 평가한 TOP 3", [펼치기] → 21–30위, 상세 팝업, "시연용 가상 평점이 포함되어 있어요" <br> - [ ] 정준교 PC 확인 <br> - [ ] 정재준 화면 검수 |
+| 수정 요청 | 없음 |
+
+![세대별 랭킹](images/6-2_generation.png)

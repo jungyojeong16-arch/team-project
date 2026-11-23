@@ -2,9 +2,9 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/21~22) |
+| 상태 | ✅ Step 1~2 완료 (11/23) — `GET /api/v1/rankings/generation/`, 화면 `/generation`(Figma 144:33778) · 정준교 PC 확인·화면 검수(정재준) ⬜ |
 | Figma | [세대별 평점](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-33778) (상단 메뉴 이름은 "세대별 랭킹") |
-| 코드(예정) | `views.py`(generation_rankings), `app/generation/page.tsx` |
+| 코드 | `backend/core/ranking.py`(generation_rows), `views.py`(generation_rankings), `app/_lib/ranking.ts`, `app/generation/page.tsx`, `app/_components/ranking-tabs.tsx` |
 | 테이블 | `rating`(score, age_group_at_rating), `content` |
 | 담당 | **정준교** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 정재준(화면) |
@@ -40,6 +40,7 @@ ORDER BY average DESC, count DESC
 LIMIT 30;
 ```
 - **회원 연령대가 아니라 평가할 당시 연령대(age_group_at_rating)** 로 묶는다 → 해가 바뀌어도 과거 평가가 다른 세대로 옮겨 가지 않음 (ERD 원칙 ④).
+- (11/23 구현) 응답: `{age, age_label, total, offset, limit, next_offset, min_count, has_demo, items:[{rank, average, count, movie:{작품 카드}}]}` — `age` 를 안 보내면 로그인한 회원의 연령대, 없으면 20대. `has_demo` = 시연용 가상 회원 평점이 섞였는지(D12)
 
 ## 5. 규칙 · 예외
 - 조건에 맞는 작품이 30개보다 적으면 있는 만큼만 보여 주고 "아직 평가가 모이고 있어요" 안내.
@@ -47,11 +48,11 @@ LIMIT 30;
 - 로그인 없이도 볼 수 있다.
 
 ## 6. 완료 기준
-- [ ] `seed_demo` 후 세대별 랭킹 → 연령대 탭마다 순위가 다르다
-- [ ] 20대 1위 작품의 평균이 HeidiSQL에서 위 SQL로 계산한 값과 같다
-- [ ] 평가 2개뿐인 작품은 순위에 없다
-- [ ] 회원 연령대를 30대로 바꿔도, 20대일 때 남긴 평점은 20대 순위에 남아 있다
-- [ ] 화면이 Figma 144:33778 과 같다
+- [x] `seed_demo` 후 세대별 랭킹 → 연령대 탭마다 순위가 다르다 (11/23 AI 확인 — 6개 연령대 1위가 모두 다름)
+- [x] 20대 1위 작품의 평균이 HeidiSQL에서 위 SQL로 계산한 값과 같다 (11/23 AI 확인 — 1~3위 평균·평가 수 SQL과 같음)
+- [x] 평가 2개뿐인 작품은 순위에 없다 (테스트)
+- [x] 회원 연령대를 30대로 바꿔도, 20대일 때 남긴 평점은 20대 순위에 남아 있다 (테스트)
+- [x] 화면이 Figma 144:33778 과 같다 (11/23 AI 비교, 정재준 검수 ⬜)
 
 ## 7. 범위 밖
 - 성별·직업별 랭킹
