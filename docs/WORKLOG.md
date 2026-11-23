@@ -8,6 +8,11 @@
 > 11/21 이전 항목은 GitHub 커밋 기록으로 정리했습니다. 커밋에 요청한 사람이 적혀 있지 않은 것은 "요청: 기록 없음"으로 두었습니다 — 본인 작업이면 이름을 채워 주세요.
 
 ---
+### 11/23 · 물리 ERD 그림을 지금 DB와 맞춤 · 요청: 정준교
+- 한 일: `docs/erd/ViewFit_ERD_physical_preview.png`·`.drawio` 에 11/17 이후 추가된 칸 8개 반영 — content 6칸(D6), ranking.score(D7), recommendation.reason(7-1). recommendation → tpo 점선이 ranking 표 뒤로 지나가 "랭킹–상황 관계"처럼 보이던 것 고침. ERD 문서 ⑦ 표에 reason 추가
+- 확인: models.py 14개 테이블·칸과 그림 대조
+- 남은 일·주의: 노션 발표 자료의 ERD 이미지는 이 새 그림으로 바꿔야 함
+
 ### 11/23 · 11/24 중간 발표 자료 · 요청: 정준교
 - 한 일: 노션 가져오기용 발표 자료 `docs/presentation/ViewFit 중간 발표.md` + 실행 화면 8장(`docs/presentation/images/`) + 가져오기용 zip. 개발 환경·프로그램 목록표(진도율)·주차 보고서·PRD 예시·실행 결과·GitHub·남은 일정·예상 질문
 - 커밋: `eab3ae6`
