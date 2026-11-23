@@ -100,7 +100,7 @@ export default function OnboardingPage() {
         />
       }
     >
-      <div className="mx-auto grid max-w-[1440px] items-center gap-12 px-4 py-12 md:px-16 lg:grid-cols-[400px_minmax(0,752px)] lg:justify-between lg:gap-16 lg:px-28">
+      <div className="mx-auto grid max-w-[1440px] items-center gap-12 px-4 py-12 md:px-16 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-10 lg:px-12 xl:grid-cols-[400px_minmax(0,752px)] xl:justify-between xl:gap-16 xl:px-28">
         <SurveyStory />
 
         {/* Survey form (39:3125) */}
@@ -180,14 +180,14 @@ function SurveyStory() {
         <MoodChip icon={<Sparkles className="h-3.5 w-3.5" />}>당신을 알아가는 시간 · 약 2분</MoodChip>
       </div>
       <div className="flex flex-col gap-5">
-        <h1 className="break-keep text-[38px] font-black leading-[1.3] tracking-[-1.38px] sm:text-[46px]">
+        <h1 className="break-keep text-[38px] font-black leading-[1.3] tracking-[-1.38px] sm:text-[46px] lg:text-[36px] xl:text-[46px]">
           당신의 취향,
           <br />
           <span className="text-[#f0abfc]">한 번에 알려주세요.</span>
         </h1>
         <p className="break-keep text-[15px] leading-[1.6] text-[#9ca3b5]">
           연령대와 직업, 좋아하는 장르, 피하고 싶은 장르를 알려주면
-          <br className="hidden sm:block" /> 나의 상황에 딱 맞는 OTT 추천을 준비해드릴게요.
+          <br className="hidden xl:block" /> 나의 상황에 딱 맞는 OTT 추천을 준비해드릴게요.
         </p>
       </div>
       <div className="flex h-[60px] items-center gap-3.5 rounded-md border border-[rgba(240,171,252,0.25)] bg-[rgba(240,171,252,0.08)] px-4" aria-current="step">
@@ -237,7 +237,7 @@ function QuestionHeading({ title, meta, inline = false }: { title: string; meta:
   );
 }
 
-const OPTION_BASE = "flex h-[38px] items-center justify-center gap-2 rounded-md border px-[13px] text-[13px] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f0abfc]";
+const OPTION_BASE = "whitespace-nowrap flex h-[38px] items-center justify-center gap-2 rounded-md border px-[13px] text-[13px] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f0abfc]";
 const OPTION_OFF = "border-white/[0.12] bg-white/[0.02] text-[#eceef4] hover:border-white/25";
 const OPTION_ON = "border-[#f0abfc] bg-[rgba(240,171,252,0.08)] font-bold text-[#f0abfc]";
 
