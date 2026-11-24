@@ -2,9 +2,9 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | 🟡 일부 완료 — 프로필에 닉네임·이메일·설문 결과 표시 ✅(11/10), Figma 프로필 전체·취향 수정 화면 ⬜ (11/27) |
+| 상태 | 🟡 일부 완료 — 프로필에 닉네임·이메일·설문 결과 표시 ✅(11/10), 취향 수정 화면(Step 3, FR8~FR10) ✅(11/24, 기억에 남는 작품 카드 모양·D8 남음), 프로필 요약 API·Figma 프로필 화면(Step 1~2) ⬜ (11/27) |
 | Figma | [프로필 정보](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=130-846) · [취향 수정](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=220-5925) |
-| 코드 | `app/profile/page.tsx`, `views.py`(me, save_survey) / 예정: `views.py`(profile_summary), `app/me/taste/page.tsx` |
+| 코드 | `app/profile/page.tsx`, `views.py`(me, save_survey) , `app/me/taste/page.tsx`, `app/_components/survey-questions.tsx` / 예정: `views.py`(profile_summary) |
 | 테이블 | `member`, `genre_preference`, `watch_history`, `rating`, `content_like`, `recommendation` |
 | 담당 | **정재준** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 정준교(API) |
@@ -60,7 +60,7 @@
 ## 6. 완료 기준
 - [ ] 프로필 숫자(좋아요 수·평점 수·평균)가 HeidiSQL에서 센 값과 같다
 - [ ] 로맨스 작품 3개에 좋아요 → 장르 비율에서 로맨스가 올라간다
-- [ ] 취향 수정 화면에 기존 설문 값이 채워져 있다
+- [x] 취향 수정 화면에 기존 설문 값이 채워져 있다 (11/24 정재준 PC — 기억에 남는 작품은 작품 데이터 수집 후 다시 확인)
 - [ ] 비선호에 공포 추가 후 저장 → 맞춤 추천에서 공포 작품이 사라진다
 - [ ] 화면이 Figma 130:846, 220:5925 와 같다
 

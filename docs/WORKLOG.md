@@ -8,6 +8,14 @@
 > 11/21 이전 항목은 GitHub 커밋 기록으로 정리했습니다. 커밋에 요청한 사람이 적혀 있지 않은 것은 "요청: 기록 없음"으로 두었습니다 — 본인 작업이면 이름을 채워 주세요.
 
 ---
+### 11/24 · 8-1 취향 수정 화면 (Step 3) · 요청: 정재준
+- 한 일: `/me/taste` 취향 수정 화면(Figma 220:5925, FR8~FR10) — 서버에 저장된 연령대·직업·장르·기억에 남는 작품으로 채우고, [변경사항 저장] → `PUT /me/survey/` → `POST /recommendations/refresh/`(실패해도 저장은 성공) → `/profile`, [취소] → `/profile`. 이 화면의 강조색은 Figma대로 보라(`#b99aff`)
+- 공용 파일: 3-1 설문의 질문 부품(연령대·직업·장르·기억에 남는 작품)을 `app/onboarding/page.tsx` 에서 **`app/_components/survey-questions.tsx` 로 옮김** — 설문 화면 모양은 그대로(선택 옵션 `violet`·`hideHeading` 만 추가). `app/_lib/account.ts` 가 `/me/` 의 `memorable_contents` 를 받도록(`survey.memorable`), `viewfit.ts` 에 `refreshRecommendations()`
+- 고친 버그: 다른 브라우저에서 취향 수정을 열면 기억에 남는 작품이 빈칸 → 그대로 저장하면 DB 에서 지워지던 문제(서버 값을 먼저 쓰도록)
+- 커밋: `bf6f543` (11/23 Copilot 으로 시작한 작업을 Claude Code 로 마무리)
+- 확인: 테스트 81개 통과, 타입 검사 통과. 정재준 PC 브라우저: `/onboarding` 전과 같음, `/me/taste` 기존 값 채워짐, 저장 → `/profile`, 다시 열면 바뀐 값 유지, 취소 → `/profile`
+- 남은 일·주의: Figma와 다른 곳 — 기억에 남는 작품의 포스터 카드·돋보기 입력창·"+ 작품 추가" 버튼(다음 작업), 왼쪽 카드 한 줄 소개·취향 문장(D8 팀 결정 + Step 1 `profile_summary` 후). 작품 데이터가 없어 기억에 남는 작품 채우기·"비선호에 공포 추가 → 추천에서 사라짐"은 TMDB 수집 후 확인. **홍준화**: 설문 부품 위치가 바뀌었으니 3-1 고칠 때 `survey-questions.tsx` 를 보세요. **정준교**: `account.ts` 에 칸 하나 추가
+
 ### 11/23 · 3-1 설문 화면 검수·수정 / 4-1 기록 정정 · 요청: 정재준
 - 한 일: 설문 화면(Figma 39:3071) 검수. 화면 폭이 1280px보다 좁으면(노트북 125% 배율 등) 설문 카드가 줄어 장르 칩 글자가 한 글자씩 잘리던 문제 수정 — `app/onboarding/page.tsx` 중간 화면에서 왼쪽 칸 300px, 칩 `whitespace-nowrap`, 제목 `break-keep`, 왼쪽 제목·설명 크기와 줄바꿈 조정. 큰 화면(xl)은 그대로
 - 4-1: 작품 데이터가 없어 확인 못 한 완료 기준 2개 체크 해제, 검색창 항목 커밋 번호 `2bbce66`으로 정정

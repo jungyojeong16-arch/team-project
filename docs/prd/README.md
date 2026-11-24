@@ -37,7 +37,7 @@
 | [6-2](6-2_generation_ranking.md) | 세대별 랭킹 | 세대별 평점 | rating | P1 | 11/21 | 정준교 | ✅ 11/23 (정준교 PC 확인·화면 검수 ⬜) |
 | [7-1](7-1_tpo_recommend.md) | 맞춤 추천 (TPO·AI) | 맞춤 추천 | recommendation, content_tpo | P1 | 11/23~24 | 홍준화 | ✅ 11/19 (11/22 6-1과 합쳐 확인 · 화면 검수 ⬜ · 한 줄 이유는 문장 틀 — LLM은 D10 이후) |
 | [7-2](7-2_revisit_feedback.md) | 재방문 추천 피드백 | 재방문 추천 피드백 | recommendation, rating | P1 | 11/26 | 홍준화 | ✅ 11/22 (화면 검수 ⬜) |
-| [8-1](8-1_profile_taste.md) | 프로필·취향 수정 | 프로필 정보, 취향 수정 | member, genre_preference, rating, content_like | P1 | 11/27 | 정재준 | 🟡 |
+| [8-1](8-1_profile_taste.md) | 프로필·취향 수정 | 프로필 정보, 취향 수정 | member, genre_preference, rating, content_like | P1 | 11/27 | 정재준 | 🟡 취향 수정 ✅ · 프로필 ⬜ |
 | [8-2](8-2_interest_update.md) | 최근 관심사 반영 | 최근 관심사 반영 확인 | recommendation, watch_history | P2 | 11/30 | 정재준 | ⬜ |
 
 - 담당 = 그 프로그램의 PRD 확정·바이브 코딩·완료 기준 확인까지 맡는 사람. 각 PRD의 "함께 확인" = 결과를 같이 보고 의견을 주는 사람.
