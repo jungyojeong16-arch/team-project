@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useMemo, useState, type Dispatch, type KeyboardEvent, type ReactNode, type SetStateAction } from "react";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Info, ListChecks, LockKeyhole, Sparkles, X } from "lucide-react";
-import { AuthHeader, AuthPage, MoodChip, OttStrip, PlatformTag } from "../_components/onboarding-ui";
-import { SEARCH_MIN_LENGTH, searchContents, type ContentBrief, type PlatformCode } from "../_lib/viewfit";
-import { ApiError, getAccount, getOnboarding, saveOnboarding, type OnboardingAnswers, type WatchedItem } from "../_lib/account";
+import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, CheckCircle2, ListChecks, LockKeyhole, Sparkles } from "lucide-react";
+import { AuthHeader, AuthPage, MoodChip, OttStrip } from "../_components/onboarding-ui";
+import { ApiError, getAccount, getOnboarding, saveOnboarding, type OnboardingAnswers } from "../_lib/account";
+// 질문 부품은 8-1 취향 수정 화면(/me/taste)과 같이 쓰려고 공용 파일로 옮김
+import { AGE_OPTIONS, GenreQuestions, INITIAL_ONBOARDING, JOB_OPTIONS, MemorableWorks, SingleChoice, SurveyDivider, SurveyGuidance } from "../_components/survey-questions";
 
 /* ============================================================================
  * 3-1 맞춤 추천 설문 — Figma "ViewFit 맞춤 추천 설문" 39:3071
@@ -18,18 +19,8 @@ import { ApiError, getAccount, getOnboarding, saveOnboarding, type OnboardingAns
  * ========================================================================== */
 
 type Answers = OnboardingAnswers;
-type SetAnswers = Dispatch<SetStateAction<Answers>>;
 
-const AGE_OPTIONS = ["14–19세", "20대", "30대", "40대", "50대", "60대 이상", "응답 안 함"];
-const JOB_OPTIONS = ["학생", "직장인", "자영업·프리랜서", "가사·돌봄", "구직·휴직 중", "기타", "응답 안 함"];
-const GENRES = ["드라마", "로맨스", "코미디", "액션", "스릴러", "미스터리", "SF", "판타지", "공포", "다큐멘터리", "애니메이션", "예능"];
-
-const INITIAL: Answers = {
-  // sleep·pattern·stress·daily_watch_time 은 더 묻지 않음 (프로필 화면 호환을 위해 칸만 null 로 유지)
-  lifestyle: { age_group: null, occupation: null, sleep: null, pattern: null, stress: null },
-  genres: { liked: [], liked_all: false, disliked: [], disliked_none: false },
-  history: { watched: [], none: false, daily_watch_time: null },
-};
+const INITIAL: Answers = INITIAL_ONBOARDING;
 
 /** 이 브라우저에 저장해 둔 지난 답변이 있으면 이어서 (없으면 처음부터) */
 const loadInitial = (): Answers => {
@@ -40,14 +31,6 @@ const loadInitial = (): Answers => {
     genres: saved.genres,
     history: { ...INITIAL.history, watched: saved.history.watched.filter((w) => w.content_id) },
   };
-};
-
-const toggleIn = (list: string[], value: string) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
-
-/** 한국어 주제 조사 (받침 있으면 '은', 없으면 '는') */
-const withTopic = (word: string) => {
-  const code = word.charCodeAt(word.length - 1) - 0xac00;
-  return word + (code >= 0 && code <= 11171 && code % 28 !== 0 ? "은" : "는");
 };
 
 /* ============================================================================
@@ -113,9 +96,9 @@ export default function OnboardingPage() {
             </header>
 
             <div className="flex flex-col gap-6">
-              <Guidance icon={<ListChecks className="h-[18px] w-[18px]" />}>
+              <SurveyGuidance icon={<ListChecks className="h-[18px] w-[18px]" />}>
                 연령대와 직업은 하나씩, 선호 장르와 비선호 장르는 여러 개씩 선택할 수 있어요.
-              </Guidance>
+              </SurveyGuidance>
               <SingleChoice
                 title="연령대"
                 options={AGE_OPTIONS}
@@ -128,7 +111,7 @@ export default function OnboardingPage() {
                 value={answers.lifestyle.occupation}
                 onChange={(v) => setAnswers((a) => ({ ...a, lifestyle: { ...a.lifestyle, occupation: v } }))}
               />
-              <Divider />
+              <SurveyDivider />
               <GenreQuestions answers={answers} setAnswers={setAnswers} />
               <MemorableWorks answers={answers} setAnswers={setAnswers} />
             </div>
@@ -208,359 +191,5 @@ function SurveyStory() {
       </div>
       <OttStrip />
     </aside>
-  );
-}
-
-/* ============================================================================
- * 공통 조각 (Figma 크기: 칩 높이 38 · 글자 13 · 모서리 6)
- * ========================================================================== */
-
-function Divider() {
-  return <div className="h-px bg-white/[0.12]" />;
-}
-
-function Guidance({ icon, children, fit = false }: { icon: ReactNode; children: ReactNode; fit?: boolean }) {
-  return (
-    <p className={`flex items-center gap-2.5 rounded-md bg-[rgba(240,171,252,0.08)] px-3.5 py-3 text-xs leading-[1.6] text-[#f0abfc] ${fit ? "w-fit" : ""}`}>
-      <span className="shrink-0">{icon}</span>
-      {children}
-    </p>
-  );
-}
-
-function QuestionHeading({ title, meta, inline = false }: { title: string; meta: string; inline?: boolean }) {
-  return (
-    <div className={`flex items-center gap-2 ${inline ? "" : "justify-between"}`}>
-      <h3 className="text-[15px] font-bold text-[#eceef4]">{title}</h3>
-      <span className="text-[11px] text-[#9ca3b5]">{meta}</span>
-    </div>
-  );
-}
-
-const OPTION_BASE = "whitespace-nowrap flex h-[38px] items-center justify-center gap-2 rounded-md border px-[13px] text-[13px] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f0abfc]";
-const OPTION_OFF = "border-white/[0.12] bg-white/[0.02] text-[#eceef4] hover:border-white/25";
-const OPTION_ON = "border-[#f0abfc] bg-[rgba(240,171,252,0.08)] font-bold text-[#f0abfc]";
-
-/** 하나만 선택 (다시 누르면 해제) — Figma Answer option */
-function SingleChoice({ title, options, value, onChange }: { title: string; options: string[]; value: string | null; onChange: (v: string | null) => void }) {
-  return (
-    <fieldset className="flex flex-col gap-2.5">
-      <legend className="sr-only">{title}</legend>
-      <QuestionHeading title={title} meta="하나만 선택" />
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => {
-          const selected = value === option;
-          return (
-            <button key={option} type="button" aria-pressed={selected} onClick={() => onChange(selected ? null : option)} className={`${OPTION_BASE} ${selected ? OPTION_ON : OPTION_OFF}`}>
-              {selected && <span className="h-[5px] w-[5px] rounded-full bg-[#f0abfc]" />}
-              {option}
-            </button>
-          );
-        })}
-      </div>
-    </fieldset>
-  );
-}
-
-/** 복수 선택 체크 칸 — Figma Genre choices (체크 14px) */
-function CheckOption({ checked, disabled = false, onClick, children, className = "" }: { checked: boolean; disabled?: boolean; onClick: () => void; children: ReactNode; className?: string }) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={checked}
-      aria-disabled={disabled}
-      disabled={disabled}
-      onClick={onClick}
-      className={`${OPTION_BASE} ${checked ? OPTION_ON : OPTION_OFF} ${disabled ? "cursor-not-allowed opacity-35 hover:border-white/[0.12]" : ""} ${className}`}
-    >
-      <span
-        aria-hidden
-        className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border ${checked ? "border-[#f0abfc] bg-[#f0abfc] text-[#241229]" : "border-white/25"}`}
-      >
-        {checked && <Check className="h-2.5 w-2.5" strokeWidth={3.5} />}
-      </span>
-      {children}
-    </button>
-  );
-}
-
-/* ============================================================================
- * 3·4번 질문 — 선호 장르 / 비선호 장르 (FR3)
- * ========================================================================== */
-
-function GenreQuestions({ answers, setAnswers }: { answers: Answers; setAnswers: SetAnswers }) {
-  const { liked, liked_all, disliked, disliked_none } = answers.genres;
-  const update = (patch: Partial<Answers["genres"]>) => setAnswers((a) => ({ ...a, genres: { ...a.genres, ...patch } }));
-
-  const summary = useMemo(() => {
-    const more = liked_all ? "모든 장르를" : liked.length ? withTopic(liked.join(" · ")) : "";
-    const less = disliked.length ? withTopic(disliked.join(" · ")) : "";
-    if (!more && !less) return "아직 고른 장르가 없어요";
-    if (more && less) return `${more} 더 많이, ${less} 덜`;
-    return more ? `${more} 더 많이` : `${less} 덜`;
-  }, [liked, liked_all, disliked]);
-
-  return (
-    <>
-      <GenreGroup
-        title="선호 장르"
-        selected={liked_all ? [] : liked}
-        blocked={disliked}
-        onToggle={(g) => update({ liked: toggleIn(liked, g), liked_all: false })}
-        extraLabel="모든 장르가 좋아요"
-        extraChecked={liked_all}
-        onExtra={() => update({ liked_all: !liked_all, liked: [] })}
-      />
-      <Divider />
-      <GenreGroup
-        title="비선호 장르"
-        selected={disliked}
-        blocked={liked}
-        onToggle={(g) => update({ disliked: toggleIn(disliked, g), disliked_none: false })}
-        extraLabel="딱히 없어요"
-        extraChecked={disliked_none}
-        onExtra={() => update({ disliked_none: !disliked_none, disliked: [] })}
-      />
-      {/* Taste summary (39:3232) */}
-      <div className="flex flex-col gap-2 rounded-md border border-white/[0.12] bg-white/[0.02] p-4 leading-[1.6]">
-        <p className="text-[13px] font-bold text-[#eceef4]">{summary}</p>
-        <p className="text-[11px] text-[#9ca3b5]">반대 질문에서 고른 장르는 흐리게 표시돼요. 바꾸려면 먼저 선택을 해제해주세요.</p>
-      </div>
-    </>
-  );
-}
-
-function GenreGroup({
-  title,
-  selected,
-  blocked,
-  onToggle,
-  extraLabel,
-  extraChecked,
-  onExtra,
-}: {
-  title: string;
-  selected: string[];
-  blocked: string[];
-  onToggle: (genre: string) => void;
-  extraLabel: string;
-  extraChecked: boolean;
-  onExtra: () => void;
-}) {
-  return (
-    <fieldset className="flex flex-col gap-2.5">
-      <legend className="sr-only">{title}</legend>
-      <QuestionHeading title={title} meta={`복수 선택 · ${selected.length}개 선택됨`} />
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {GENRES.map((genre) => (
-          <CheckOption key={genre} checked={selected.includes(genre)} disabled={blocked.includes(genre)} onClick={() => onToggle(genre)}>
-            {genre}
-          </CheckOption>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <CheckOption checked={extraChecked} onClick={onExtra}>
-          {extraLabel}
-        </CheckOption>
-        <span className="text-[11px] text-[#9ca3b5]">선택하면 개별 선택이 해제돼요</span>
-      </div>
-    </fieldset>
-  );
-}
-
-/* ============================================================================
- * 5번 질문 — 기억에 남는 작품 (FR4): 제목 검색 → 작품 DB 에서 골라 등록·삭제
- * ========================================================================== */
-
-const briefMeta = (c: ContentBrief) => [c.release_year, ...c.genres.slice(0, 2)].filter(Boolean).join(" · ");
-
-function MemorableWorks({ answers, setAnswers }: { answers: Answers; setAnswers: SetAnswers }) {
-  const watched = answers.history.watched;
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ContentBrief[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
-  const [message, setMessage] = useState<string | null>(null);
-  const listId = useId();
-
-  const candidates = results.filter((r) => !watched.some((w) => w.content_id === r.id));
-
-  // 입력이 멈추고 0.25초 뒤에 검색 (2글자 이상)
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < SEARCH_MIN_LENGTH) {
-      setResults([]);
-      setSearching(false);
-      return;
-    }
-    const controller = new AbortController();
-    setSearching(true);
-    const timer = setTimeout(() => {
-      searchContents(q, controller.signal)
-        .then((rows) => {
-          setResults(rows);
-          setActive(0);
-        })
-        .catch(() => !controller.signal.aborted && setResults([]))
-        .finally(() => !controller.signal.aborted && setSearching(false));
-    }, 250);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query]);
-
-  const setWatched = (next: WatchedItem[]) => setAnswers((a) => ({ ...a, history: { ...a.history, watched: next, none: next.length === 0 && a.history.none } }));
-
-  const add = (c: ContentBrief) => {
-    setWatched([
-      ...watched,
-      { id: `content-${c.id}`, content_id: c.id, title: c.title, meta: briefMeta(c), platform: c.platforms[0] ?? null },
-    ]);
-    setQuery("");
-    setResults([]);
-    setOpen(false);
-    setMessage(null);
-  };
-
-  /** [추가] · Enter: 고른(또는 제목이 똑같은) 작품을 등록 */
-  const addFromInput = () => {
-    const q = query.trim();
-    if (q.length < SEARCH_MIN_LENGTH) return setMessage("작품 제목을 두 글자 이상 입력해 주세요.");
-    if (searching) return setMessage("작품을 찾는 중이에요. 잠시만요…");
-    const exact = candidates.find((c) => c.title === q);
-    const pick = exact ?? candidates[active];
-    if (pick) return add(pick);
-    setMessage(results.length ? "이미 등록한 작품이에요." : "찾는 작품이 아직 없어요. 다른 제목으로 찾아보세요.");
-  };
-
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addFromInput();
-    } else if (e.key === "ArrowDown" && candidates.length) {
-      e.preventDefault();
-      setOpen(true);
-      setActive((i) => (i + 1) % candidates.length);
-    } else if (e.key === "ArrowUp" && candidates.length) {
-      e.preventDefault();
-      setActive((i) => (i - 1 + candidates.length) % candidates.length);
-    } else if (e.key === "Escape") {
-      setOpen(false);
-    }
-  };
-
-  const showList = open && query.trim().length >= SEARCH_MIN_LENGTH && (candidates.length > 0 || !searching);
-
-  return (
-    <section className="flex flex-col gap-2.5" aria-labelledby={`${listId}-title`}>
-      <div className="flex flex-wrap items-baseline gap-x-2">
-        <h3 id={`${listId}-title`} className="text-[15px] font-bold text-[#eceef4]">
-          기억에 남는 작품
-        </h3>
-        <span className="text-[11px] text-[#9ca3b5]">선택 사항 · 여러 작품 입력 가능</span>
-      </div>
-      <Guidance icon={<Info className="h-[18px] w-[18px]" />} fit>
-        작품 제목을 입력하고 추가 버튼을 눌러 여러 작품을 등록할 수 있어요.
-      </Guidance>
-
-      {/* Entry row (120:684) */}
-      <div className="flex gap-3">
-        <div className="relative min-w-0 flex-1">
-          <input
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-              setMessage(null);
-            }}
-            onFocus={() => setOpen(true)}
-            onBlur={() => setTimeout(() => setOpen(false), 150)}
-            onKeyDown={onKeyDown}
-            placeholder="작품 제목을 입력하세요"
-            aria-label="기억에 남는 작품 제목"
-            role="combobox"
-            aria-expanded={showList}
-            aria-controls={listId}
-            aria-autocomplete="list"
-            autoComplete="off"
-            className="h-11 w-full rounded-md border border-white/[0.12] bg-white/[0.02] px-3.5 text-[13px] text-[#eceef4] placeholder:text-[#9ca3b5] focus:border-[#f0abfc]/60 focus:outline-none focus:ring-2 focus:ring-[#f0abfc]/25"
-          />
-          {showList && (
-            <ul id={listId} role="listbox" className="absolute inset-x-0 top-full z-20 mt-1.5 max-h-72 overflow-y-auto rounded-md border border-white/[0.12] bg-[#11141c] py-1 shadow-2xl shadow-black/60">
-              {candidates.length === 0 ? (
-                <li className="px-3.5 py-3 text-xs text-[#9ca3b5]">{results.length ? "이미 등록한 작품이에요." : "찾는 작품이 아직 없어요."}</li>
-              ) : (
-                candidates.map((c, i) => (
-                  <li key={c.id} role="option" aria-selected={i === active}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onMouseEnter={() => setActive(i)}
-                      onClick={() => add(c)}
-                      className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-left ${i === active ? "bg-white/[0.07]" : ""}`}
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-bold text-[#eceef4]">{c.title}</span>
-                        <span className="block truncate text-[11px] text-[#9ca3b5]">
-                          {briefMeta(c)} · {c.content_type === "series" ? "시리즈" : "영화"}
-                        </span>
-                      </span>
-                      {c.platforms[0] && <PlatformTag code={c.platforms[0]} />}
-                    </button>
-                  </li>
-                ))
-              )}
-            </ul>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={addFromInput}
-          className="h-11 w-[88px] shrink-0 rounded-md bg-[#f0abfc] text-sm font-bold text-[#241229] transition hover:bg-[#f5c2fd] sm:w-28"
-        >
-          추가
-        </button>
-      </div>
-      {message && (
-        <p role="status" className="text-xs text-[#f0abfc]">
-          {message}
-        </p>
-      )}
-
-      {/* Saved works (120:689) */}
-      <div className="flex flex-col gap-3 rounded-md border border-white/[0.12] bg-white/[0.02] p-4">
-        <div className="flex items-baseline gap-2">
-          <p className="text-[13px] font-bold text-[#eceef4]">저장된 작품</p>
-          <span className="text-[11px] text-[#9ca3b5]">{watched.length}개 등록됨</span>
-        </div>
-        {watched.length > 0 && (
-          <ul className="flex flex-col gap-3">
-            {watched.map((w) => (
-              <li key={w.id} className="flex items-center gap-3">
-                <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
-                  <p className="truncate text-[13px] font-bold text-[#eceef4]">{w.title}</p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate text-[11px] text-[#9ca3b5]">{w.meta}</span>
-                    {w.platform && <PlatformTag code={w.platform as PlatformCode} />}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  aria-label={`${w.title} 삭제`}
-                  onClick={() => setWatched(watched.filter((x) => x.id !== w.id))}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/[0.12] bg-white/[0.02] text-[#9ca3b5] transition hover:bg-white/10 hover:text-white"
-                >
-                  <X className="h-3.5 w-3.5" strokeWidth={3} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="text-[11px] text-[#9ca3b5]">기억에 남는 작품이 없다면 입력하지 않아도 돼요.</p>
-      </div>
-    </section>
   );
 }

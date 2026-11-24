@@ -754,3 +754,16 @@ export async function fetchContent(id: number, signal?: AbortSignal): Promise<Mo
   if (!movie) throw new Error("존재하지 않는 콘텐츠입니다.");
   return movie;
 }
+
+/** 취향 저장 후 맞춤 추천을 새로 만듭니다. 실패는 저장 화면에서 무시합니다. */
+export async function refreshRecommendations(signal?: AbortSignal): Promise<void> {
+  if (!API_BASE_URL) return;
+  const auth = authHeader();
+  if (!auth.Authorization) throw new RequestError("로그인이 필요해요.", 401);
+  const res = await fetch(`${API_BASE_URL}/api/v1/recommendations/refresh/`, {
+    method: "POST",
+    signal,
+    headers: { Accept: "application/json", ...auth },
+  });
+  if (!res.ok) throw new RequestError("맞춤 추천을 새로 만들지 못했어요.", res.status);
+}

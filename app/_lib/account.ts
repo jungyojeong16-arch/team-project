@@ -7,7 +7,7 @@
  *
  * 로그인하면 서버가 토큰을 주고, 이후 요청 헤더에 "Authorization: Token <토큰>" 을 붙입니다.
  */
-import { API_BASE_URL } from "./viewfit";
+import { API_BASE_URL, type ContentBrief } from "./viewfit";
 
 /* ============================================================================
  * 타입
@@ -71,7 +71,14 @@ export interface Account {
   created_at: string;
   survey_completed: boolean;
   /** 서버에 저장된 설문 결과 (화면 표시용 한글 값) */
-  survey?: { age_group: string | null; occupation: string | null; liked: string[]; disliked: string[] };
+  survey?: {
+    age_group: string | null;
+    occupation: string | null;
+    liked: string[];
+    disliked: string[];
+    /** 기억에 남는 작품 (8-1 취향 수정 화면에서 기존 값 채우기용, 예전에 저장된 계정엔 없을 수 있음) */
+    memorable?: ContentBrief[];
+  };
 }
 
 /** 서버가 돌려준 오류. fields 에는 칸별 오류 문구가 들어 있음 (예: { email: "이미 가입된 이메일이에요." }) */
@@ -119,6 +126,7 @@ interface MemberResponse {
   job: string | null;
   liked_genres: string[];
   disliked_genres: string[];
+  memorable_contents?: ContentBrief[];
 }
 
 const toAccount = (m: MemberResponse): Account => ({
@@ -132,6 +140,7 @@ const toAccount = (m: MemberResponse): Account => ({
     occupation: m.job ? (CODE_TO_JOB[m.job] ?? m.job) : null,
     liked: m.liked_genres,
     disliked: m.disliked_genres,
+    memorable: m.memorable_contents ?? [],
   },
 });
 
