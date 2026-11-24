@@ -8,6 +8,13 @@
 > 11/21 이전 항목은 GitHub 커밋 기록으로 정리했습니다. 커밋에 요청한 사람이 적혀 있지 않은 것은 "요청: 기록 없음"으로 두었습니다 — 본인 작업이면 이름을 채워 주세요.
 
 ---
+### 11/24 · 5-1 평점 · 요청: 정준교
+- 한 일: 평점 API 4개(`backend/core/rating.py` — 별점 저장·수정·삭제, 나의 평점 목록, 평점 반영 결과), 별점 입력 팝업 `app/_components/star-input.tsx`(`StarInput`·`RatingDialog`), 나의 평점 화면 `app/me/ratings/page.tsx`(Figma 220:2672), 평점 반영 결과 `app/me/ratings/result/[id]/page.tsx`(Figma 224:4225)
+- 공용 파일 (팀 단톡방에 알리기): ① 7-2 피드백 팝업의 별 입력을 `star-input.tsx` 로 옮김 — 모양·동작 그대로 ② 마이페이지 공통 머리 `app/_components/profile-header.tsx` 새로 만듦 — **5-2 좋아요·8-1 프로필도 이걸 쓰면 됨** (`active="likes"` 등) ③ `pagination.tsx` 에 `activeClassName` 선택 옵션 추가 (안 넘기면 예전 그대로) ④ 작품 상세 API `my` 에 `comment` 추가
+- 커밋: `362f0c2`
+- 확인: 테스트 89개 통과(MariaDB, 새 테스트 8개), 타입 검사 통과, 브라우저 — 시리즈+4점대 필터, 수정 → 반영 결과 이동, 순위가 ranking 표와 같음, 휴대폰 폭 넘침 없음
+- 남은 일·주의: **정재준 — 4-1 상세 팝업 FR3 별점 버튼은 `RatingDialog` 를 쓰면 됨** (사용 예는 `star-input.tsx` 맨 위 주석, 상세 API 의 `my.score`·`my.comment` 로 미리 채우기). 상단 프로필 메뉴의 평점 개수(counts)는 5-2 때 좋아요와 함께 연결. 새 API 4개라 노션 1.5 API 목록은 19개 → 23개
+
 ### 11/24 · 추천 정확도 기준과 확인 방법 정리 (교수님 지적 4번) · 요청: 정준교
 - 한 일: `docs/presentation/추천 정확도 기준과 확인 방법.md` — "정확 = 추천 작품에 별점 4.0 이상", 확인 4단계(① 규칙 자동 테스트 ② 숨겨 두고 맞히기 ③ 통합 테스트 때 10명 이상 실제 평가, 인기순 TOP 10과 비교 ④ 7-2 재방문 피드백 별점 집계 SQL)와 교수님 답변 문장
 - 확인: 문서만 바뀜 (코드 변경 없음)

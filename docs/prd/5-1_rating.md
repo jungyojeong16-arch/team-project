@@ -2,9 +2,9 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ⬜ 예정 (11/25) — 테이블·규칙(별점 CHECK, 평가 당시 연령대)은 ✅ |
+| 상태 | 🟡 11/24 — API 4개·별점 입력 팝업(`star-input.tsx`)·나의 평점·평점 반영 결과 화면 ✅ (테스트·브라우저 확인) / 상세 팝업(4-1 FR3)에 별점 버튼 연결 ⬜ (정재준, `RatingDialog` 사용) · 정준교 PC 확인·화면 검수 ⬜ |
 | Figma | [나의 평점](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=220-2672) · [평점 반영 결과 · 랭킹 변화](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=224-4225) |
-| 코드(예정) | `views.py`(rate_content, my_ratings, rating_result), `app/me/ratings/page.tsx`, `app/me/ratings/result/[id]/page.tsx` |
+| 코드 | `backend/core/rating.py`, `views.py`(content_rating, content_rating_result, my_ratings), `app/_lib/rating.ts`, `app/_components/star-input.tsx`(StarInput·RatingDialog), `app/_components/profile-header.tsx`, `app/me/ratings/page.tsx`, `app/me/ratings/result/[id]/page.tsx` |
 | 테이블 | `rating`(member, content, score, comment, age_group_at_rating, rated_at, updated_at), `ranking` |
 | 담당 | **정준교** (PRD 확정·바이브 코딩) |
 | 함께 확인 | 정재준(화면) |
@@ -46,12 +46,12 @@
 - Figma의 "예시 데이터" 문구는 실제 데이터로 바뀌면 지운다.
 
 ## 6. 완료 기준
-- [ ] 상세 팝업에서 4.5점 + 감상 → `rating` 1행, `age_group_at_rating` 이 내 연령대
-- [ ] 같은 작품에 3.0으로 다시 → 행은 1개 그대로, 점수만 3.0
-- [ ] 나의 평점에서 "시리즈" + "4점대" 필터가 맞게 걸린다, 3개씩 페이지가 넘어간다
-- [ ] 평가 후 반영 결과 화면 → 현재/이전 순위가 `ranking` 표와 같다
-- [ ] `python manage.py test core` 통과 (4.3 거부 테스트는 이미 있음)
-- [ ] 화면이 Figma 220:2672, 224:4225 와 같다
+- [x] 4.5점 + 감상 → `rating` 1행, `age_group_at_rating` 이 내 연령대 (API 테스트 ✅ · 상세 팝업 버튼은 4-1 FR3 연결 후)
+- [x] 같은 작품에 3.0으로 다시 → 행은 1개 그대로, 점수만 3.0
+- [x] 나의 평점에서 "시리즈" + "4점대" 필터가 맞게 걸린다, 3개씩 페이지가 넘어간다
+- [x] 평가 후 반영 결과 화면 → 현재/이전 순위가 `ranking` 표와 같다 (로컬 DB 11/14 15위 → 11/21 10위 대조)
+- [x] `python manage.py test core` 통과 (89개, 11/24)
+- [ ] 화면이 Figma 220:2672, 224:4225 와 같다 (구현 ✅ · 정재준 검수 ⬜)
 
 ## 7. 범위 밖
 - 다른 회원의 감상 목록·댓글, 평점 신고
