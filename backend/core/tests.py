@@ -471,7 +471,7 @@ class ContentDetailAndHomeFeedTests(APITestCase):
         self.assertIsNone(res.data["my"])  # 로그인 안 하면 null
         self.client.force_authenticate(self.member)
         Rating.objects.create(member=self.member, content=self.drama, score=Decimal("3.5"))
-        self.assertEqual(self.client.get(f"/api/v1/contents/{self.drama.id}/").data["my"], {"score": 3.5, "liked": False})
+        self.assertEqual(self.client.get(f"/api/v1/contents/{self.drama.id}/").data["my"], {"score": 3.5, "comment": "", "liked": False})
         res = self.client.get("/api/v1/contents/999999/")
         self.assertEqual((res.status_code, res.data["detail"]), (404, "작품을 찾을 수 없어요."))
 
@@ -1296,3 +1296,162 @@ class GenerationRankingTests(APITestCase):
                 Rating.objects.create(member=r, content=c, score=Decimal("3.0"))
         res = self.client.get(self.URL, {"age": "20s", "limit": 100})
         self.assertEqual((res.data["total"], len(res.data["items"])), (30, 30))
+
+
+# =============================================================================
+# 5-1 평점 — 작성·수정·삭제, 나의 평점, 평점 반영 결과
+# =============================================================================
+
+
+class RatingTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from .models import ContentLike
+
+        cls.member = Member.objects.create_user("me@x.kr", "나", "viewfit123!", age_group="20s", job="student")
+        cls.other = Member.objects.create_user("you@x.kr", "너", "viewfit123!", age_group="30s")
+        cls.c = [
+            Content.objects.create(title=f"작품{i}", content_type="series" if i % 2 else "movie", tmdb_id=500 + i)
+            for i in range(12)
+        ]
+        ContentLike.objects.create(member=cls.member, content=cls.c[0])
+        ContentLike.objects.create(member=cls.member, content=cls.c[1])
+
+    def setUp(self):
+        self.client.force_authenticate(self.member)
+
+    def put(self, content, score, comment="", **kw):
+        return self.client.put(f"/api/v1/contents/{content.id}/rating/", {"score": score, "comment": comment, **kw}, format="json")
+
+    def test_put_creates_then_updates_same_row(self):
+        res = self.put(self.c[0], 4.5, "재밌어요")
+        self.assertEqual(res.status_code, 201, res.data)
+        self.assertEqual(res.data["score"], 4.5)
+        self.assertEqual(res.data["age_group_at_rating"], "20s")  # 평가 당시 연령대 자동 복사 (FR4)
+
+        Member.objects.filter(pk=self.member.pk).update(age_group="30s")  # 해가 바뀌어 30대가 됨
+        res = self.put(self.c[0], 3.0, "다시 보니 보통")
+        self.assertEqual(res.status_code, 200, res.data)  # 수정 (FR3)
+        rows = Rating.objects.filter(member=self.member, content=self.c[0])
+        self.assertEqual(rows.count(), 1)
+        self.assertEqual(rows.get().score, Decimal("3.0"))
+        self.assertEqual(rows.get().comment, "다시 보니 보통")
+        self.assertEqual(rows.get().age_group_at_rating, "20s")  # 처음 평가할 때 연령대 그대로
+
+        detail = self.client.get(f"/api/v1/contents/{self.c[0].id}/").data
+        self.assertEqual(detail["my"]["score"], 3.0)
+        self.assertEqual(detail["my"]["comment"], "다시 보니 보통")
+
+    def test_invalid_input_and_login(self):
+        self.assertEqual(self.put(self.c[0], 4.3).status_code, 400)  # 0.5 단위가 아님
+        self.assertEqual(self.put(self.c[0], 0).status_code, 400)
+        self.assertEqual(self.put(self.c[0], 5.5).status_code, 400)
+        self.assertEqual(self.put(self.c[0], 4.0, "가" * 201).status_code, 400)  # 200자 넘음
+        self.assertEqual(self.client.put(f"/api/v1/contents/{self.c[0].id}/rating/", {}, format="json").status_code, 400)
+        self.assertEqual(self.client.put("/api/v1/contents/99999/rating/", {"score": 4}, format="json").status_code, 404)
+        self.assertFalse(Rating.objects.exists())
+
+        self.client.force_authenticate(None)
+        self.assertEqual(self.put(self.c[0], 4.0).status_code, 401)
+        self.assertEqual(self.client.get("/api/v1/me/ratings/").status_code, 401)
+
+    def test_no_age_member_rating_has_null_age_group(self):
+        nobody = Member.objects.create_user("n@x.kr", "무응답", "viewfit123!")  # 연령대 '응답 안 함'
+        self.client.force_authenticate(nobody)
+        res = self.put(self.c[0], 4.0)
+        self.assertEqual(res.status_code, 201, res.data)
+        self.assertIsNone(Rating.objects.get(member=nobody).age_group_at_rating)  # 세대별 랭킹에서 빠짐
+
+    def test_delete(self):
+        self.put(self.c[0], 4.0)
+        url = f"/api/v1/contents/{self.c[0].id}/rating/"
+        self.assertEqual(self.client.delete(url).status_code, 204)
+        self.assertFalse(Rating.objects.filter(member=self.member).exists())
+        self.assertEqual(self.client.delete(url).status_code, 404)
+
+    def test_my_ratings_filters_sort_pages_and_summary(self):
+        scores = [5.0, 4.5, 4.0, 3.5, 4.5, 2.0, 1.0, 4.0]  # 작품0~7 (홀수 번호 = 시리즈)
+        for content, score in zip(self.c, scores):
+            self.put(content, score, f"{content.title} 감상")
+        Rating.objects.create(member=self.other, content=self.c[9], score=Decimal("5.0"))  # 다른 회원 평점은 안 보임
+
+        res = self.client.get("/api/v1/me/ratings/")
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual(res.data["count"], 8)
+        self.assertEqual(res.data["page_size"], 3)
+        self.assertEqual(res.data["total_pages"], 3)
+        self.assertEqual(len(res.data["results"]), 3)
+        self.assertEqual(res.data["results"][0]["movie"]["title"], "작품7")  # 최근 평가순
+        self.assertEqual(res.data["summary"], {"like_count": 2, "rating_count": 8, "rating_average": 3.6})
+
+        # 시리즈 + 4점대 → 작품1(4.5), 작품7(4.0) (작품3 3.5, 작품5 2.0 제외)
+        res = self.client.get("/api/v1/me/ratings/", {"type": "series", "score": "4"})
+        self.assertEqual([r["movie"]["title"] for r in res.data["results"]], ["작품7", "작품1"])
+        self.assertEqual(res.data["summary"]["rating_count"], 8)  # 요약은 필터와 상관없이 전체
+
+        res = self.client.get("/api/v1/me/ratings/", {"score": "5"})
+        self.assertEqual([r["score"] for r in res.data["results"]], [5.0])
+
+        res = self.client.get("/api/v1/me/ratings/", {"sort": "score_desc", "page": 2})
+        self.assertEqual(res.data["page"], 2)
+        self.assertEqual([r["score"] for r in res.data["results"]], [4.0, 4.0, 3.5])
+
+        res = self.client.get("/api/v1/me/ratings/", {"page": 9})  # 없는 페이지 → 마지막 페이지
+        self.assertEqual(res.data["page"], 3)
+        self.assertEqual(len(res.data["results"]), 2)
+
+        for bad in ({"type": "anime"}, {"score": "4.5"}, {"sort": "random"}, {"page": "0"}, {"page": "x"}):
+            self.assertEqual(self.client.get("/api/v1/me/ratings/", bad).status_code, 400, bad)
+
+    def test_my_ratings_empty(self):
+        res = self.client.get("/api/v1/me/ratings/")
+        self.assertEqual(res.data["count"], 0)
+        self.assertEqual(res.data["total_pages"], 1)
+        self.assertEqual(res.data["results"], [])
+        self.assertIsNone(res.data["summary"]["rating_average"])
+
+    def _rank(self, date, order):
+        from .models import Ranking
+
+        for rank, i in enumerate(order, start=1):
+            Ranking.objects.create(period="weekly", ranked_on=date, content=self.c[i], rank=rank)
+
+    def test_rating_result_matches_ranking_table(self):
+        import datetime
+
+        url = f"/api/v1/contents/{self.c[5].id}/rating-result/"
+        self.assertEqual(self.client.get(url).status_code, 404)  # 아직 평가 안 함
+        self.put(self.c[5], 4.5, "끝까지 긴장")
+
+        # 집계가 아직 없음
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertIsNone(res.data["ranking"]["current_rank"])
+        self.assertEqual(res.data["rating"]["movie"]["title"], "작품5")
+        self.assertEqual(res.data["rating"]["comment"], "끝까지 긴장")
+
+        # 전 집계: 작품5가 5위 → 이번 집계: 3위, 위 2위 작품1(변동 없음), 아래 4위 작품0(1위→4위)
+        self._rank(datetime.date(2026, 11, 14), [0, 1, 2, 3, 5, 4])
+        self._rank(datetime.date(2026, 11, 21), [2, 1, 5, 0, 3, 4])
+        r = self.client.get(url).data["ranking"]
+        self.assertEqual(str(r["ranked_on"]), "2026-11-21")
+        self.assertEqual(str(r["previous_ranked_on"]), "2026-11-14")
+        self.assertEqual((r["previous_rank"], r["current_rank"], r["rank_change"]), (5, 3, 2))
+        self.assertEqual([n["rank"] for n in r["neighbors"]], [2, 3, 4])
+        self.assertEqual([n["is_mine"] for n in r["neighbors"]], [False, True, False])
+        self.assertEqual([n["rank_change"] for n in r["neighbors"]], [0, 2, -3])
+        self.assertEqual(r["neighbors"][2]["previous_rank"], 1)
+
+        # 1위 작품은 위가 없음
+        self.put(self.c[2], 5.0)
+        r = self.client.get(f"/api/v1/contents/{self.c[2].id}/rating-result/").data["ranking"]
+        self.assertEqual([n["rank"] for n in r["neighbors"]], [1, 2])
+
+    def test_rating_result_outside_top100(self):
+        import datetime
+
+        self._rank(datetime.date(2026, 11, 21), [0, 1, 2])
+        self.put(self.c[9], 3.5)
+        r = self.client.get(f"/api/v1/contents/{self.c[9].id}/rating-result/").data["ranking"]
+        self.assertIsNone(r["current_rank"])  # 화면: "아직 TOP 100 밖이에요"
+        self.assertEqual(r["neighbors"], [])

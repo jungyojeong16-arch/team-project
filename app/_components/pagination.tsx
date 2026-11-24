@@ -12,11 +12,14 @@ export function Pagination({
   pageSize,
   total,
   onChange,
+  activeClassName = "bg-white/10 font-bold text-[#f0abfc]",
 }: {
   page: number;
   pageSize: number;
   total: number;
   onChange: (page: number) => void;
+  /** 현재 페이지 버튼 색 (나의 평점 220:2672 은 보라 바탕 "bg-[#b99aff] font-bold text-[#181321]") */
+  activeClassName?: string;
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -38,7 +41,7 @@ export function Pagination({
             type="button"
             aria-current={n === page ? "page" : undefined}
             onClick={() => onChange(n)}
-            className={`${button} ${n === page ? "bg-white/10 font-bold text-[#f0abfc]" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+            className={`${button} ${n === page ? activeClassName : "text-white/60 hover:bg-white/5 hover:text-white"}`}
           >
             {n}
           </button>

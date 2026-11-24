@@ -14,6 +14,12 @@ API 목록 (주소 앞에 /api/v1 이 붙음)
   GET  /contents/<id>/         작품 상세 + my{score, liked}
   POST /contents/<id>/watch/   [바로 보기] 시청 기록 {platform}   * 로그인 필요
 
+  [5-1 평점]                                                 * 로그인 필요
+  PUT    /contents/<id>/rating/          {score: 4.5, comment} 없으면 만들고 있으면 수정 (만들면 201)
+  DELETE /contents/<id>/rating/          내 평점 삭제 (없으면 404)
+  GET    /contents/<id>/rating-result/   내 평점 + 통합 랭킹(주간) 현재/이전 순위 + 주변 순위
+  GET    /me/ratings/?type=&score=&sort=&page=   나의 평점 (3개씩) + 요약(좋아요·평점 수·평균)
+
   [6-1 통합 랭킹]
   GET  /rankings/?period=weekly|monthly&type=&platform=&genre=&offset=&limit=
                                가장 최근 집계일의 TOP 100 (필터 걸면 1위부터 다시 번호)
@@ -49,12 +55,13 @@ from rest_framework.response import Response
 
 from . import models as m
 from . import feedback, ranking, recommend
-from .common import contents_for_cards, filter_contents, page_bounds, paginate
+from . import rating as rating_logic
+from .common import contents_for_cards, filter_contents, page_bounds, paginate, save_rating
 from .curation import ALL_SITUATIONS, situation_label
 from .home import build_home_feed
 from .serializers import (
-    ContentCardSerializer, FeedbackSerializer, LoginSerializer, MeSerializer, SignupSerializer, SurveySerializer, check_nickname,
-    content_brief,
+    ContentCardSerializer, FeedbackSerializer, LoginSerializer, MeSerializer, RatingInputSerializer, SignupSerializer,
+    SurveySerializer, check_nickname, content_brief,
 )
 
 
@@ -241,6 +248,7 @@ def content_detail(request, content_id):
         rating = m.Rating.objects.filter(member=request.user, content=content).first()
         my = {
             "score": float(rating.score) if rating else None,
+            "comment": rating.comment if rating else "",  # 5-1 — 별점 입력 창을 미리 채움
             "liked": m.ContentLike.objects.filter(member=request.user, content=content).exists(),
         }
     data["my"] = my
@@ -258,6 +266,81 @@ def content_watch(request, content_id):
         return Response({"platform": [f"이 작품을 볼 수 있는 OTT가 아니에요. ({codes})"]}, status=status.HTTP_400_BAD_REQUEST)
     m.WatchHistory.objects.create(member=request.user, content=content, source=m.WatchSource.DIRECT)
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# -----------------------------------------------------------------------------
+# 5-1 평점 (정준교) — 저장은 common.save_rating (7-2 와 같은 규칙), 목록·반영 결과는 core/rating.py
+# -----------------------------------------------------------------------------
+
+
+def _my_rating_payload(rating, card=None):
+    """나의 평점 카드 1개 (FR6) — 평가 날짜는 수정했으면 수정한 날"""
+    data = {
+        "content_id": rating.content_id,
+        "score": float(rating.score),
+        "comment": rating.comment,
+        "age_group_at_rating": rating.age_group_at_rating,
+        "rated_at": _local_iso(rating.rated_at),
+        "updated_at": _local_iso(rating.updated_at),
+    }
+    if card is not None:
+        data["movie"] = ContentCardSerializer(card).data
+    return data
+
+
+@api_view(["PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def content_rating(request, content_id):
+    """PUT {score, comment} → 없으면 만들고(201) 있으면 수정(200). DELETE → 내 평점 삭제(204, 없으면 404)"""
+    content = _content_or_404(content_id)
+    if request.method == "DELETE":
+        deleted, _ = m.Rating.objects.filter(member=request.user, content=content).delete()
+        if not deleted:
+            raise NotFound("아직 평가하지 않은 작품이에요.")
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = RatingInputSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    existed = m.Rating.objects.filter(member=request.user, content=content).exists()
+    rating = save_rating(request.user, content, serializer.validated_data["score"], serializer.validated_data["comment"])
+    return Response(
+        _my_rating_payload(rating),
+        status=status.HTTP_200_OK if existed else status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def content_rating_result(request, content_id):
+    """평점 반영 결과 (FR7) — 내 평점 + 작품 카드 + 통합 랭킹(주간) 순위 변화. 평가 안 했으면 404"""
+    content = _content_or_404(content_id)
+    rating = m.Rating.objects.filter(member=request.user, content=content).first()
+    if rating is None:
+        raise NotFound("아직 평가하지 않은 작품이에요.")
+    return Response(
+        {
+            "rating": _my_rating_payload(rating, content),
+            "ranking": rating_logic.rating_result(request.user, content),
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_ratings(request):
+    """나의 평점 (FR5) — ?type=all|movie|series &score=all|5|4|3|2|1 &sort=recent|score_desc|score_asc &page=1"""
+    count, rows, page, total_pages = rating_logic.my_ratings(request.user, request.query_params)
+    cards = rating_logic.cards_by_id([r.content_id for r in rows])
+    return Response(
+        {
+            "summary": rating_logic.summary(request.user),
+            "count": count,
+            "page": page,
+            "page_size": rating_logic.PAGE_SIZE,
+            "total_pages": total_pages,
+            "results": [_my_rating_payload(r, cards[r.content_id]) for r in rows],
+        }
+    )
 
 
 # -----------------------------------------------------------------------------

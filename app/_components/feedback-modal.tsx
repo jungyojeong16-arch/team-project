@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircleHeart } from "lucide-react";
-import { useEffect, useId, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   fetchPendingFeedback,
   isFeedbackPostponed,
@@ -10,6 +10,7 @@ import {
   type PendingFeedback,
 } from "../_lib/feedback";
 import { Modal } from "./modal";
+import { StarInput } from "./star-input"; // 5-1 과 같이 쓰는 별점 입력 (11/24 이 파일에서 옮김)
 
 /* ============================================================================
  * 7-2 재방문 추천 피드백 팝업 (Figma 145:2341 "지난 추천 만족도 설문") — 담당: 홍준화
@@ -20,11 +21,6 @@ import { Modal } from "./modal";
  * ("추천 작품에 반영됩니다" → 한마디는 추천 계산에 쓰이지 않고 내 평점과 함께 저장됨)
  * ========================================================================== */
 
-const STAR_IMAGES = {
-  full: "/images/feedback/star-full.svg",
-  half: "/images/feedback/star-half.svg",
-  empty: "/images/feedback/star-empty.svg",
-};
 const COMMENT_MAX = 200;
 
 export function FeedbackModal() {
@@ -219,66 +215,6 @@ function WorkLine({ item }: { item: PendingFeedback }) {
           {day && ` · ${day}에 [바로 보기]로 열었어요`}
         </p>
       </div>
-    </div>
-  );
-}
-
-/** 별 5개 입력 — 별의 왼쪽 반을 누르면 .5, 오른쪽 반은 정수. 키보드 ←↓ −0.5 / →↑ +0.5 / Home 0.5 / End 5 */
-function StarInput({ value, onChange, dimmed }: { value: number | null; onChange: (value: number) => void; dimmed: boolean }) {
-  const [hover, setHover] = useState<number | null>(null);
-  const shown = hover ?? value ?? 0;
-
-  const valueAt = (e: MouseEvent<HTMLSpanElement>, index: number) => {
-    const box = e.currentTarget.getBoundingClientRect();
-    return index + (e.clientX - box.left < box.width / 2 ? 0.5 : 1);
-  };
-
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const current = value ?? 0;
-    const next =
-      e.key === "ArrowRight" || e.key === "ArrowUp"
-        ? current + 0.5
-        : e.key === "ArrowLeft" || e.key === "ArrowDown"
-          ? current - 0.5
-          : e.key === "Home"
-            ? 0.5
-            : e.key === "End"
-              ? 5
-              : null;
-    if (next === null) return;
-    e.preventDefault();
-    onChange(Math.min(5, Math.max(0.5, next)));
-  };
-
-  return (
-    <div
-      role="slider"
-      tabIndex={0}
-      aria-label="별점"
-      aria-valuemin={0.5}
-      aria-valuemax={5}
-      aria-valuenow={value ?? undefined}
-      aria-valuetext={value === null ? "선택 전" : `${value.toFixed(1)}점`}
-      onKeyDown={onKeyDown}
-      onMouseLeave={() => setHover(null)}
-      className={`flex h-11 items-center justify-center gap-3.5 rounded-lg outline-none transition focus-visible:ring-2 focus-visible:ring-[#f0abfc]/60 ${
-        dimmed ? "opacity-40" : ""
-      }`}
-    >
-      {[0, 1, 2, 3, 4].map((i) => {
-        const fill = shown - i;
-        const src = fill >= 1 ? STAR_IMAGES.full : fill >= 0.5 ? STAR_IMAGES.half : STAR_IMAGES.empty;
-        return (
-          <span
-            key={i}
-            className="size-11 shrink-0 cursor-pointer"
-            onMouseMove={(e) => setHover(valueAt(e, i))}
-            onClick={(e) => onChange(valueAt(e, i))}
-          >
-            <img src={src} alt="" width={44} height={44} draggable={false} className="pointer-events-none block size-11 select-none" />
-          </span>
-        );
-      })}
     </div>
   );
 }
