@@ -8,6 +8,11 @@
 > 11/21 이전 항목은 GitHub 커밋 기록으로 정리했습니다. 커밋에 요청한 사람이 적혀 있지 않은 것은 "요청: 기록 없음"으로 두었습니다 — 본인 작업이면 이름을 채워 주세요.
 
 ---
+### 11/24 · 중간 발표 노션 사진을 실제 화면으로 · 요청: 정준교
+- 한 일: 정준교 PC(실제 TMDB 작품)에서 찍은 홈·맞춤 추천·통합 랭킹 화면 5장을 `docs/presentation/images/real/` 에 올리고, 노션 "ViewFit 구현 중간 발표" 3.4 사진을 이것으로 교체
+- 확인: 문서·이미지만 바뀜
+- 남은 일·주의: 검색·상세 팝업·세대별 랭킹 사진은 아직 테스트 데이터 화면
+
 ### 11/24 · 8-1 취향 수정 화면 (Step 3) · 요청: 정재준
 - 한 일: `/me/taste` 취향 수정 화면(Figma 220:5925, FR8~FR10) — 서버에 저장된 연령대·직업·장르·기억에 남는 작품으로 채우고, [변경사항 저장] → `PUT /me/survey/` → `POST /recommendations/refresh/`(실패해도 저장은 성공) → `/profile`, [취소] → `/profile`. 이 화면의 강조색은 Figma대로 보라(`#b99aff`)
 - 공용 파일: 3-1 설문의 질문 부품(연령대·직업·장르·기억에 남는 작품)을 `app/onboarding/page.tsx` 에서 **`app/_components/survey-questions.tsx` 로 옮김** — 설문 화면 모양은 그대로(선택 옵션 `violet`·`hideHeading` 만 추가). `app/_lib/account.ts` 가 `/me/` 의 `memorable_contents` 를 받도록(`survey.memorable`), `viewfit.ts` 에 `refreshRecommendations()`
