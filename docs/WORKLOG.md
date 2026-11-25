@@ -8,6 +8,12 @@
 > 11/21 이전 항목은 GitHub 커밋 기록으로 정리했습니다. 커밋에 요청한 사람이 적혀 있지 않은 것은 "요청: 기록 없음"으로 두었습니다 — 본인 작업이면 이름을 채워 주세요.
 
 ---
+### 11/25 · 추천 정확도 확인 ② 숨겨 두고 맞히기 · 요청: 홍준화
+- 한 일: 정준교 제안(11/24 교수님 지적 4번)을 7번 담당 홍준화가 정함 — 목표 숫자는 제안값 그대로(적중 6/10, 별점 평균 3.5, 4점 이상 60%), **③ 실제 사람 평가 표시는 구글 폼**(사이트 기능 아님), ② 확인 명령 `python manage.py recommend_accuracy` 를 만듦(`backend/core/management/commands/recommend_accuracy.py`). 가상 회원이 4점 이상 준 작품을 하나씩 숨기고 추천을 다시 계산해서, 숨긴 작품이 TOP 10 에 들어오는지 통합 랭킹 순·무작위와 비교 (숨긴 평점은 되돌려서 DB 그대로)
+- 커밋: `554eb03`
+- 확인: 테스트 92개 통과(SQLite, 새 테스트 3개). 홍준화 PC 794번 숨김 — TOP 10 적중률 맞춤 추천 **13.4%** > 통합 랭킹 순 8.6% > 무작위 5.9%, 평균 순위 54위 vs 78위 → 기준 통과. 결과 표는 `docs/presentation/추천 정확도 기준과 확인 방법.md` ②
+- 남은 일·주의: **③ 참가자 모으기·구글 폼 만들기는 팀에서** (12/1~2 통합 테스트, 폼 구성안은 문서 ③). 서버(MariaDB)에 데이터를 올리면 `recommend_accuracy` 한 번 더 (1~2분 걸림). 처음엔 회원마다 1개만 숨겼는데 결과가 5~17% 로 흔들려서 모두 숨기는 방식으로 바꿈 — 노션·발표 자료에 ② 를 쓸 때는 이 문서의 숫자를 쓰기
+
 ### 11/24 · 5-1 평점 · 요청: 정준교
 - 한 일: 평점 API 4개(`backend/core/rating.py` — 별점 저장·수정·삭제, 나의 평점 목록, 평점 반영 결과), 별점 입력 팝업 `app/_components/star-input.tsx`(`StarInput`·`RatingDialog`), 나의 평점 화면 `app/me/ratings/page.tsx`(Figma 220:2672), 평점 반영 결과 `app/me/ratings/result/[id]/page.tsx`(Figma 224:4225)
 - 공용 파일 (팀 단톡방에 알리기): ① 7-2 피드백 팝업의 별 입력을 `star-input.tsx` 로 옮김 — 모양·동작 그대로 ② 마이페이지 공통 머리 `app/_components/profile-header.tsx` 새로 만듦 — **5-2 좋아요·8-1 프로필도 이걸 쓰면 됨** (`active="likes"` 등) ③ `pagination.tsx` 에 `activeClassName` 선택 옵션 추가 (안 넘기면 예전 그대로) ④ 작품 상세 API `my` 에 `comment` 추가

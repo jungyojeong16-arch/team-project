@@ -30,7 +30,7 @@ PRD(`docs/prd/`)를 바탕으로 **AI(Claude Code)에게 어떤 요청을 보냈
 | 4 작품 탐색 | [4-1_정재준.md](4-1_정재준.md) | 🟡 상단 검색창(FR1·FR6) ✅ / 상세·바로 보기·FR3 검수 진행 중 |
 | 5 평가·좋아요 | [5_rating_like.md](5_rating_like.md) | 🟡 5-1 ✅ (상세 팝업 연결·검수 남음) / 5-2 ⬜ |
 | 6 랭킹 | [6_ranking.md](6_ranking.md) | ✅ 6-1 · 6-2 |
-| 7 AI 추천 | [7_recommend.md](7_recommend.md) | ✅ 7-1·7-2 (화면 검수 남음) |
+| 7 AI 추천 | [7_recommend.md](7_recommend.md) | ✅ 7-1·7-2 (화면 검수 남음) · 정확도 확인 ② (11/25) |
 | 8 마이페이지 | [8_mypage.md](8_mypage.md) | 🟡 8-1 취향 수정(Step 3) ✅ / 프로필(Step 1~2) 남음 |
 
 ## 2번부터 쓸 기록 양식 (복사해서 사용)

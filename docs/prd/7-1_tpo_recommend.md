@@ -2,9 +2,9 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ✅ 완료 (11/19, 11/22 6-1 통합 랭킹과 합친 뒤 다시 확인) — 추천 점수·TOP 50 저장, 한 줄 이유(문장 틀, D10), 추천 API 2개, 맞춤 추천 화면(Figma 144:36577), 홈 오늘의 추천 연결 · 화면 검수 대기(정재준) · LLM 문구는 D10 다시 결정 시 |
+| 상태 | ✅ 완료 (11/19, 11/22 6-1 통합 랭킹과 합친 뒤 다시 확인) — 추천 점수·TOP 50 저장, 한 줄 이유(문장 틀, D10), 추천 API 2개, 맞춤 추천 화면(Figma 144:36577), 홈 오늘의 추천 연결 · 화면 검수 대기(정재준) · LLM 문구는 D10 다시 결정 시 · 11/25 정확도 확인 ② 명령 `recommend_accuracy` 추가 (교수님 지적 4번, 기준·결과는 `docs/presentation/추천 정확도 기준과 확인 방법.md`) |
 | Figma | [맞춤 추천 (TPO TOP 50)](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=144-36577), 홈의 오늘의 추천 영역([Home Feed](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=9-5)) |
-| 코드 | `backend/core/recommend.py`(점수·묶음), `backend/core/curation.py`(한 줄 이유·상황 라벨), `views.py`(recommendations·recommendations_refresh), `home.py`(hero), `app/recommend/page.tsx`, `app/_lib/viewfit.ts`(fetchRecommendations), 공통 부품 `ChipGroup`·`TopPickCard`(plainLabel·note)·`RangeHeader`(accent·note), 테스트 `RecommendationTests` |
+| 코드 | `backend/core/recommend.py`(점수·묶음), `backend/core/curation.py`(한 줄 이유·상황 라벨), `views.py`(recommendations·recommendations_refresh), `home.py`(hero), `app/recommend/page.tsx`, `app/_lib/viewfit.ts`(fetchRecommendations), 공통 부품 `ChipGroup`·`TopPickCard`(plainLabel·note)·`RangeHeader`(accent·note), 테스트 `RecommendationTests` · 정확도 확인 `management/commands/recommend_accuracy.py`(테스트 `RecommendAccuracyTests`) |
 | 테이블 | `recommendation`(member, content, tpo, rank, **reason**(D9), feedback, recommended_at), `content_tpo`, `genre_preference`, `watch_history`, `rating`, `content_like`, `ranking` |
 | 필요한 것 | LLM API 키 (D10) — 11/19 결정: 지금은 문장 틀만 |
 | 담당 | **홍준화** (PRD 확정·바이브 코딩) |
