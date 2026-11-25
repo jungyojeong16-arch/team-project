@@ -3,7 +3,7 @@
 /* 3-1 설문(/onboarding)과 8-1 취향 수정(/me/taste)이 같이 쓰는 질문 부품 (Figma 39:3071 크기: 칩 높이 38 · 글자 13 · 모서리 6) */
 
 import { useEffect, useId, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { Check, Info, X } from "lucide-react";
+import { Check, ListChecks, X } from "lucide-react";
 import { SEARCH_MIN_LENGTH, searchContents, type ContentBrief, type PlatformCode } from "../_lib/viewfit";
 import type { OnboardingAnswers, WatchedItem } from "../_lib/account";
 import { PlatformTag } from "./onboarding-ui";
@@ -207,7 +207,8 @@ export function MemorableWorks({ answers, setAnswers, hideHeading = false }: { a
             <h3 id={`${listId}-title`} className="text-[15px] font-bold text-[#eceef4]">기억에 남는 작품</h3>
             <span className="text-[11px] text-[#9ca3b5]">선택 사항 · 여러 작품 입력 가능</span>
           </div>
-          <SurveyGuidance icon={<Info className="h-[18px] w-[18px]" />} fit>
+          {/* Figma 120:681 — 레이어 이름은 info 지만 그림은 체크리스트 아이콘 (11/25 정재준 검수) */}
+          <SurveyGuidance icon={<ListChecks className="h-[18px] w-[18px]" />} fit>
             작품 제목을 입력하고 추가 버튼을 눌러 여러 작품을 등록할 수 있어요.
           </SurveyGuidance>
         </>

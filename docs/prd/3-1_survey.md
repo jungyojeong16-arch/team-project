@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 상태 | ✅ 완료 (11/17) — 한 화면 5문항(Figma 39:3071), 기억에 남는 작품 검색·등록·삭제 → `watch_history`(source=survey) 저장, 수면·생활 패턴·스트레스·시청 시간 질문 삭제 · 화면 검수 대기(정재준) |
+| 상태 | ✅ 완료 (11/17) — 한 화면 5문항(Figma 39:3071), 기억에 남는 작품 검색·등록·삭제 → `watch_history`(source=survey) 저장, 수면·생활 패턴·스트레스·시청 시간 질문 삭제 · 화면 검수 ✅ (11/23 정재준 — 좁은 화면 칩 잘림 수정, 11/25 홍준화 — 남은 Figma 차이 3개 정리) |
 | Figma | [맞춤 추천 설문](https://www.figma.com/design/MCj90ViECjscPBHzbGNyqq?node-id=39-3071) |
 | 코드 | `app/onboarding/page.tsx`, `app/_lib/account.ts`(saveOnboarding), `app/_lib/viewfit.ts`(searchContents), `backend/core/serializers.py`(SurveySerializer·MeSerializer.memorable_contents·content_brief), `views.py`(save_survey·content_search), 테스트 `SurveyMemorableContentTests` |
 | 테이블 | `member`(age_group, job, survey_completed_at), `genre_preference`, `watch_history`(source=survey) |
@@ -49,6 +49,7 @@
 - [x] 저장 후 `genre_preference`(like/dislike), `watch_history`(source=survey) 행 확인 (`GET /me/` 의 `memorable_contents`)
 - [ ] 다른 브라우저에서 로그인 → 프로필에 같은 설문 결과 (프로필의 기억에 남는 작품 표시는 8-1에서 `memorable_contents` 로 연결)
 - [x] `python manage.py test core` 통과 (38개)
+- [x] 화면이 Figma 39:3071 과 같다 — 11/23 정재준 검수(좁은 화면 칩 잘림 수정). 그때 남은 차이 3개는 11/25 홍준화가 Figma 설계값으로 확인: ① 기억에 남는 작품 안내 아이콘은 레이어 이름만 `info` 이고 그림은 체크리스트 → ⓘ 를 `ListChecks` 로 고침 ② 버튼 위 구분선(흰색 12%, 위 간격 24px) ③ "지금은 건너뛰고 둘러볼게요" 밑줄은 Figma 에도 있고 코드와 같아서 그대로 (Figma 그림에서는 잘 안 보임)
 
 ## 7. 범위 밖
 - 작품을 몇 화까지 봤는지 같은 상세 시청 기록
