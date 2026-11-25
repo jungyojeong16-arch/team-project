@@ -1203,6 +1203,90 @@ class RevisitFeedbackTests(APITestCase):
 
 
 # =============================================================================
+# 7 추천 정확도 ② 숨겨 두고 맞히기 — recommend_accuracy 명령 (docs/presentation/추천 정확도 기준과 확인 방법.md)
+# =============================================================================
+
+
+class RecommendAccuracyTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from django.utils import timezone
+
+        from .models import ContentGenre, ContentLike, ContentPlatform, Genre, Platform, Ranking
+
+        thriller, comedy = Genre.objects.get(name="스릴러"), Genre.objects.get(name="코미디")
+        netflix = Platform.objects.get(code="NETFLIX")
+
+        def make(title, genre, rank):
+            c = Content.objects.create(title=title, content_type="movie", release_year=2024)
+            ContentGenre.objects.create(content=c, genre=genre)
+            ContentPlatform.objects.create(content=c, platform=netflix)
+            Ranking.objects.create(content=c, period="weekly", ranked_on=timezone.localdate(), rank=rank)
+            return c
+
+        # 통합 랭킹은 코미디가 위, 가상 회원 취향은 스릴러
+        make("인기 코미디1", comedy, 1)
+        make("인기 코미디2", comedy, 2)
+        cls.hidden = make("숨길 스릴러", thriller, 3)
+        make("다른 스릴러", thriller, 4)
+        seen = make("본 코미디", comedy, 5)
+
+        cls.demo = Member.objects.create_user(
+            "demo01@demo.viewfit.local", "시연01", None, age_group="20s", survey_completed_at=timezone.now()
+        )
+        cls.demo.genre_preferences.create(genre=thriller, kind="like")
+        Rating.objects.create(member=cls.demo, content=cls.hidden, score=Decimal("4.5"))  # 4.0 이상 → 숨겨 볼 작품
+        ContentLike.objects.create(member=cls.demo, content=cls.hidden)
+        Rating.objects.create(member=cls.demo, content=seen, score=Decimal("2.0"))
+        # 4.0 이상 평점이 없는 가상 회원은 빼고, 진짜 회원은 처음부터 대상이 아님
+        low = Member.objects.create_user("demo02@demo.viewfit.local", "시연02", None, age_group="20s")
+        Rating.objects.create(member=low, content=seen, score=Decimal("3.0"))
+        real = Member.objects.create_user("real@x.kr", "진짜", "viewfit123!", age_group="20s")
+        Rating.objects.create(member=real, content=seen, score=Decimal("5.0"))
+
+    def test_taste_finds_hidden_work_ranking_does_not(self):
+        from .management.commands.recommend_accuracy import holdout_check
+
+        r = holdout_check(top=2)
+        self.assertEqual((r.members, r.skipped, len(r.trials)), (1, 1, 1))
+        t = r.trials[0]
+        # 후보 4개 (본 코미디는 이미 평가해서 빠짐): 맞춤 추천은 스릴러 둘이 위(같은 점수 → 랭킹 3위인 숨길 스릴러 먼저),
+        # 통합 랭킹 순은 코미디 둘 다음 3번째
+        self.assertEqual((t.nickname, t.recommend_rank, t.ranking_rank, t.pool), ("시연01", 1, 3, 4))
+        self.assertEqual((r.hits("recommend_rank"), r.hits("ranking_rank")), (1, 0))
+        self.assertEqual(r.random_rate, 0.5)  # 후보 4개 중 무작위 2개
+
+    def test_db_is_unchanged(self):
+        from .management.commands.recommend_accuracy import holdout_check
+        from .models import ContentLike, Recommendation
+
+        before = (Rating.objects.count(), ContentLike.objects.count())
+        holdout_check()
+        self.assertEqual((Rating.objects.count(), ContentLike.objects.count()), before)
+        self.assertTrue(Rating.objects.filter(member=self.demo, content=self.hidden, score=Decimal("4.5")).exists())
+        self.assertTrue(ContentLike.objects.filter(member=self.demo, content=self.hidden).exists())
+        self.assertFalse(Recommendation.objects.exists())  # 추천 묶음도 저장하지 않음
+
+    def test_command_output_and_needs_data_first(self):
+        from .models import Ranking
+
+        out = StringIO()
+        call_command("recommend_accuracy", "--top", "2", stdout=out)
+        text = out.getvalue()
+        self.assertIn("가상 회원 1명 · 1번 숨겨 봄", text)
+        self.assertIn("맞춤 추천 (7-1 점수): 1 / 1번 = 100.0%", text)
+        self.assertIn("통합 랭킹 순 (취향 안 봄): 0 / 1번 = 0.0%", text)
+        self.assertIn("통과 (+100.0%p)", text)
+
+        Ranking.objects.all().delete()
+        with self.assertRaisesMessage(CommandError, "build_rankings"):
+            call_command("recommend_accuracy", stdout=StringIO())
+        Member.objects.filter(email__endswith="@demo.viewfit.local").delete()
+        with self.assertRaisesMessage(CommandError, "seed_demo"):
+            call_command("recommend_accuracy", stdout=StringIO())
+
+
+# =============================================================================
 # 6-2 세대별 랭킹 — 평가 당시 연령대로 묶기 · 평가 3개 미만 제외 · 필터 · 기본 연령대
 # =============================================================================
 

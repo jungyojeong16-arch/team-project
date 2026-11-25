@@ -135,6 +135,16 @@ python manage.py build_rankings --offline            # TMDB 에 접속하지 않
 - 상위 100개가 `ranking` 표에 저장되고, http://localhost:3000/ranking 과 홈의 TOP 10 에 나옵니다.
 - 순위 변동은 **바로 전 집계**와 비교합니다. 처음 한 번만 집계하면 모두 "—" 입니다.
 
+## 추천 정확도 확인 (7 — ② 숨겨 두고 맞히기)
+작품·가상 평점·통합 랭킹(`import_tmdb` → `seed_demo` → `build_rankings`)이 있는 상태에서 실행합니다.
+```powershell
+python manage.py recommend_accuracy            # 숨긴 작품이 TOP 10 안이면 적중 (1~2분)
+python manage.py recommend_accuracy --top 20   # TOP 20
+python manage.py recommend_accuracy -v 2       # 회원마다 적중 개수까지
+```
+- 가상 회원이 4점 이상 준 작품을 하나씩 숨기고 추천을 다시 계산해서, 맞춤 추천·통합 랭킹 순·무작위의 적중률을 비교합니다.
+- 숨긴 평점은 바로 되돌려서 **DB는 바뀌지 않습니다.** 기준·결과는 `docs/presentation/추천 정확도 기준과 확인 방법.md`
+
 ## 새 API 를 만들 때 (0번 공통 규칙 — 1~8번 담당 공통)
 `docs/prd/0_common_base.md` 0-2 규칙을 코드로 만들어 둔 것입니다. 직접 만들지 말고 가져다 쓰세요.
 
